@@ -1,27 +1,22 @@
----
-# Kapitel 1
----
-## Abschnitt 1
-#### noch ein Test
-#### noch ein Test
-## Abschnitt 2
-#### noch ein Test
-#### noch ein Test
----
-# Kapitel 2
----
-bla bla bla
+# ilic - INTERLIS Compiler
+Checks syntactical correctness of [INTERLIS](https://www.interlis.ch) data models. 
+ilic can generate output in several formats (.log, .imd, .ili, .xsd, .gml).
 
-+ Punkt
-  + Unterpunkt
-     + Unterunterpunkt
-+ **Punkt**
+## License
+ilic is free software. Source files and binaries can be copdied, changed, integrated in other software (commercial or non commercial) without any restrictions. On foreign libraries contained in /lib folder restrictions my apply.
 
-1. *zuerst*
+## System Requirements
+To run ilic a PC with Windows 7 or higher (32bit or 64bit) is required. Prebuilt Windows binaries can be
+downloaded from https://www.infogrips.ch/de/support/produkt-download.
 
-1. <u>dann</u>
-2. drittens
+## Installation
 
-[INTERLIS](http://www.interlis.ch)
+In order to install ilic, extract the .zip file into a directory.
 
-`some code some code some code`
+## Usage
+
+Read the [help](./doc/help.txt) file for more information on ilic command line options. For information on the newest version consult the [changelog](./doc/changelog.txt).
+
+## How to build it?
+
+To compile the c++ source files you will need Visual Studio 2019 community edition. A preconfigured project file for VS can be found in /build/vc2019. If you need to modify the ANTLR4 grammar files in folder /source/input/parser/grammar, you have to generate c++ source from ANTLR4 files first. To do this, a batch file is included in /build/tools. As ANTLR4 is a Java based utility a Java Runtime or JDK must be installed on the development machine.
