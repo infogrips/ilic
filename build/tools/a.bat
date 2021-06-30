@@ -1,6 +1,6 @@
 @echo off
-set grammar_dir=..\..\..\..\source\c\ilic\input\parser\grammar
-set output_dir=..\..\..\..\source\c\ilic\input\parser\generated
+set grammar_dir=..\..\source\input\parser\grammar
+set output_dir=..\..\source\input\parser\generated
 copy /y %grammar_dir%\*.l4 %output_dir% >nul 2>nul
 copy /y %grammar_dir%\*.g4 %output_dir% >nul 2>nul
 

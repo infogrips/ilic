@@ -89,7 +89,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>c:\shared\flib\opensource\antlr4\runtime\src;c:\shared\flib\opensource\nana\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\lib\antlr4\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_ICS_NT;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -103,11 +103,11 @@
       </AdditionalOptions>
     </ClCompile>
     <Link>
-      <OutputFile>..\..\..\..\product\iltools\system\bin\ilic.exe</OutputFile>
+      <OutputFile>..\..\build\bin\win\x86\ilic.exe</OutputFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalDependencies>c:\shared\flib\opensource\antlr4\runtime\bin\vs-2019\x86\Debug Static\antlr4-runtime.lib;c:\shared\flib\opensource\nana\build\bin\nana_ClangCL_Debug_x86.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>..\..\lib\antlr4\bin\win\x86\Debug Static\antlr4-runtime.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/IGNORE:4049,4099,4217</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -117,7 +117,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>c:\shared\flib\opensource\antlr4\runtime\src;c:\shared\flib\opensource\nana\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\lib\antlr4\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_ICS_NT;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -131,12 +131,11 @@
       </AdditionalOptions>
     </ClCompile>
     <Link>
-      <OutputFile>..\..\..\..\product\iltools\system\bin64\ilic.exe</OutputFile>
+      <OutputFile>..\..\build\bin\win\x64\ilic.exe</OutputFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX64</TargetMachine>
-      <ProgramDatabaseFile>..\..\..\..\product\iltools\system\bin64\ics.pdb</ProgramDatabaseFile>
-      <AdditionalDependencies>c:\shared\flib\opensource\antlr4\runtime\bin\vs-2019\x64\Debug Static\antlr4-runtime.lib;c:\shared\flib\opensource\nana\build\bin\nana_ClangCL_Debug_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>..\..\lib\antlr4\bin\win\x64\Debug Static\antlr4-runtime.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/IGNORE:4049,4099,4217</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -144,7 +143,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>c:\shared\flib\opensource\antlr4\runtime\src;c:\shared\flib\opensource\nana\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\lib\antlr4\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -157,14 +156,14 @@
       </AdditionalOptions>
     </ClCompile>
     <Link>
-      <OutputFile>..\..\..\..\product\iltools\system\bin\ilic.exe</OutputFile>
+      <OutputFile>..\..\build\bin\win\x86\ilic.exe</OutputFile>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <LargeAddressAware>true</LargeAddressAware>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalDependencies>c:\shared\flib\opensource\antlr4\runtime\bin\vs-2019\x86\Release Static\antlr4-runtime.lib;c:\shared\flib\opensource\nana\build\bin\nana_ClangCL_Release_x86.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>..\..\lib\antlr4\bin\win\x86\Release Static\antlr4-runtime.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/IGNORE:4049,4099,4217</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -175,7 +174,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>c:\shared\flib\opensource\antlr4\runtime\src;c:\shared\flib\opensource\nana\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\lib\antlr4\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -188,92 +187,90 @@
       </AdditionalOptions>
     </ClCompile>
     <Link>
-      <OutputFile>..\..\..\..\product\iltools\system\bin64\ilic.exe</OutputFile>
+      <OutputFile>..\..\build\bin\win\x64\ilic.exe</OutputFile>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <LargeAddressAware>true</LargeAddressAware>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalDependencies>c:\shared\flib\opensource\antlr4\runtime\bin\vs-2019\x64\Release Static\antlr4-runtime.lib;c:\shared\flib\opensource\nana\build\bin\nana_ClangCL_Release_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>..\..\lib\antlr4\bin\win\x64\Release Static\antlr4-runtime.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/IGNORE:4049,4099,4217</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili1\Ili1Input.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili1\Ili1Input_package.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili1\Ili1Input_table.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili1\Ili1Input_type.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_assoc.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_class.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_constraint.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_expression.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_function.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_graphic.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_helper.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_package.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_path.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_type.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_unit.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_view.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\InterlisModel.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\parser\IliParserErrorListener.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\main\Gui.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\main\ilic.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\metamodel\MetaModel.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\metamodel\MetaModelInput.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\metamodel\MetaModelOutput.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\metamodel\MetaModelTreeVisitor.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\output\GmlOutput.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\output\Ili1Output.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\output\Ili2Output.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\output\ImdOutput.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\output\XsdOutput.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\util\Converter.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\util\IliFile.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\util\Logger.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\util\os.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\util\StringMap.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\util\StringUtil.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\util\TextWriter.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\util\XMLWriter.cpp" />
-    <ClCompile Include="..\..\..\..\source\c\ilic\util\XTFWriter.cpp" />
+    <ClCompile Include="..\..\source\input\ili1\Ili1Input.cpp" />
+    <ClCompile Include="..\..\source\input\ili1\Ili1Input_package.cpp" />
+    <ClCompile Include="..\..\source\input\ili1\Ili1Input_table.cpp" />
+    <ClCompile Include="..\..\source\input\ili1\Ili1Input_type.cpp" />
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input.cpp" />
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_assoc.cpp" />
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_class.cpp" />
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_constraint.cpp" />
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_expression.cpp" />
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_function.cpp" />
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_graphic.cpp" />
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_helper.cpp" />
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_package.cpp" />
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_path.cpp" />
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_type.cpp" />
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_unit.cpp" />
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_view.cpp" />
+    <ClCompile Include="..\..\source\input\ili2\InterlisModel.cpp" />
+    <ClCompile Include="..\..\source\input\parser\IliParserErrorListener.cpp" />
+    <ClCompile Include="..\..\source\main\ilic.cpp" />
+    <ClCompile Include="..\..\source\metamodel\MetaModel.cpp" />
+    <ClCompile Include="..\..\source\metamodel\MetaModelInput.cpp" />
+    <ClCompile Include="..\..\source\metamodel\MetaModelOutput.cpp" />
+    <ClCompile Include="..\..\source\metamodel\MetaModelTreeVisitor.cpp" />
+    <ClCompile Include="..\..\source\output\GmlOutput.cpp" />
+    <ClCompile Include="..\..\source\output\Ili1Output.cpp" />
+    <ClCompile Include="..\..\source\output\Ili2Output.cpp" />
+    <ClCompile Include="..\..\source\output\ImdOutput.cpp" />
+    <ClCompile Include="..\..\source\output\XsdOutput.cpp" />
+    <ClCompile Include="..\..\source\util\Converter.cpp" />
+    <ClCompile Include="..\..\source\util\IliFile.cpp" />
+    <ClCompile Include="..\..\source\util\Logger.cpp" />
+    <ClCompile Include="..\..\source\util\os.cpp" />
+    <ClCompile Include="..\..\source\util\StringMap.cpp" />
+    <ClCompile Include="..\..\source\util\StringUtil.cpp" />
+    <ClCompile Include="..\..\source\util\TextWriter.cpp" />
+    <ClCompile Include="..\..\source\util\XMLWriter.cpp" />
+    <ClCompile Include="..\..\source\util\XTFWriter.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\source\c\ilic\input\ili1\Ili1Input.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_helper.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\input\ili2\InterlisModel.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\input\parser\IliParserErrorListener.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\main\Gui.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\main\ilic.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\metamodel\MetaModel.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\metamodel\MetaModelInput.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\metamodel\MetaModelOutput.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\metamodel\MetaModelTreeVisitor.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\output\GmlOutput.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\output\Ili1Output.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\output\Ili2Output.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\output\ImdOutput.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\output\XsdOutput.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\util\Converter.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\util\IliFile.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\util\Logger.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\util\os.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\util\StringMap.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\util\StringUtil.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\util\TextWriter.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\util\XMLWriter.h" />
-    <ClInclude Include="..\..\..\..\source\c\ilic\util\XTFWriter.h" />
+    <ClInclude Include="..\..\source\input\ili1\Ili1Input.h" />
+    <ClInclude Include="..\..\source\input\ili2\Ili2Input.h" />
+    <ClInclude Include="..\..\source\input\ili2\Ili2Input_helper.h" />
+    <ClInclude Include="..\..\source\input\ili2\InterlisModel.h" />
+    <ClInclude Include="..\..\source\input\parser\IliParserErrorListener.h" />
+    <ClInclude Include="..\..\source\main\ilic.h" />
+    <ClInclude Include="..\..\source\metamodel\MetaModel.h" />
+    <ClInclude Include="..\..\source\metamodel\MetaModelInput.h" />
+    <ClInclude Include="..\..\source\metamodel\MetaModelOutput.h" />
+    <ClInclude Include="..\..\source\metamodel\MetaModelTreeVisitor.h" />
+    <ClInclude Include="..\..\source\output\GmlOutput.h" />
+    <ClInclude Include="..\..\source\output\Ili1Output.h" />
+    <ClInclude Include="..\..\source\output\Ili2Output.h" />
+    <ClInclude Include="..\..\source\output\ImdOutput.h" />
+    <ClInclude Include="..\..\source\output\XsdOutput.h" />
+    <ClInclude Include="..\..\source\util\Converter.h" />
+    <ClInclude Include="..\..\source\util\IliFile.h" />
+    <ClInclude Include="..\..\source\util\Logger.h" />
+    <ClInclude Include="..\..\source\util\os.h" />
+    <ClInclude Include="..\..\source\util\StringMap.h" />
+    <ClInclude Include="..\..\source\util\StringUtil.h" />
+    <ClInclude Include="..\..\source\util\TextWriter.h" />
+    <ClInclude Include="..\..\source\util\XMLWriter.h" />
+    <ClInclude Include="..\..\source\util\XTFWriter.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\..\source\c\ilic\input\parser\grammar\Ili1Lexer.l4" />
-    <None Include="..\..\..\..\source\c\ilic\input\parser\grammar\Ili1Parser.g4" />
-    <None Include="..\..\..\..\source\c\ilic\input\parser\grammar\Ili2Lexer.l4" />
-    <None Include="..\..\..\..\source\c\ilic\input\parser\grammar\Ili2Parser.g4" />
-    <None Include="..\..\..\..\source\c\ilic\input\parser\grammar\IliFileLexer.l4" />
-    <None Include="..\..\..\..\source\c\ilic\input\parser\grammar\IliFileParser.g4" />
+    <None Include="..\..\source\input\parser\grammar\Ili1Lexer.l4" />
+    <None Include="..\..\source\input\parser\grammar\Ili1Parser.g4" />
+    <None Include="..\..\source\input\parser\grammar\Ili2Lexer.l4" />
+    <None Include="..\..\source\input\parser\grammar\Ili2Parser.g4" />
+    <None Include="..\..\source\input\parser\grammar\IliFileLexer.l4" />
+    <None Include="..\..\source\input\parser\grammar\IliFileParser.g4" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

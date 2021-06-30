@@ -1,122 +1,119 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\source\c\ilic\util\XMLWriter.cpp">
+    <ClCompile Include="..\..\source\util\Converter.cpp">
       <Filter>util</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\util\XTFWriter.cpp">
-      <Filter>util</Filter>
+    <ClCompile Include="..\..\source\input\ili1\Ili1Input.cpp">
+      <Filter>input\ili1</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\util\Logger.cpp">
-      <Filter>util</Filter>
+    <ClCompile Include="..\..\source\input\ili1\Ili1Input_package.cpp">
+      <Filter>input\ili1</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\metamodel\MetaModel.cpp">
-      <Filter>metamodel</Filter>
+    <ClCompile Include="..\..\source\input\ili1\Ili1Input_table.cpp">
+      <Filter>input\ili1</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\util\IliFile.cpp">
-      <Filter>util</Filter>
+    <ClCompile Include="..\..\source\input\ili1\Ili1Input_type.cpp">
+      <Filter>input\ili1</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\main\ilic.cpp">
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input.cpp">
+      <Filter>input\ili2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_assoc.cpp">
+      <Filter>input\ili2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_class.cpp">
+      <Filter>input\ili2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_constraint.cpp">
+      <Filter>input\ili2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_expression.cpp">
+      <Filter>input\ili2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_function.cpp">
+      <Filter>input\ili2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_graphic.cpp">
+      <Filter>input\ili2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_helper.cpp">
+      <Filter>input\ili2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_package.cpp">
+      <Filter>input\ili2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_path.cpp">
+      <Filter>input\ili2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_type.cpp">
+      <Filter>input\ili2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_unit.cpp">
+      <Filter>input\ili2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\input\ili2\Ili2Input_view.cpp">
+      <Filter>input\ili2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\output\GmlOutput.cpp">
+      <Filter>output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\main\ilic.cpp">
       <Filter>main</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\util\Converter.cpp">
+    <ClCompile Include="..\..\source\util\IliFile.cpp">
       <Filter>util</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\util\os.cpp">
-      <Filter>util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\output\Ili1Output.cpp">
-      <Filter>output</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\output\Ili2Output.cpp">
-      <Filter>output</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\output\ImdOutput.cpp">
-      <Filter>output</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\output\XsdOutput.cpp">
-      <Filter>output</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\util\StringUtil.cpp">
-      <Filter>util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\output\GmlOutput.cpp">
-      <Filter>output</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\metamodel\MetaModelInput.cpp">
+    <ClCompile Include="..\..\source\metamodel\MetaModel.cpp">
       <Filter>metamodel</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\metamodel\MetaModelOutput.cpp">
+    <ClCompile Include="..\..\source\metamodel\MetaModelInput.cpp">
       <Filter>metamodel</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\util\TextWriter.cpp">
-      <Filter>util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\util\StringMap.cpp">
-      <Filter>util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\main\Gui.cpp">
-      <Filter>main</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\metamodel\MetaModelTreeVisitor.cpp">
+    <ClCompile Include="..\..\source\metamodel\MetaModelOutput.cpp">
       <Filter>metamodel</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili1\Ili1Input.cpp">
-      <Filter>input\ili1</Filter>
+    <ClCompile Include="..\..\source\metamodel\MetaModelTreeVisitor.cpp">
+      <Filter>metamodel</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili1\Ili1Input_package.cpp">
-      <Filter>input\ili1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili1\Ili1Input_table.cpp">
-      <Filter>input\ili1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili1\Ili1Input_type.cpp">
-      <Filter>input\ili1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input.cpp">
-      <Filter>input\ili2</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_assoc.cpp">
-      <Filter>input\ili2</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_class.cpp">
-      <Filter>input\ili2</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_constraint.cpp">
-      <Filter>input\ili2</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_expression.cpp">
-      <Filter>input\ili2</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_function.cpp">
-      <Filter>input\ili2</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_graphic.cpp">
-      <Filter>input\ili2</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_helper.cpp">
-      <Filter>input\ili2</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_package.cpp">
-      <Filter>input\ili2</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_path.cpp">
-      <Filter>input\ili2</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_type.cpp">
-      <Filter>input\ili2</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_unit.cpp">
-      <Filter>input\ili2</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_view.cpp">
-      <Filter>input\ili2</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\ili2\InterlisModel.cpp">
-      <Filter>input\ili2</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\c\ilic\input\parser\IliParserErrorListener.cpp">
+    <ClCompile Include="..\..\source\input\parser\IliParserErrorListener.cpp">
       <Filter>input\parser</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\output\ImdOutput.cpp">
+      <Filter>output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\util\Logger.cpp">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\input\ili2\InterlisModel.cpp">
+      <Filter>input\parser</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\util\StringMap.cpp">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\util\StringUtil.cpp">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\util\TextWriter.cpp">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\util\XMLWriter.cpp">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\output\XsdOutput.cpp">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\util\os.cpp">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\util\XTFWriter.cpp">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\output\Ili2Output.cpp">
+      <Filter>output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\output\Ili1Output.cpp">
+      <Filter>output</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -146,99 +143,96 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\source\c\ilic\metamodel\MetaModel.h">
-      <Filter>metamodel</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\util\Logger.h">
+    <ClInclude Include="..\..\source\util\Converter.h">
       <Filter>util</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\util\XMLWriter.h">
-      <Filter>util</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\util\XTFWriter.h">
-      <Filter>util</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\util\IliFile.h">
-      <Filter>util</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\util\Converter.h">
-      <Filter>util</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\util\os.h">
-      <Filter>util</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\output\Ili1Output.h">
-      <Filter>output</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\output\Ili2Output.h">
-      <Filter>output</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\output\ImdOutput.h">
-      <Filter>output</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\output\XsdOutput.h">
-      <Filter>output</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\util\StringUtil.h">
-      <Filter>util</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\output\GmlOutput.h">
-      <Filter>output</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\metamodel\MetaModelInput.h">
-      <Filter>metamodel</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\metamodel\MetaModelOutput.h">
-      <Filter>metamodel</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\util\TextWriter.h">
-      <Filter>util</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\util\StringMap.h">
-      <Filter>util</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\main\Gui.h">
-      <Filter>main</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\metamodel\MetaModelTreeVisitor.h">
-      <Filter>metamodel</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\main\ilic.h">
-      <Filter>main</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\input\ili1\Ili1Input.h">
+    <ClInclude Include="..\..\source\input\ili1\Ili1Input.h">
       <Filter>input\ili1</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input.h">
+    <ClInclude Include="..\..\source\input\ili2\Ili2Input.h">
       <Filter>input\ili2</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\input\ili2\Ili2Input_helper.h">
+    <ClInclude Include="..\..\source\input\ili2\Ili2Input_helper.h">
       <Filter>input\ili2</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\input\ili2\InterlisModel.h">
-      <Filter>input\ili2</Filter>
+    <ClInclude Include="..\..\source\output\GmlOutput.h">
+      <Filter>output</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\source\c\ilic\input\parser\IliParserErrorListener.h">
+    <ClInclude Include="..\..\source\main\ilic.h">
+      <Filter>main</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\util\IliFile.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\metamodel\MetaModel.h">
+      <Filter>metamodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\metamodel\MetaModelInput.h">
+      <Filter>metamodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\metamodel\MetaModelOutput.h">
+      <Filter>metamodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\metamodel\MetaModelTreeVisitor.h">
+      <Filter>metamodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\input\parser\IliParserErrorListener.h">
       <Filter>input\parser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\output\ImdOutput.h">
+      <Filter>output</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\util\Logger.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\input\ili2\InterlisModel.h">
+      <Filter>input\parser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\util\StringMap.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\util\StringUtil.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\util\TextWriter.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\util\XMLWriter.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\output\XsdOutput.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\util\os.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\util\XTFWriter.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\output\Ili2Output.h">
+      <Filter>output</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\output\Ili1Output.h">
+      <Filter>output</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\..\source\c\ilic\input\parser\grammar\Ili1Lexer.l4">
+    <None Include="..\..\source\input\parser\grammar\Ili1Lexer.l4">
       <Filter>input\parser</Filter>
     </None>
-    <None Include="..\..\..\..\source\c\ilic\input\parser\grammar\Ili1Parser.g4">
+    <None Include="..\..\source\input\parser\grammar\Ili1Parser.g4">
       <Filter>input\parser</Filter>
     </None>
-    <None Include="..\..\..\..\source\c\ilic\input\parser\grammar\Ili2Lexer.l4">
+    <None Include="..\..\source\input\parser\grammar\Ili2Parser.g4">
       <Filter>input\parser</Filter>
     </None>
-    <None Include="..\..\..\..\source\c\ilic\input\parser\grammar\Ili2Parser.g4">
+    <None Include="..\..\source\input\parser\grammar\Ili2Lexer.l4">
       <Filter>input\parser</Filter>
     </None>
-    <None Include="..\..\..\..\source\c\ilic\input\parser\grammar\IliFileLexer.l4">
+    <None Include="..\..\source\input\parser\grammar\IliFileLexer.l4">
       <Filter>input\parser</Filter>
     </None>
-    <None Include="..\..\..\..\source\c\ilic\input\parser\grammar\IliFileParser.g4">
+    <None Include="..\..\source\input\parser\grammar\IliFileParser.g4">
       <Filter>input\parser</Filter>
     </None>
   </ItemGroup>

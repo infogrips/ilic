@@ -1,0 +1,3 @@
+﻿C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(1363,5): warning MSB8012: TargetPath(F:\users\MGPRO\dev\GitHub\ilic\build\vc2019\x64\Release\ilic.exe) does not match the Linker's OutputFile property value (F:\users\MGPRO\dev\GitHub\ilic\build\bin\win\x64\ilic.exe). This may cause your project to build incorrectly. To correct this, please make sure that $(OutDir), $(TargetName) and $(TargetExt) property values match the value specified in %(Link.OutputFile).
+lld-link : warning : ignoring '/incremental' because REF is enabled; use '/opt:noref' to disable
+  ilic.vcxproj -> F:\users\MGPRO\dev\GitHub\ilic\build\vc2019\x64\Release\ilic.exe

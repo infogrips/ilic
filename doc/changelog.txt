@@ -1,3 +1,11 @@
+ilic 0.9.0 (2021-06-30)
+-----------------------
+
+- all functions tested with roads example
+- INTERLIS 1.0 output
+- XSD output
+- GML output
+
 ilic 0.8.1 (2021-06-25)
 -----------------------
 

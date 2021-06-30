@@ -1,5 +1,5 @@
 
-// Generated from ..\..\..\..\source\c\ilic\input\parser\generated\Ili1Lexer.l4 by ANTLR 4.7.1
+// Generated from ..\..\source\input\parser\generated\Ili1Lexer.l4 by ANTLR 4.7.1
 
 #pragma once
 
