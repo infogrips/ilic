@@ -1,14 +1,14 @@
 # ilic - INTERLIS Compiler
 Validates [INTERLIS](https://www.interlis.ch) data models. 
 ilic can generate output in several formats (.log, .imd, .ili, .xsd, .gml) from INTERLIS 2.3 and 2.4 input models.
-ilic is maintained by [infoGrips Ltd. Zürich](https://www.infogrips.ch).
+ilic is maintained by [infoGrips Ltd. ZÃ¼rich](https://www.infogrips.ch).
 
 ## License
 Source files and binaries can be copied, changed, integrated in other software (commercial or non commercial) without any license restrictions. 
 On foreign libraries contained in folder /lib some license restrictions may apply (see folder for details).
 
 ## System Requirements
-To run ilic Windows 7 or higher is required.
+Windows 7 or higher is required to run ilic.
 
 ## Installation
 In order to install ilic, extract the [.zip](https://www.infogrips.ch/download/ilic.zip) file into a directory.
