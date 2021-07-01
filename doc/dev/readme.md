@@ -6,7 +6,7 @@ ilic was completely built from scratch, this is no c++ port of the
 [Java INTERLIS compiler](https://github.com/claeis/ili2c).
 
 ## Project Goals
-+ fast INTERLIS compiler without any runtime or installation requirements (exept OS)
++ fast INTERLIS compiler without any runtime or installation requirements (except OS)
 + one single executable
 + standard c++ without external libraries or frameworks (except ANTLR for parse tree generation)
 + reusable ANTLR grammars without embedded c++ code
