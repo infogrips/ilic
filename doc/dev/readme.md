@@ -16,13 +16,13 @@ ilic was completely built from scratch, this is no c++ port of the
 + supported output formats: INTERLIS 2.3 and 2.4, imd, xsd, gml
 
 ## How to build ilic?
-Unpack the "Debug Static" libraries in \lib\antlr4\bin\win first. To compile the c++ source files 
-you will need Visual Studio 2019 community edition (VS). A preconfigured project file for VS 
-can be found in /build/vc2019. If you need to modify the ANTLR4 grammar files in folder 
-/source/input/parser/grammar, you have to generate c++ source from ANTLR4 definition files 
-first. To do this, use the batch file /build/scripts/a.bat. As ANTLR4 is a Java based utility 
-a Java Runtime or JDK must be present on the development machine (java.exe has to 
-work from the command line).
+Unpack the static libraries in \lib\antlr4\bin.zip to folder \lib\antlr4\bin. To compile 
+the c++ source files you will need Visual Studio 2019 community edition (VS). A preconfigured 
+project file for VS can be found in /build/vc2019. If you need to modify the ANTLR4 grammar 
+files in folder /source/input/parser/grammar, you have to generate c++ source from ANTLR4 
+definition files first. To do this, use the batch file /build/scripts/a.bat. As ANTLR4 is 
+a Java based utility a Java Runtime or JDK must be present on the development machine 
+(java.exe has to work from the command line).
 
 ## Additional Information
 + [coding conventions](./codingconventions.md)
