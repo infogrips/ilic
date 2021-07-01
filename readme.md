@@ -7,7 +7,7 @@ Source files and binaries can be copied, changed, integrated in other software (
 On foreign libraries contained in folder /lib some license restrictions may apply (see folder for details).
 
 ## System Requirements
-Windows 7 or higher is required.
+To run ilic Windows 7 or higher is required.
 
 ## Installation
 In order to install ilic, extract the [.zip](https://www.infogrips.ch/download/ilic.zip) file into a directory.
