@@ -7,11 +7,10 @@ Source files and binaries can be copied, changed, integrated in other software (
 On foreign libraries contained in folder /lib some license restrictions may apply (see folder for details).
 
 ## System Requirements
-Windows 7 or higher is required. Prebuilt 32bit and 64bit Windows binaries can be
-downloaded from https://www.infogrips.ch/download/ilic.zip.
+Windows 7 or higher is required.
 
 ## Installation
-In order to install ilic, extract the .zip file into a directory.
+In order to install ilic, extract the [.zip](https://www.infogrips.ch/download/ilic.zip) file into a directory.
 
 ## Documentation
 
