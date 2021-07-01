@@ -1,8 +1,9 @@
-# Developer Documentation
+# ilic Developer Documentation
 
 ## Introduction
 Welcome to the ilic developer documentation. ilic is an INTERLIS compiler written in c++. 
-ilic was completely built from scratch, this is no c++ port of the Java INTERLIS compiler.
+ilic was completely built from scratch, this is no c++ port of the 
+[Java INTERLIS compiler](https://github.com/claeis/ili2c).
 
 ## Project Goals
 + fast INTERLIS compiler without any runtime or installation requirements (exept OS)
