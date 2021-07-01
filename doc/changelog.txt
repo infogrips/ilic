@@ -1,6 +1,5 @@
 ilic 0.9.0 (2021-06-30)
 -----------------------
-
 - all functions tested with roads example
 - INTERLIS 1.0 output
 - XSD output
@@ -8,12 +7,10 @@ ilic 0.9.0 (2021-06-30)
 
 ilic 0.8.1 (2021-06-25)
 -----------------------
-
 - IMD output completed
 
 ilic 0.8.0 (2021-06-24)
 -----------------------
-
 - new option -success
 - new option -werror
 - new option -ident for output formats
@@ -21,18 +18,15 @@ ilic 0.8.0 (2021-06-24)
 
 ilic 0.7.9 (2021-06-17)
 -----------------------
-
 - new option -model_filter for interlis output
 
 ilic 0.7.8 (2021-06-16)
 -----------------------
-
 - problem with o1/o2 .ili output fixed
 - Microsoft c++ compiler replaced by clang (LLVM)
 
 ilic 0.7.7 (2021-06-08)
 -----------------------
-
 - new command line switch -o1_model for INTERLIS 1 output
 - limited version of INTERLIS 2.3 output implemented
 - limited version of INTERLIS 1 output implemented
@@ -41,7 +35,6 @@ ilic 0.7.7 (2021-06-08)
 
 ilic 0.7.6 (2021-06-01)
 -----------------------
-
 - INTERLIS 2.4 syntax rules completed
 - INTERLIS 1.0 parser completed
 - internal metamodel switched from IlisMeta07.ili
