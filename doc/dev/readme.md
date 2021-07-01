@@ -12,7 +12,7 @@ ilic was completely built from scratch, this is no c++ port of the
 + reusable ANTLR grammars without embedded c++ code
 + simple and easy to extend source code
 + documented api for developers
-+ supported input formats: INTERLIS 2.3 and 2.4
++ supported input formats: INTERLIS 1.0, 2.3 and 2.4
 + supported output formats: INTERLIS 2.3 and 2.4, imd, xsd, gml
 
 ## How to build ilic?
