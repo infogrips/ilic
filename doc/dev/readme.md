@@ -9,7 +9,7 @@ ilic was completely built from scratch, this is no c++ port of the
 + fast INTERLIS compiler without any runtime or installation requirements (exept OS)
 + one single executable
 + standard c++ without external libraries or frameworks (except ANTLR for parse tree generation)
-+ reusable ANTLR grammars without c++ code
++ reusable ANTLR grammars without embedded c++ code
 + simple and easy to extend source code
 + documented api for developers
 + supported input formats: INTERLIS 2.3 and 2.4
