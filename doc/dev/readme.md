@@ -13,7 +13,7 @@ ilic was completely built from scratch, this is no c++ port of the
 + simple and easy to extend source code
 + documented api for developers
 + supported input formats: INTERLIS 1.0, 2.3 and 2.4
-+ supported output formats: INTERLIS 2.3 and 2.4, imd, xsd, gml
++ supported output formats: INTERLIS 1.0, 2.3 and 2.4, imd, xsd, gml
 
 ## How to build ilic?
 Unpack the static libraries in \lib\antlr4\bin.zip to folder \lib\antlr4\bin. To compile 
