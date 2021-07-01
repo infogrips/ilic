@@ -1,6 +1,6 @@
 # ilic - INTERLIS Compiler
 Validates [INTERLIS](https://www.interlis.ch) data models. 
-ilic can generate output in several formats (.log, .imd, .ili, .xsd, .gml) from INTERLIS 2.3 and 2.4 input models.
+ilic can generate output in several formats (.log, .imd, .ili, .xsd, .gml) from INTERLIS 1.0, 2.3 and 2.4 input models.
 ilic is maintained by [infoGrips Ltd. Zürich](https://www.infogrips.ch).
 
 ## License
