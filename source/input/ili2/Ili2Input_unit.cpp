@@ -65,7 +65,9 @@ antlrcpp::Any Ili2Input::visitUnitDef(parser::Ili2Parser::UnitDefContext *ctx)
    u->Kind = Unit::BaseU;
    if (ctx->derivedUnit() != nullptr) {
       u->Kind = Unit::DerivedU;
+      push_context(u);
       u->Definition = visitDerivedUnit(ctx->derivedUnit());
+      pop_context();
    }
    else if (ctx->composedUnit() != nullptr) {
       u->Kind = Unit::ComposedU;
@@ -92,7 +94,8 @@ antlrcpp::Any Ili2Input::visitDerivedUnit(parser::Ili2Parser::DerivedUnitContext
       enum {Undefined, Numeric, Text, Enumeration} Kind;
    */
 
-   debug(ctx,"visitDerivedUnit()");
+   debug(ctx,">>> visitDerivedUnit()");
+   Log.incNestLevel();
    
    Expression *e = nullptr;
    
@@ -143,8 +146,14 @@ antlrcpp::Any Ili2Input::visitDerivedUnit(parser::Ili2Parser::DerivedUnitContext
       // to do !!!
    }
 
-   // unitref, to do !!!
+   if (ctx->unitref != nullptr) {
+      Unit *u = static_cast<Unit *>(get_context());
+      u->Super = find_unit(ctx->unitref->getText());
+   }
    
+   Log.decNestLevel();
+   debug(ctx,"<<< visitDerivedUnit()");
+
    return e;
    
 }

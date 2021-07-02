@@ -547,7 +547,9 @@ void Ili2Output::visitUnit(metamodel::Unit* u)
       // to do !!!
    }
    
-   ili2.write(0," [" + u->Name + "]");
+   if (u->Super != nullptr) {
+      ili2.write(0," [" + u->Super->Name + "]");
+   }
    ili2.writeln(0,";");
 
 }

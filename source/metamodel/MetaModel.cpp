@@ -603,10 +603,7 @@ namespace metamodel {
 
    static void clone_init_submodel(SubModel *clone,SubModel *org)
    {
-
       clone_init_package(clone,org);
-
-
    }
 
    static void clone_init_type(Type *clone,Type *org)
