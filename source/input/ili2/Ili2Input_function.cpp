@@ -52,7 +52,7 @@ antlrcpp::Any Ili2Input::visitFunctionDef(parser::Ili2Parser::FunctionDefContext
    */
 
    string name = ctx->functioname->getText();
-   debug(ctx,"visitFunctionDef(" + name + ")");
+   debug(ctx,">>> visitFunctionDef(" + name + ")");
    Log.incNestLevel();
 
    FunctionDef *f = new FunctionDef;
@@ -68,34 +68,40 @@ antlrcpp::Any Ili2Input::visitFunctionDef(parser::Ili2Parser::FunctionDefContext
       f->Explanation = ctx->EXPLANATION()->getText();
    }
    
-   //push_context(f);
+   push_context(f);
+
    for (auto pctx : ctx->functionDefParam()) {
       Argument *a = new Argument();
       init_metaelement(a,pctx->start->getLine());
       a->Name = pctx->NAME()->getText();
-      debug(ctx,">>> visitArgument " + a->Name);
       Log.incNestLevel();
       a->Kind = Argument::TypeVal; // to do !!!
       a->Type = visitArgumentType(pctx->argumentType());
-      pop_context();
       if (a->Type != nullptr) {
          a->Type->LFTParent = f;
+      }
+      else {
+         Log.internal_error("type of function argument " + get_path(a) + " not found in function " + get_path(f),1);
       }
       a->Function = f;
       f->Argument.push_back(a);
       Log.decNestLevel();
-      debug(ctx,"<<< visitArgument " + a->Name + ":" + a->Type->Name + "/" + a->Type->getClass());
+      debug(ctx,"<<< visitArgument");
+      // debug(ctx,"<<< visitArgument " + a->Name + ":" + a->Type->Name + "/" + a->Type->getClass());
    }
-   //pop_context();
 
    // f->LocalType ???
    debug(ctx,">>> visitResultType");
    Log.incNestLevel();
-   f->ResultType = visitArgumentType(ctx->result);
+   Type *t = visitArgumentType(ctx->result);
+   f->ResultType = t;
    Log.decNestLevel();
    debug(ctx,"<<< visitResultType");
 
+   pop_context();
+
    Log.decNestLevel();
+   debug(ctx,"<<< visitFunctionDef(" + name + ")");
    return f;
 
 }
@@ -198,6 +204,7 @@ antlrcpp::Any Ili2Input::visitArgumentType(parser::Ili2Parser::ArgumentTypeConte
       }
       else {
          // viewRef, to do !!!
+         Log.internal_error("visitArgumentType(): viewRef not implemented",1);
       }
    }
    else if (ctx->OBJECTS() != nullptr) {
@@ -209,14 +216,19 @@ antlrcpp::Any Ili2Input::visitArgumentType(parser::Ili2Parser::ArgumentTypeConte
       }
       else {
          // viewRef, to do !!!
+         Log.internal_error("visitArgumentType(): viewRef not implemented",1);
       }
       t = tt;
    }
    else if (ctx->ENUMVAL() != nullptr) {
-      // to do !!!
+      EnumTreeValueType *tt = new EnumTreeValueType();
+      // tt->ET = find_enumtreevalue(); to do !!!
+      t = tt;
    }
    else if (ctx->ENUMTREEVAL() != nullptr) {
-      // to do !!!
+      EnumTreeValueType *tt = new EnumTreeValueType();
+      // tt->ET = find_enumtreevalue(); to do !!!
+      t = tt;
    }
    
    //t->ElementInPackage = nullptr;

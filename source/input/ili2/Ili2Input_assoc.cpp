@@ -306,7 +306,14 @@ antlrcpp::Any Ili2Input::visitCardinality(parser::Ili2Parser::CardinalityContext
    if (ctx->max != nullptr) {
       m.Max = stoi(ctx->max->getText());
    }
+   else {
+      m.Max = m.Min;
+   }
    
+   if (ctx->STAR() != nullptr) {
+      m.Max = -1;
+   }
+
    return m;
    
 }

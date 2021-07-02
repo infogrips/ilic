@@ -44,7 +44,6 @@ antlrcpp::Any Ili2Input::visitUnitDef(parser::Ili2Parser::UnitDefContext *ctx)
       u->Name = ctx->unitshort->getText();
    }
    else {
-      Log.message(">>> unitshort of " + name + " is null");
       u->Name = name;
    }
    add_unit(u);

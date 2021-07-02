@@ -34,194 +34,6 @@ namespace output {
    static Model *act_model = nullptr;
 }
 
-void Ili2Output::preVisitModel(Model *m)
-{
-
-   /* class Model : public Package {
-   public:
-      string iliVersion;
-      bool Contracted = false;
-      enum { NormalM, TypeM, RefSystemM, SymbologyM } Kind;
-      string Language;
-      string At;
-      string Version;
-      string VersionExplanation;
-      bool NoIncrementalTransfer = true; // 2.4
-      string CharSetIANAName; // 2.4
-      string xmlns; // 2.4
-      string ili1Transfername;
-      Ili1Format *ili1Format;
-   */
-
-   /* MODEL RoadsExdm2ben (de)
-      AT "http://www.interlis.ch/models"
-      VERSION "2005-06-16"  =
-   */
-
-   if (m->Name == "INTERLIS") {
-      ignoreVisit();
-   }
-
-   ili2.writeln("");
-   ili2.writeln("MODEL " + m->Name + " (" + m->Language + ")");
-   ili2.incNestLevel();
-   ili2.writeln("AT \"" + m->At + "\"");
-   ili2.writeln("VERSION \"" + m->Version + "\" =");
-   
-   Model *act_model = m;
-
-}
-   
-void Ili2Output::visitModel(Model *m)
-{
-   
-   if (m->Name == "INTERLIS") {
-      ignoreVisit();
-   }
-
-   // imports
-   for (auto i : get_all_imports()) {
-      if (i->ImportingP->Name == m->Name) {
-         visit(i);
-      }
-   }
-
-   // all functions
-   for (auto e : m->Element) {
-      if (e->isSubClassOf("Function")) {
-         visit(e);
-      }
-   }
-
-   // all units
-   if (count_metaelement(m->Element,"Unit") > 0) {
-      ili2.writeln("");
-      ili2.writeln("UNIT");
-      ili2.incNestLevel();
-      for (auto e : m->Element) {
-         if (e->isSubClassOf("Unit")) {
-            visit(e);
-         }
-      }
-   }
-   ili2.decNestLevel();
-
-   // all domaintypes
-   if (count_metaelement(m->Element, "DomainType") > 0) {
-      ili2.writeln("");
-      ili2.writeln("DOMAIN");
-      ili2.incNestLevel();
-      for (auto e : m->Element) {
-         if (e->isSubClassOf("DomainType")) {
-            visit(e);
-         }
-      }
-      ili2.decNestLevel();
-   }
-
-   // all topics
-   for (auto e : m->Element) {
-      if (e->isSubClassOf("SubModel")) {
-         Log.incNestLevel();
-         visit(e);
-         Log.decNestLevel();
-      }
-   }
-
-   ignoreVisit();
-
-}
-
-void Ili2Output::postVisitModel(Model *m)
-{
-
-   if (m->Name == "INTERLIS") {
-      ignoreVisit();
-   }
-
-   ili2.decNestLevel();
-   ili2.writeln("");
-   ili2.writeln("END " + m->Name + ".");
-
-}
-
-void Ili2Output::visitImport(metamodel::Import *i) 
-{
-
-   /* class Import : public MMObject { // ASSOCIATION
-   public:
-      Package *ImportingP;
-      Package *ImportedP;
-      bool _unqualified = false;
-   */
-   
-   /* importDef
-   : IMPORTS importing (COMMA importing)* SEMI
-
-   importing
-   : UNQUALIFIED? (importname=path)
-   */
-
-   ili2.write("IMPORTS ");
-   if (i->_unqualified) {
-      ili2.writeNoIdent("UNQUALIFIED ");
-   }
-   ili2.writelnNoIdent(i->ImportedP->Name + ";");
-
-}
-
-void Ili2Output::preVisitSubModel(SubModel *s)
-{
-
-   ili2.writeln("");
-   ili2.writeln("TOPIC " + s->Name);
-   if (s->_super != nullptr) {
-      ili2.incNestLevel();
-      ili2.write("EXTENDS " + get_path(s->_super));
-      ili2.decNestLevel();
-   }
-   ili2.writeln(0," =");
-   ili2.incNestLevel();
-
-}
-
-void Ili2Output::postVisitSubModel(SubModel *s)
-{
-
-   ili2.decNestLevel();
-   ili2.writeln("");
-   ili2.writeln("END " + s->Name + ";");
-
-}
-
-void Ili2Output::preVisitClass(Class *c)
-{
-
-   ili2.writeln("");
-
-   if (c->Kind == Class::ClassVal) {
-      ili2.writeln("CLASS " + c->Name + " =");
-   }
-   else if (c->Kind == Class::Structure) {
-      ili2.writeln("STRUCTURE " + c->Name + " =");
-   }
-   else if (c->Kind == Class::ViewVal) {
-      ili2.writeln("VIEW " + c->Name + " =");
-   }
-   else if (c->Kind == Class::Association) {
-      ili2.writeln("ASSOCIATION " + c->Name + " =");
-   }
-
-   ili2.incNestLevel();
-
-}
-
-void Ili2Output::postVisitClass(Class *c)
-{
-   ili2.decNestLevel();
-   ili2.writeln("END " + c->Name + ";");
-}
-
 static void write_texttype(TextWriter *ili2,TextType *t) 
 {
    ili2->write(0, "TEXT*" + to_string(t->MaxLength));
@@ -253,7 +65,7 @@ static void write_coordtype(TextWriter *ili2,CoordType *t)
       axis += a->Min + ".." + a->Max;
    }
    ili2->write(0,axis);
-   ili2->write(0,", ROTATION " + to_string(t->PiHalfAxis) + "->" + to_string(t->NullAxis));
+   ili2->write(0,", ROTATION " + to_string(t->NullAxis) + "->" + to_string(t->PiHalfAxis));
 
 }
 
@@ -331,6 +143,23 @@ static void write_linetype(TextWriter *ili2,LineType *t)
 
 }
 
+static void write_referencetype(TextWriter *ili2,ReferenceType *t) 
+{
+
+   /* class ClassRelatedType : public DomainType { // ABSTRACT
+   public:
+      Class *BaseClass = nullptr;
+   */
+
+   /* class ReferenceType : public ClassRelatedType {
+   public:
+      bool External = false;
+   */
+
+   ili2->write(0, "REFERENCE TO " + get_path(t->BaseClass));
+
+}
+
 static void write_type(TextWriter *ili2,Type *t) 
 {
    try {
@@ -352,13 +181,218 @@ static void write_type(TextWriter *ili2,Type *t)
       else if (t->getClass() == "LineType") {
          write_linetype(ili2,static_cast<LineType *>(t));
       }
+      else if (t->getClass() == "ReferenceType") {
+         write_referencetype(ili2,static_cast<ReferenceType *>(t));
+      }
       else {
-         ili2->write(0,t->getClass() + "???");
+         Log.internal_error("write_class(): <" + t->getClass() + "> not implemented yet",1);
       }
    } 
    catch (exception e) {
       Log.error("unexected exception " + string(e.what()));
    }
+}
+
+void Ili2Output::preVisitModel(Model *m)
+{
+
+   /* class Model : public Package {
+   public:
+      string iliVersion;
+      bool Contracted = false;
+      enum { NormalM, TypeM, RefSystemM, SymbologyM } Kind;
+      string Language;
+      string At;
+      string Version;
+      string VersionExplanation;
+      bool NoIncrementalTransfer = true; // 2.4
+      string CharSetIANAName; // 2.4
+      string xmlns; // 2.4
+      string ili1Transfername;
+      Ili1Format *ili1Format;
+   */
+
+   /* MODEL RoadsExdm2ben (de)
+      AT "http://www.interlis.ch/models"
+      VERSION "2005-06-16"  =
+   */
+
+   if (m->Name == "INTERLIS") {
+      ignoreVisit();
+   }
+
+   ili2.writeln("");
+   ili2.writeln("MODEL " + m->Name + " (" + m->Language + ")");
+   ili2.incNestLevel();
+   ili2.writeln("AT \"" + m->At + "\"");
+   ili2.writeln("VERSION \"" + m->Version + "\" =");
+   
+   Model *act_model = m;
+
+}
+   
+void Ili2Output::visitModel(Model *m)
+{
+   
+   if (m->Name == "INTERLIS") {
+      ignoreVisit();
+   }
+
+   // imports
+   for (auto i : get_all_imports()) {
+      if (i->ImportingP->Name == m->Name) {
+         visit(i);
+      }
+   }
+
+   // all functions
+   for (auto e : m->Element) {
+      if (e->isSubClassOf("Function")) {
+         visit(e);
+      }
+   }
+
+   // all units
+   if (count_metaelement(m->Element,"Unit") > 0) {
+      ili2.writeln("");
+      ili2.writeln("UNIT");
+      ili2.incNestLevel();
+      for (auto e : m->Element) {
+         if (e->isSubClassOf("Unit")) {
+            visit(e);
+         }
+      }
+   }
+   ili2.decNestLevel();
+
+   // all domaintypes
+   ili2.writeln("");
+   ili2.writeln("DOMAIN");
+   ili2.incNestLevel();
+   for (auto e : m->Element) {
+      if (e->isSubClassOf("DomainType")) {
+         if (e->ElementInPackage == nullptr) {
+            continue;
+         }
+         visit(e);
+      }
+   }
+   ili2.decNestLevel();
+
+   // all topics
+   for (auto e : m->Element) {
+      if (e->isSubClassOf("SubModel")) {
+         Log.incNestLevel();
+         visit(e);
+         Log.decNestLevel();
+      }
+   }
+
+   ignoreVisit();
+
+}
+
+void Ili2Output::postVisitModel(Model *m)
+{
+
+   if (m->Name == "INTERLIS") {
+      ignoreVisit();
+   }
+
+   ili2.decNestLevel();
+   ili2.writeln("");
+   ili2.writeln("END " + m->Name + ".");
+
+}
+
+void Ili2Output::visitImport(metamodel::Import *i) 
+{
+
+   /* class Import : public MMObject { // ASSOCIATION
+   public:
+      Package *ImportingP;
+      Package *ImportedP;
+      bool _unqualified = false;
+   */
+   
+   /* importDef
+   : IMPORTS importing (COMMA importing)* SEMI
+
+   importing
+   : UNQUALIFIED? (importname=path)
+   */
+
+   ili2.write("IMPORTS ");
+   if (i->_unqualified) {
+      ili2.writeNoIdent("UNQUALIFIED ");
+   }
+   ili2.writelnNoIdent(i->ImportedP->Name + ";");
+
+}
+
+void Ili2Output::preVisitSubModel(SubModel *s)
+{
+
+   ili2.writeln("");
+   ili2.write("TOPIC " + s->Name);
+   if (s->_super != nullptr) {
+      ili2.incNestLevel();
+      ili2.write("EXTENDS " + get_path(s->_super));
+      ili2.decNestLevel();
+   }
+   ili2.writeln(0," =");
+   ili2.incNestLevel();
+
+   // all domaintypes
+   ili2.writeln("");
+   ili2.writeln("DOMAIN");
+   ili2.incNestLevel();
+   for (auto e : s->Element) {
+      if (e->isSubClassOf("DomainType")) {
+         if (e->ElementInPackage == nullptr) {
+            continue;
+         }
+      }
+   }
+   ili2.decNestLevel();
+
+}
+
+void Ili2Output::postVisitSubModel(SubModel *s)
+{
+
+   ili2.decNestLevel();
+   ili2.writeln("");
+   ili2.writeln("END " + s->Name + ";");
+
+}
+
+void Ili2Output::preVisitClass(Class *c)
+{
+
+   ili2.writeln("");
+
+   if (c->Kind == Class::ClassVal) {
+      ili2.writeln("CLASS " + c->Name + " =");
+   }
+   else if (c->Kind == Class::Structure) {
+      ili2.writeln("STRUCTURE " + c->Name + " =");
+   }
+   else if (c->Kind == Class::ViewVal) {
+      ili2.writeln("VIEW " + c->Name + " =");
+   }
+   else if (c->Kind == Class::Association) {
+      ili2.writeln("ASSOCIATION " + c->Name + " =");
+   }
+
+   ili2.incNestLevel();
+
+}
+
+void Ili2Output::postVisitClass(Class *c)
+{
+   ili2.decNestLevel();
+   ili2.writeln("END " + c->Name + ";");
 }
 
 void Ili2Output::visitAttrOrParam(AttrOrParam *a)
@@ -393,6 +427,7 @@ void Ili2Output::visitAttrOrParam(AttrOrParam *a)
             ili2.write(0,"MANDATORY ");
          }
          write_type(&ili2,t);
+         // visit(t); ???, to do !!!
          ili2.writeln(0,";");
       }
       catch (exception e) {
@@ -511,8 +546,8 @@ void Ili2Output::visitUnit(metamodel::Unit* u)
       ili2.write(0," = ");
       // to do !!!
    }
-
-   ili2.write(0," [" + u->_unitname + "]");
+   
+   ili2.write(0," [" + u->Name + "]");
    ili2.writeln(0,";");
 
 }
@@ -550,30 +585,9 @@ static string get_properties(metamodel::Type* t)
 void Ili2Output::visitDomainType(metamodel::DomainType* t)
 {
 
-   if (t->LTParent != nullptr) {
-      return; // local attribute type
+   if (t->ElementInPackage == nullptr) {
+      return; // local attribute type, function argument type, COORD Axis Types
    }
-   else if (t->LFTParent != nullptr) {
-      return; // function argument type
-   }
-   else if (t->Name == "TYPE") {
-      return;
-   }
-   else if (t->Name == "C1") {
-      return;
-   }
-   else if (t->Name == "C2") {
-      return;
-   }
-   else if (t->Name == "C3") {
-      return;
-   }   
-   else if (t->Name == "TOP") {
-      return;
-   }   
-   else if (t->Name == "") {
-      return;
-   }   
 
    ili2.write(t->Name + " " + get_properties(t) + "= ");
    write_type(&ili2,t);

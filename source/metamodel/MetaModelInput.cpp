@@ -438,7 +438,12 @@ namespace metamodel {
 
    MetaElement* get_context()
    {
-      return context.back();
+      if (context.size() > 0) {
+         return context.back();
+      }
+      else {
+         return nullptr;
+      }
    }
 
    MetaElement * get_context(string classname)

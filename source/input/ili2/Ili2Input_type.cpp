@@ -339,15 +339,20 @@ antlrcpp::Any Ili2Input::visitEnumTreeValueType(parser::Ili2Parser::EnumTreeValu
    : ALL OF typeref=path
    */
 
-   debug(ctx,"visitEnumTreeValueType()");
+   debug(ctx,">>> visitEnumTreeValueType()");
+   Log.incNestLevel();
 
-   EnumTreeValueType *t = new EnumTreeValueType;
+   EnumTreeValueType *t = new EnumTreeValueType();
+   init_domaintype(t,ctx->start->getLine());
 
    // ASSOCIATION PackageElements
    t->ElementInPackage = get_package_context();
    get_package_context()->Element.push_back(t);
 
-   return nullptr;
+   Log.incNestLevel();
+   debug(ctx,"<<< visitEnumTreeValueType()");
+
+   return t;
 
 }
 
@@ -534,15 +539,21 @@ antlrcpp::Any Ili2Input::visitCoordinateType(parser::Ili2Parser::CoordinateTypeC
    t->ElementInPackage = get_package_context();
    get_package_context()->Element.push_back(t);
 
-   // NullAxis, PiHalfAxis, to do !!!
-
+   if (ctx->rotationDef() != nullptr) {
+      /* rotationDef
+      : ROTATION nullaxis=POSNUMBER RARROW pihalfaxis=POSNUMBER
+      */
+      t->NullAxis = atoi(ctx->rotationDef()->nullaxis->getText().c_str());
+      t->PiHalfAxis = atoi(ctx->rotationDef()->pihalfaxis->getText().c_str());
+   }
+      
    if (ctx->MULTICOORD() != nullptr) {
       t->Multi = true;
    }
 
    // C1
-   NumType *nt = visitNumericType(ctx->numtype1);
-   NumType *n = static_cast<NumType *>(nt->clone());
+   NumType *n = visitNumericType(ctx->numtype1);
+   //NumType *n = static_cast<NumType *>(nt->clone());
    n->Name = "C1";
    n->ElementInPackage = nullptr;
    n->_other_type = t;
@@ -557,8 +568,8 @@ antlrcpp::Any Ili2Input::visitCoordinateType(parser::Ili2Parser::CoordinateTypeC
    // C2
    if (ctx->numtype2 != nullptr) {
 
-      nt = visitNumericType(ctx->numtype2);
-      n = static_cast<NumType *>(nt->clone());
+      n = visitNumericType(ctx->numtype2);
+      // n = static_cast<NumType *>(nt->clone());
       n->Name = "C2";
       n->ElementInPackage = nullptr;
       n->_other_type = t;
@@ -575,8 +586,8 @@ antlrcpp::Any Ili2Input::visitCoordinateType(parser::Ili2Parser::CoordinateTypeC
    // C3
    if (ctx->numtype3 != nullptr) {
 
-      nt = visitNumericType(ctx->numtype2);
-      n = static_cast<NumType *>(nt->clone());
+      n = visitNumericType(ctx->numtype2);
+      // n = static_cast<NumType *>(nt->clone());
       n->Name = "C3";
       n->ElementInPackage = nullptr;
       n->_other_type = t;
@@ -589,7 +600,7 @@ antlrcpp::Any Ili2Input::visitCoordinateType(parser::Ili2Parser::CoordinateTypeC
       add_axisspec(as);
 
    }
-      
+   
    Log.decNestLevel();
    debug(ctx,"<<< visitCoordinateType()");
    return t;
@@ -826,11 +837,15 @@ antlrcpp::Any Ili2Input::visitLineFormTypeDef(parser::Ili2Parser::LineFormTypeDe
    : LINE FORM (lineFormTypeDecl)*
    */
    
-   debug(ctx,"visitLineFormTypeDef()");
+   debug(ctx,">>> visitLineFormTypeDef()");
+   Log.incNestLevel();
    
    for (auto d : ctx->lineFormTypeDecl()) {
       visitLineFormTypeDecl(d);
    }
+
+   Log.decNestLevel();
+   debug(ctx,">>> visitLineFormTypeDef()");
 
    return nullptr;
 
@@ -843,7 +858,8 @@ antlrcpp::Any Ili2Input::visitLineFormTypeDecl(parser::Ili2Parser::LineFormTypeD
    : lineformtype=NAME COLON linestructurename=NAME SEMI
    */   
    
-   debug(ctx,"visitLineFormTypeDecl()");
+   debug(ctx,">>> visitLineFormTypeDecl()");
+   Log.incNestLevel();
    
    DomainType *t = new DomainType();
    init_mmobject(t,ctx->start->getLine());
@@ -854,6 +870,9 @@ antlrcpp::Any Ili2Input::visitLineFormTypeDecl(parser::Ili2Parser::LineFormTypeD
    if (s != nullptr) {
       // to do !!!
    }
+
+   Log.decNestLevel();
+   debug(ctx,"<<< visitLineFormTypeDecl()");
    
    return t;
    
@@ -868,7 +887,8 @@ antlrcpp::Any Ili2Input::visitOIDType(parser::Ili2Parser::OIDTypeContext* ctx)
 
    DomainType* t;
 
-   debug(ctx, "visitOIDType()");
+   debug(ctx, ">>> visitOIDType()");
+   Log.incNestLevel();
 
    if (ctx->ANY() != nullptr) {
       t = new AnyOIDType();
@@ -887,7 +907,8 @@ antlrcpp::Any Ili2Input::visitOIDType(parser::Ili2Parser::OIDTypeContext* ctx)
       t = tt;
    }
 
-
+   Log.decNestLevel();
+   debug(ctx, "<<< visitOIDType()");
    return t;
 
 }
@@ -899,7 +920,8 @@ antlrcpp::Any Ili2Input::visitBlackboxType(parser::Ili2Parser::BlackboxTypeConte
    : BLACKBOX (XML | BINARY)
    */
    
-   debug(ctx,"visitBlackboxType()");
+   debug(ctx,">>> visitBlackboxType()");
+   Log.incNestLevel();
 
    BlackboxType *t = new BlackboxType();
    init_domaintype(t,ctx->start->getLine());
@@ -917,6 +939,9 @@ antlrcpp::Any Ili2Input::visitBlackboxType(parser::Ili2Parser::BlackboxTypeConte
       t->Kind = BlackboxType::Binary;
    }
    
+   Log.decNestLevel();
+   debug(ctx,"<<< visitBlackboxType()");
+
    return t;
 
 }
@@ -929,7 +954,8 @@ antlrcpp::Any Ili2Input::visitClassType(parser::Ili2Parser::ClassTypeContext *ct
    | STRUCTURE restriction?
    */
 
-   debug(ctx,"visitClassType()");
+   debug(ctx,">>> visitClassType()");
+   Log.incNestLevel();
    
    Class *t;
    
@@ -940,6 +966,9 @@ antlrcpp::Any Ili2Input::visitClassType(parser::Ili2Parser::ClassTypeContext *ct
       t = find_class("ANYSTRUCTURE"); // restriction, to do !!!
    }
    
+   Log.decNestLevel();
+   debug(ctx,"<<< visitClassType()");
+
    return t;
 
 }
@@ -952,7 +981,8 @@ antlrcpp::Any Ili2Input::visitRefSys(parser::Ili2Parser::RefSysContext *ctx)
    | LESS coord=path (LBRACE axis=POSNUMBER RBRACE)? GREATER)
    */
 
-   debug(ctx,"visitRefSys()");
+   debug(ctx,">>> visitRefSys()");
+   debug(ctx,"<<< visitRefSys()");
    return nullptr;
 
 }
@@ -966,19 +996,8 @@ antlrcpp::Any Ili2Input::visitFormatDef(parser::Ili2Parser::FormatDefContext *ct
      baseAttrRef nonnumeric=STRING? RPAREN
    */
 
-   debug(ctx,"visitFormatDef()");
-   return nullptr;
-
-}
-
-antlrcpp::Any Ili2Input::visitRotationDef(parser::Ili2Parser::RotationDefContext *ctx)
-{
-
-   /* rotationDef
-   : ROTATION nullaxis=POSNUMBER RARROW pihalfaxis=POSNUMBER
-   */
-
-   debug(ctx,"visitRotationDef()");
+   debug(ctx,">>> visitFormatDef()");
+   debug(ctx,"<<< visitFormatDef()");
    return nullptr;
 
 }

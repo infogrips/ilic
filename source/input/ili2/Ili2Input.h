@@ -100,7 +100,6 @@ namespace input {
       antlrcpp::Any visitAttributeRef(parser::Ili2Parser::AttributeRefContext *ctx) override;
       antlrcpp::Any visitRefSys(parser::Ili2Parser::RefSysContext *ctx) override;
       antlrcpp::Any visitFormatDef(parser::Ili2Parser::FormatDefContext *ctx) override;
-      antlrcpp::Any visitRotationDef(parser::Ili2Parser::RotationDefContext *ctx) override;
       antlrcpp::Any visitObjectOrAttributePath(parser::Ili2Parser::ObjectOrAttributePathContext *ctx) override;
       antlrcpp::Any visitAttributePath(parser::Ili2Parser::AttributePathContext *ctx) override;
       antlrcpp::Any visitPathEl(parser::Ili2Parser::PathElContext *ctx) override;

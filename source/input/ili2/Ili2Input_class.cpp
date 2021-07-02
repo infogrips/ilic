@@ -516,8 +516,18 @@ antlrcpp::Any Ili2Input::visitAttrType(parser::Ili2Parser::AttrTypeContext * ctx
       RestrictedRef *r =  visitRestrictedRef(ctx->restrictedRef());
       t = r->BaseType;
    }
-
-   t->LTParent = dynamic_cast<AttrOrParam *>(get_context());
+   
+   try {
+      if (get_context()->getClass() == "FunctionDef") {
+         t->LFTParent = dynamic_cast<FunctionDef*>(get_context());
+      }
+      else {
+         t->LTParent = dynamic_cast<AttrOrParam*>(get_context());
+      }
+   }
+   catch (exception e) {
+      Log.internal_error("LTParent: " + string(e.what()),1);
+   }
    t->ElementInPackage = nullptr;
 
    Log.decNestLevel();
