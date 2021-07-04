@@ -204,6 +204,12 @@ int Logger::getErrorCount()
 
 // internal error
 
+void Logger::internal_error(string message)
+{
+   this->messageNoIdent("int: " + message);
+   exit(1);
+}
+
 void Logger::internal_error(string message,int error_code)
 {
    this->messageNoIdent("int: " + message);

@@ -51,8 +51,8 @@ namespace input {
       antlrcpp::Any visitExpression(parser::Ili2Parser::ExpressionContext *ctx) override;
       antlrcpp::Any visitOrTerm(parser::Ili2Parser::OrTermContext *ctx) override;
       antlrcpp::Any visitAndTerm(parser::Ili2Parser::AndTermContext *ctx) override;
-      antlrcpp::Any visitPredicateTerm(parser::Ili2Parser::PredicateTermContext *ctx) override;
-      antlrcpp::Any visitPredicate(parser::Ili2Parser::PredicateContext *ctx) override;
+      antlrcpp::Any visitOtherTerm(parser::Ili2Parser::OtherTermContext *ctx) override;
+      antlrcpp::Any visitTerm(parser::Ili2Parser::TermContext *ctx) override;
       antlrcpp::Any visitRelation(parser::Ili2Parser::RelationContext *ctx) override;
       antlrcpp::Any visitFactor(parser::Ili2Parser::FactorContext *ctx) override;
       antlrcpp::Any visitViewDef(parser::Ili2Parser::ViewDefContext *ctx) override;

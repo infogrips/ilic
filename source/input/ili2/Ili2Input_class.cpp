@@ -21,6 +21,47 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
      END classname2=NAME SEMI
    */
    
+   /*
+   class Class : public Type {
+      // MetaElement.Name := StructureName, ClassName,
+      //                     AssociationName, ViewName
+      //                     as defined in the INTERLIS-Model
+   public:
+      enum { Structure, ClassVal, ViewVal, Association } Kind;
+      Multiplicity Multiplicity; // for associations only
+      list<Constraint*> Constraints;
+      bool EmbeddedRoleTransfer = false;
+      bool ili1OptionalTable = false;
+      // role from ASSOCIATION ClassAttr
+      list<metamodel::AttrOrParam*> ClassAttribute;
+      // role from ASSOCIATION AssocRole
+      list<Role*> Role;
+      // role from ExplicitAssocAcc
+      list<ExplicitAssocAccess*> ExplicitAssocAccess;
+      // role from ASSOCIATION MetaObjectClass
+      list<MetaObjectDef*> MetaObjectDef;
+      // role from ASSOCIATION StructOfFormat
+      list<FormattedType*> FormattedType;
+      // role form ASSOCIATION ObjectOID
+      DomainType* Oid = nullptr; // RESTRICTION(TextType; NumType; AnyOIDType)
+      // role from ASSOCIATION ARefOf
+      list<AttributeRefType*> ForARef;
+      // role from ASSOCIATION LineFormStructure
+      list<LineForm*> LineForm;
+      // role from ASSOCIATION LineAttr
+      list<LineType*> LineType;
+      // role from ASSOCIATION BaseViewRef
+      list<RenamedBaseView*> RenamedBaseView;
+      // role from ASSOCIATION DerivedAssoc
+      View* View = nullptr;
+      // role from ASSOCIATION GraphicBase
+      //list<Graphic *> Graphic;
+      // role from ASSOCIATION SignClass
+      list <DrawingRule*> DrawingRule;
+      // from from ASSOCIATION ClassConstraint
+      list<Constraint*> Constraint;
+   */
+
    string name1 = ctx->classname1->getText();
    if (util::starts_with(name1,"ILIC_")) {
       name1 = name1.substr(5);
@@ -125,7 +166,8 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
    }
 
    for (auto cctx : ctx->classOrStructureDef()->constraintDef()) {
-      visitConstraintDef(cctx);
+      Constraint *cc = visitConstraintDef(cctx);
+      c->Constraint.push_back(cc);
    }
 
    for (auto pctx : ctx->classOrStructureDef()->parameterDef()) {

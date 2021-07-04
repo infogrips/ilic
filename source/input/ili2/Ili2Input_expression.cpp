@@ -77,8 +77,7 @@ antlrcpp::Any Ili2Input::visitExpression(parser::Ili2Parser::ExpressionContext *
    debug(ctx,">>> visitExpression()");
    Log.incNestLevel();
 
-   CompoundExpr *o = visitOrTerm(ctx->orTerm());
-   Expression *e = o;
+   Expression *e = visitOrTerm(ctx->orTerm());
 
    Log.decNestLevel();
    debug(ctx, "<<< visitExpression()");
@@ -107,22 +106,30 @@ antlrcpp::Any Ili2Input::visitOrTerm(parser::Ili2Parser::OrTermContext *ctx)
 
    debug(ctx,">>> visitOrTerm()");
    Log.incNestLevel();
+   
+   Expression *e = nullptr;
 
-   CompoundExpr *orTerm = new CompoundExpr();
-   orTerm->Operation = CompoundExpr_OperationType::Or;
-   orTerm->_type = "BooleanType";
-
-   for (auto t : ctx->andTerm()) {
-      CompoundExpr* e = visitAndTerm(t);
-      if (e->_type != "BooleanType") {
-         Log.error("term is not of boolean type", e->_line);
+   if (ctx->andTerm().size() == 1) {
+      e = visitAndTerm(ctx->andTerm().front());
+   }
+   else {
+      CompoundExpr *ot = new CompoundExpr();
+      ot->Operation = CompoundExpr_OperationType::Or;
+      ot->_type = "BooleanType";
+      for (auto t : ctx->andTerm()) {
+         Expression *at = visitAndTerm(t);
+         ot->SubExpressions.push_back(at);
       }
-      orTerm->SubExpressions.push_back(e);
+      e = ot;
+   }
+      
+   if (e->_type != "BooleanType") {
+      Log.error("term is not of boolean type", e->_line);
    }
 
    Log.decNestLevel();
    debug(ctx, "<<< visitOrTerm()");
-   return orTerm;
+   return e;
    
 }
 
@@ -130,31 +137,39 @@ antlrcpp::Any Ili2Input::visitAndTerm(parser::Ili2Parser::AndTermContext *ctx)
 {
 
    /* andTerm
-   : predicateTerm (AND predicateTerm)*
+   : otherTerm ((AND | {ili24}? STAR | {ili24}? SLASH) otherTerm)*
    */
 
    debug(ctx,">>> visitAndTerm()");
    Log.incNestLevel();
 
-   CompoundExpr *andTerm = new CompoundExpr();
-   andTerm->Operation = CompoundExpr_OperationType::And;
-   andTerm->_type = "BooleanType";
+   Expression *e = nullptr;
 
-   for (auto t : ctx->predicateTerm()) {
-      Expression *e = visitPredicateTerm(t);
-      if (e->_type != "BooleanType") {
-         Log.error("term is not of boolean type", e->_line);
+   if (ctx->otherTerm().size() == 1) {
+      e = visitOtherTerm(ctx->otherTerm().front());
+   }
+   else {
+      CompoundExpr *at = new CompoundExpr();
+      at->Operation = CompoundExpr_OperationType::And;
+      at->_type = "BooleanType";
+      for (auto t : ctx->otherTerm()) {
+         Expression *pt = visitOtherTerm(t);
+         at->SubExpressions.push_back(pt);
       }
-      andTerm->SubExpressions.push_back(e);
+      e = at;
+   }
+
+   if (e->_type != "BooleanType") {
+      Log.error("term is not of boolean type", e->_line);
    }
 
    Log.decNestLevel();
    debug(ctx, "<<< visitAndTerm()");
-   return andTerm;
+   return e;
    
 }
 
-static string get_operation_type(int operation,UnaryExpr *e1,UnaryExpr *e2)
+static string get_operation_type(int operation,Expression *e1,Expression *e2)
 {
 
    /* enum {And, Or, Mult, Div,
@@ -228,101 +243,100 @@ static string get_operation_type(int operation,UnaryExpr *e1,UnaryExpr *e2)
 
 }
    
-antlrcpp::Any Ili2Input::visitPredicateTerm(parser::Ili2Parser::PredicateTermContext *ctx)
+antlrcpp::Any Ili2Input::visitOtherTerm(parser::Ili2Parser::OtherTermContext *ctx)
 {
 
-   /* predicateTerm
-   : predicate1=predicate (relation predicate2=predicate)?
+   /* otherTerm
+   : term1=term (relation term2=term)?
    */
 
-   /*
-   struct UnaryExpr : public Expression {
-   public:
-      enum {Not, Defined} Operation;
-      Expression *SubExpression;
-      virtual string getClass() { return "UnaryExpr"; }
-   };
-   */
-
-   /*
-   struct CompoundExpr : public Expression {
-   public:
-      enum {And, Or, Mult, Div,
-            Relation_Equal, Relation_NotEqual,
-            Relation_LessOrEqual, Relation_GreaterOrEqual,
-            Relation_Less, Relation_Greater} Operation;
-      list <Expression *> SubExpressions;
-      virtual string getClass() { return "CompoundExpr"; }
-   };
-   */
-
-   debug(ctx,">>> visitPredicateTerm()");
+   debug(ctx,">>> visitOtherTerm()");
    Log.incNestLevel();
 
    Expression *e = nullptr;
 
-   if (ctx->predicate2 == nullptr) {
-      // unary expression
-      UnaryExpr *u = visitPredicate(ctx->predicate1);
+   if (ctx->term2 == nullptr) {
+      /* struct UnaryExpr : public Expression {
+      public:
+         enum {Not, Defined} Operation;
+         Expression *SubExpression = nullptr;
+      */
+      UnaryExpr *u = new UnaryExpr();
+      init_mmobject(u,ctx->start->getLine());
+      u->SubExpression = visitTerm(ctx->term1);
       e = u;
    }
    else {
-      // compound expression
+      /*
+      struct CompoundExpr : public Expression {
+      public:
+         enum {And, Or, Mult, Div,
+               Relation_Equal, Relation_NotEqual,
+               Relation_LessOrEqual, Relation_GreaterOrEqual,
+               Relation_Less, Relation_Greater} Operation;
+         list <Expression *> SubExpressions;
+         virtual string getClass() { return "CompoundExpr"; }
+      };
+      */
       CompoundExpr *c = new CompoundExpr();
       init_mmobject(c,ctx->start->getLine());
       c->Operation = static_cast<CompoundExpr_OperationType>(visitRelation(ctx->relation()));
-      UnaryExpr *u1 = visitPredicate(ctx->predicate1);
-      UnaryExpr *u2 = visitPredicate(ctx->predicate2);
-      c->SubExpressions.push_back(u1);
-      c->SubExpressions.push_back(u2);
-      c->_type = get_operation_type(c->Operation,u1,u2);
+      Expression *e1 = visitTerm(ctx->term1);
+      c->SubExpressions.push_back(e1);
+      Expression *e2 = visitTerm(ctx->term2);
+      c->SubExpressions.push_back(e2);
+      c->_type = get_operation_type(c->Operation,e1,e2);
       e = c;
    }
 
    Log.decNestLevel();
-   debug(ctx, "<<< visitPredicateTerm()");
+   debug(ctx, "<<< visitOtherTerm()");
    return e;
    
 }
    
-antlrcpp::Any Ili2Input::visitPredicate(parser::Ili2Parser::PredicateContext *ctx)
+antlrcpp::Any Ili2Input::visitTerm(parser::Ili2Parser::TermContext *ctx)
 {
 
-   /* predicate
-   : factor                        
-   | NOT? LPAREN expression RPAREN
+   /* term
+   : factor                       
+   | NOT? LPAREN expression RPAREN // predicate
    | DEFINED LPAREN factor RPAREN
    */
    
-   /*
-   struct UnaryExpr : public Expression {
-   public:
-      enum {Not, Defined} Operation;
-      Expression *SubExpression;
-   };
-   */
-
-   debug(ctx,">>> visitPredicate()");
+   debug(ctx,">>> visitTerm()");
    Log.incNestLevel();
    
-   UnaryExpr *e = new UnaryExpr();
-   init_mmobject(e,ctx->start->getLine());
+   Expression *e = nullptr;;
    
    if (ctx->factor() != nullptr) {
+      /* struct Factor : public Expression { // ABSTRACT
+      public:
+      */
       Factor *f = visitFactor(ctx->factor());
-      e->SubExpression = f;
-      e->_type = f->_type;
+      e = f;
    }
-
-   if (ctx->NOT() != nullptr) {
-      e->Operation = UnaryExpr::Not;
-   }
-   else if (ctx->DEFINED() != nullptr) {
-      e->Operation = UnaryExpr::Defined;
+   else {
+      /* struct UnaryExpr : public Expression {
+      public:
+         enum {Not, Defined} Operation;
+         Expression *SubExpression;
+      };
+      */
+      UnaryExpr *u = new UnaryExpr();
+      init_mmobject(u,ctx->start->getLine());
+      if (ctx->NOT() != nullptr) {
+         u->Operation = UnaryExpr::Not;
+      }
+      else {
+         u->Operation = UnaryExpr::Defined;
+      }
+      u->_type = "BooleanType";
+      e = u;
    }
 
    Log.decNestLevel();
-   debug(ctx, "<<< visitPredicate(" + e->_type + ")");
+   debug(ctx, "<<< visitTerm(" + e->_type + ")");
    return e;
    
 }

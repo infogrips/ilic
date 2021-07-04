@@ -395,6 +395,45 @@ void Ili2Output::postVisitClass(Class *c)
    ili2.writeln("END " + c->Name + ";");
 }
 
+void Ili2Output::visitSimpleConstraint(metamodel::SimpleConstraint *c)
+{
+
+   /* class SimpleConstraint : public Constraint {
+   public:
+      enum {MandC, LowPercC, HighPercC} Kind;
+      double Percentage = 100.0;
+      Expression *LogicalExpression = nullptr;
+      enum {Equal, LessEqual, GreaterEqual} _percentage_operation = Equal;
+   */
+
+   switch (c->Kind) {
+      case SimpleConstraint::MandC:
+         ili2.writeln("MANDATORY CONSTRAINT");
+         ili2.incNestLevel();
+         ili2.write("");write_expression(&ili2,c->LogicalExpression);
+         ili2.writeln(0,";");
+         ili2.decNestLevel();
+         break;
+      case SimpleConstraint::LowPercC:
+         ili2.writeln("PLAUSIBILITY CONSTRAINT");
+         ili2.incNestLevel();
+         ili2.write("");write_expression(&ili2,c->LogicalExpression);
+         ili2.writeln(0,";");
+         ili2.decNestLevel();
+         break;
+      case SimpleConstraint::HighPercC: // High vs. Low ???, to do !!!
+         ili2.writeln("PLAUSIBILITY CONSTRAINT");
+         ili2.incNestLevel();
+         ili2.write("");write_expression(&ili2,c->LogicalExpression);
+         ili2.writeln(0,";");
+         ili2.decNestLevel();
+         break;
+      default:
+         Log.internal_error("visitSimpleConstraint(): unknown Kind id " + to_string(c->Kind));
+   }
+      
+}
+
 void Ili2Output::visitAttrOrParam(AttrOrParam *a)
 {
    

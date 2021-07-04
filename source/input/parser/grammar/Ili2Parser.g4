@@ -490,16 +490,16 @@ orTerm
    ;
 
 andTerm
-   : predicateTerm ((AND | {ili24}? STAR | {ili24}? SLASH) predicateTerm)*
+   : otherTerm ((AND | {ili24}? STAR | {ili24}? SLASH) otherTerm)*
    ;
 
-predicateTerm
-   : predicate1=predicate (relation predicate2=predicate)?
+otherTerm
+   : term1=term (relation term2=term)?
    ;
 
-predicate
+term
    : factor                       
-   | NOT? LPAREN expression RPAREN
+   | NOT? LPAREN expression RPAREN // predicate
    | DEFINED LPAREN factor RPAREN
    ;
    

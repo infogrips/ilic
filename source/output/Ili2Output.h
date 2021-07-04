@@ -25,6 +25,8 @@ namespace output {
       void preVisitClass(metamodel::Class *c) override;
       void postVisitClass(metamodel::Class *c) override;
 
+      void visitSimpleConstraint(metamodel::SimpleConstraint* c) override;
+
       void visitDomainType(metamodel::DomainType *t) override;
 //      void visitTextType(metamodel::TextType *t) override;
 

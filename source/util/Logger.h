@@ -52,6 +52,7 @@ namespace util {
          int getErrorCount();
          
          // internal_error
+         void internal_error(string message);
          void internal_error(string message,int error_code);
          void internal_error(string message,exception e,int error_code);
 

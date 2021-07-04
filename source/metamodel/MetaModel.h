@@ -41,6 +41,7 @@ namespace metamodel {
    class Type;
    class GenericDef;
    class DomainType;
+   class Constraint;
 
    // general
 
@@ -190,17 +191,6 @@ namespace metamodel {
       int Max = -1;
       virtual string getClass() { return "Multiplicity"; }
       virtual string getBaseClass() { return "MMObject"; };
-   };
-
-   class Constraint : public MetaElement { // ABSTRACT, 2.4
-   public:
-      // role from ASSOCIATION DomainConstraint
-      DomainType *toDomain = nullptr; // 2.4
-      // role from ASSOCIATION ClassConstraint
-      Class *ToClass = nullptr; // 2.4
-      virtual string getClass() { return "Constraint"; }
-      virtual string getBaseClass() { return "MetaElement"; };
-      virtual bool isAbstract() { return true; }
    };
 
    class DomainType : public Type { // ABSTRACT
@@ -897,6 +887,17 @@ namespace metamodel {
    };
 
    // Constraints
+
+   class Constraint : public MetaElement { // ABSTRACT, 2.4
+   public:
+      // role from ASSOCIATION DomainConstraint
+      DomainType *toDomain = nullptr; // 2.4
+      // role from ASSOCIATION ClassConstraint
+      Class *ToClass = nullptr; // 2.4
+      virtual string getClass() { return "Constraint"; }
+      virtual string getBaseClass() { return "MetaElement"; };
+      virtual bool isAbstract() { return true; }
+   };
 
    class SimpleConstraint : public Constraint {
    public:

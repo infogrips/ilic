@@ -37,19 +37,24 @@ antlrcpp::Any Ili2Input::visitConstraintDef(parser::Ili2Parser::ConstraintDefCon
    Constraint *c = nullptr;
    
    if (ctx->mandatoryConstraint() != nullptr) {
-      visitMandatoryConstraint(ctx->mandatoryConstraint());
+      SimpleConstraint *cc = visitMandatoryConstraint(ctx->mandatoryConstraint());
+      c = cc;
    }
    else if (ctx->plausibilityConstraint() != nullptr) {
-      visitPlausibilityConstraint(ctx->plausibilityConstraint());
+      SimpleConstraint *cc = visitPlausibilityConstraint(ctx->plausibilityConstraint());
+      c = cc;
    }
    else if (ctx->existenceConstraint() != nullptr) {
-      visitExistenceConstraint(ctx->existenceConstraint());
+      ExistenceConstraint *cc = visitExistenceConstraint(ctx->existenceConstraint());
+      c = cc;
    }
    else if (ctx->uniquenessConstraint() != nullptr) {
-      visitUniquenessConstraint(ctx->uniquenessConstraint());
+      UniqueConstraint *cc = visitUniquenessConstraint(ctx->uniquenessConstraint());
+      c = cc;
    }
    else if (ctx->setConstraint() != nullptr) {
-      visitSetConstraint(ctx->setConstraint());
+      SetConstraint *cc = visitSetConstraint(ctx->setConstraint());
+      c = cc;
    }
 
    Log.decNestLevel();
@@ -78,7 +83,8 @@ antlrcpp::Any Ili2Input::visitMandatoryConstraint(parser::Ili2Parser::MandatoryC
       Expression *LogicalExpression;
    */
 
-   Log.debug("visitMandatoryConstraint() " + to_string(ctx->start->getLine()));
+   debug(ctx,">>> visitMandatoryConstraint()");
+   Log.incNestLevel();
    
    SimpleConstraint *c = new SimpleConstraint();
    init_constraint(c,ctx->start->getLine());
@@ -88,6 +94,9 @@ antlrcpp::Any Ili2Input::visitMandatoryConstraint(parser::Ili2Parser::MandatoryC
       Log.error("expression must return a boolean value", ctx->expression()->start->getLine());
    }
    
+   Log.decNestLevel();
+   debug(ctx,"<<< visitMandatoryConstraint()");
+
    return c;
 
 }
@@ -322,7 +331,35 @@ antlrcpp::Any Ili2Input::visitConstraintsDef(parser::Ili2Parser::ConstraintsDefC
      END SEMI
    */
 
-   debug(ctx,"visitSetConstraintsDef()");
+   /* class Class : public Type {
+      // MetaElement.Name := StructureName, ClassName,
+      //                     AssociationName, ViewName
+      //                     as defined in the INTERLIS-Model
+   public:
+      enum {Structure,ClassVal,ViewVal,Association} Kind;
+      Multiplicity Multiplicity; // for associations only
+      list<Constraint *> Constraints;
+      bool EmbeddedRoleTransfer = false;
+      bool ili1OptionalTable = false;
+      // ...
+      // from from ASSOCIATION ClassConstraint
+      list<Constraint *> Constraint;
+   */
+
+   debug(ctx,">>> visitSetConstraintsDef()");
+   Log.incNestLevel();
+   
+   Class *c = find_class(visit(ctx->path()));
+   if (c != nullptr) {
+      for (auto cctx : ctx->constraintDef()) {
+         Constraint *cc = visitConstraintDef(cctx);
+         c->Constraint.push_back(cc);
+      }
+   }
+
+   Log.decNestLevel();
+   debug(ctx,"<<< visitSetConstraintsDef()");
+   
    return nullptr;
 
 }

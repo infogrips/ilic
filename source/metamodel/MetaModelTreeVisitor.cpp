@@ -578,6 +578,21 @@ static void visitConstraint(MetaModelTreeVisitor *visitor, Constraint *t)
       visitor->visitConstraint(t);
       debug2(t,"Constraint");
    }
+   if (t->getClass() == "SimpleConstraint") {
+      visitSimpleConstraint(visitor,static_cast<SimpleConstraint *>(t));
+   }
+   else if (t->getClass() == "ExistenceConstraint") {
+      visitExistenceConstraint(visitor,static_cast<ExistenceConstraint *>(t));
+   }
+   else if (t->getClass() == "UniqueConstraint") {
+      visitUniqueConstraint(visitor,static_cast<UniqueConstraint *>(t));
+   }
+   else if (t->getClass() == "SetConstraint") {
+      visitSetConstraint(visitor,static_cast<SetConstraint *>(t));
+   }
+   else {
+      Log.internal_error("unknown constraint type " + t->getClass());
+   }
 
 }
 
