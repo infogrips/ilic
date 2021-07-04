@@ -178,7 +178,7 @@ namespace metamodel {
       AllTypes.push_back(t);
    }
 
-   Type* find_type(string name)
+   static Type* find_type(string name,bool error)
    {
 
       string search;
@@ -203,11 +203,19 @@ namespace metamodel {
          }
       }
 
-      Log.error("type " + search + " not found.",get_package_context()->_line);
+      if (error) {
+         Log.error("type " + search + " not found.",get_package_context()->_line);
+      }
+
       return nullptr;
 
    }
    
+   Type* find_type(string name)
+   {
+      return find_type(name,true);
+   }
+
    void init_domaintype(DomainType *t, int line)
    {
       init_type(t, line);
@@ -253,7 +261,7 @@ namespace metamodel {
          kinds = "association";
       }
 
-      Type *t = find_type(name);
+      Type *t = find_type(name,false);
       if (t == nullptr) {
          Log.error(kinds + " " + name + " not found",get_package_context()->_line);
          return nullptr;

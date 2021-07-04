@@ -1021,11 +1021,11 @@ namespace metamodel {
    void add_import(Import *import);
    list <Import *> get_all_imports();
    void add_dependency(Dependency *d);
-   list <metamodel::Dependency *> get_all_dependencies();
+   list <Dependency *> get_all_dependencies();
    void add_axisspec(AxisSpec *s);
-   list <metamodel::AxisSpec *> get_all_axisspecs();
+   list <AxisSpec *> get_all_axisspecs();
    void add_baseclass(BaseClass *c);
-   list <metamodel::BaseClass *> get_all_baseclasses();
+   list <BaseClass *> get_all_baseclasses();
 
    // path helpers
    string get_path(MMObject *o);

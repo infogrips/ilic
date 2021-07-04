@@ -266,8 +266,21 @@ void Ili2Output::visitModel(Model *m)
    ili2.decNestLevel();
 
    // all domaintypes
-   ili2.writeln("");
-   ili2.writeln("DOMAIN");
+
+   bool hasdomains = false;
+   for (auto e : m->Element) {
+      if (e->isSubClassOf("DomainType")) {
+         if (e->ElementInPackage == nullptr) {
+            continue;
+         }
+         hasdomains = true;
+      }
+   }
+         
+   if (hasdomains) {
+      ili2.writeln("");
+      ili2.writeln("DOMAIN");
+   }
    ili2.incNestLevel();
    for (auto e : m->Element) {
       if (e->isSubClassOf("DomainType")) {
@@ -336,6 +349,7 @@ void Ili2Output::preVisitSubModel(SubModel *s)
    ili2.writeln("");
    ili2.write("TOPIC " + s->Name);
    if (s->_super != nullptr) {
+      ili2.writeln("");
       ili2.incNestLevel();
       ili2.write("EXTENDS " + get_path(s->_super));
       ili2.decNestLevel();
@@ -344,8 +358,21 @@ void Ili2Output::preVisitSubModel(SubModel *s)
    ili2.incNestLevel();
 
    // all domaintypes
-   ili2.writeln("");
-   ili2.writeln("DOMAIN");
+
+   bool hasdomains = false;
+   for (auto e : s->Element) {
+      if (e->isSubClassOf("DomainType")) {
+         if (e->ElementInPackage == nullptr) {
+            continue;
+         }
+         hasdomains = true;
+      }
+   }
+
+   if (hasdomains) {
+      ili2.writeln("");
+      ili2.writeln("DOMAIN");
+   }
    ili2.incNestLevel();
    for (auto e : s->Element) {
       if (e->isSubClassOf("DomainType")) {
@@ -370,20 +397,70 @@ void Ili2Output::postVisitSubModel(SubModel *s)
 void Ili2Output::preVisitClass(Class *c)
 {
 
+   /* class Class : public Type {
+      // MetaElement.Name := StructureName, ClassName,
+      //                     AssociationName, ViewName
+      //                     as defined in the INTERLIS-Model
+   public:
+      enum {Structure,ClassVal,ViewVal,Association} Kind;
+      Multiplicity Multiplicity; // for associations only
+      list<Constraint *> Constraints;
+      bool EmbeddedRoleTransfer = false;
+      bool ili1OptionalTable = false;
+      // role from ASSOCIATION ClassAttr
+      list<metamodel::AttrOrParam *> ClassAttribute;
+      // role from ASSOCIATION AssocRole
+      list<Role *> Role;
+      // role from ExplicitAssocAcc
+      list<ExplicitAssocAccess *> ExplicitAssocAccess;
+      // role from ASSOCIATION MetaObjectClass
+      list<MetaObjectDef *> MetaObjectDef;
+      // role from ASSOCIATION StructOfFormat
+      list<FormattedType *> FormattedType;
+      // role form ASSOCIATION ObjectOID
+      DomainType *Oid = nullptr; // RESTRICTION(TextType; NumType; AnyOIDType)
+      // role from ASSOCIATION ARefOf
+      list<AttributeRefType *> ForARef;
+      // role from ASSOCIATION LineFormStructure
+      list<LineForm *> LineForm;
+      // role from ASSOCIATION LineAttr
+      list<LineType *> LineType;
+      // role from ASSOCIATION BaseViewRef
+      list<RenamedBaseView *> RenamedBaseView;
+      // role from ASSOCIATION DerivedAssoc
+      View *View = nullptr;
+      // role from ASSOCIATION GraphicBase
+      //list<Graphic *> Graphic;
+      // role from ASSOCIATION SignClass
+      list <DrawingRule *> DrawingRule;
+      // from from ASSOCIATION ClassConstraint
+      list<Constraint *> Constraint;
+   */
+
    ili2.writeln("");
 
    if (c->Kind == Class::ClassVal) {
-      ili2.writeln("CLASS " + c->Name + " =");
+      ili2.write("CLASS " + c->Name);
    }
    else if (c->Kind == Class::Structure) {
-      ili2.writeln("STRUCTURE " + c->Name + " =");
+      ili2.write("STRUCTURE " + c->Name);
    }
    else if (c->Kind == Class::ViewVal) {
-      ili2.writeln("VIEW " + c->Name + " =");
+      ili2.write("VIEW " + c->Name);
    }
    else if (c->Kind == Class::Association) {
-      ili2.writeln("ASSOCIATION " + c->Name + " =");
+      ili2.write("ASSOCIATION " + c->Name);
    }
+
+   if (c->Super != nullptr) {
+      if (c->Super->Name == c->Name) {
+         ili2.write(0," (EXTENDED)");
+      }
+      else {
+         ili2.write(0," EXTENDS " + get_path(c->Super));
+      }
+   }
+   ili2.writeln(0," =");
 
    ili2.incNestLevel();
 
@@ -574,8 +651,7 @@ void Ili2Output::visitUnit(metamodel::Unit* u)
       ili2.write(0," (ABSTRACT)");
    }
    if (u->Super != nullptr) {
-// to do !!!
-//      ili2.write(" EXTENDS " + get_path(u->Super));
+      ili2.write(" EXTENDS " + get_path(u->Super));
    }
    if (u->Kind == Unit::DerivedU) {
       ili2.write(0," = ");

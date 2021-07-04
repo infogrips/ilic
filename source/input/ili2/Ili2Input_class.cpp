@@ -104,6 +104,10 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
             Log.error(string("EXTENDED can only by used in extended topics"),line);
          }
          else {
+            string superpath = get_path(u->Super);
+            superpath = superpath.substr(0,superpath.length()-7); // without .BASKET
+            string baseclass = superpath + "." + c->Name;
+            c->Super = find_class(baseclass);
             bool found = false;
             while (u->Super != nullptr) {
                DataUnit *uu = static_cast<DataUnit *>(u->Super);
@@ -219,6 +223,11 @@ antlrcpp::Any Ili2Input::visitStructureDef(Ili2Parser::StructureDefContext *ctx)
       c->Abstract = properties[ABSTRACT];
       c->Final = properties[FINAL];
       if (properties[EXTENDED]) {
+         string basestructure = c->ElementInPackage->Name + "." + c->Name;
+         c->Super = find_structure(basestructure);
+         if (c->Super == nullptr) {
+            Log.error("base structure " + basestructure + " not found");
+         }
          Package* p = get_package_context();
          DataUnit* u = find_dataunit(get_path(p));
          int line = ctx->properties()->start->getLine();
