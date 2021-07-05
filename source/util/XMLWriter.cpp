@@ -15,28 +15,22 @@ using namespace util;
 // private interface
 //----------------------------------------------------------------------
 
-void XMLWriter::ident()
-{
-   for (int i = 0; i < nestLevel; i++) {
-      out << "   ";
-   }
-};
-
 void XMLWriter::writeAttributes(StringMap attributes)
 {
    for (auto key : attributes.getKeys()) {
       string value = attributes.get(key);
       if (value.substr(0,1) == "\"") {
-         out << " " << key << "=" << value;
+         txt.write(0," " + key + "=" + value);
       }
       else {
-         out << " " << key << "=" << "\"" << value << "\"";
+         txt.write(0," " + key + "=" + "\"" + value + "\"");
       }
    }
 };
 
 void XMLWriter::writeContent(string content)
 {
+
    string pre_postfix = "\"";
 
    if (content.substr(0, pre_postfix.size()) == pre_postfix &&
@@ -45,7 +39,8 @@ void XMLWriter::writeContent(string content)
       content = content.substr(0, content.size() - 1);
    }
 
-   out << content;
+   txt.write(0,content);
+
 };
 
 //----------------------------------------------------------------------
@@ -54,27 +49,20 @@ void XMLWriter::writeContent(string content)
 
 void XMLWriter::openFile(string output_file,string encoding)
 {
-   out.open(output_file);
-   out << "<?xml version=\"1.0\" encoding=\"" + encoding + "\" ?>\n";
+   txt.openFile(output_file);
+   txt.writeln(0,"<?xml version=\"1.0\" encoding=\"" + encoding + "\" ?>");
 };
 
 void XMLWriter::closeFile()
 {
-   out.close();
+   txt.closeFile();
 };
 
 void XMLWriter::openTag(string tag,StringMap attributes)
 {
-
-   ident();
-
-   out << "<" << tag;
-   writeAttributes(attributes);
-   out << ">\n";
-
+   txt.writeln("<" + tag + ">");
    tags.push_back(tag);
-   nestLevel++;
-
+   txt.incNestLevel();
 };
 
 void XMLWriter::openTag(string tag)
@@ -85,18 +73,16 @@ void XMLWriter::openTag(string tag)
 
 void XMLWriter::closeTag()
 {
-   nestLevel--;
-   ident();
-   out << "</" << tags.back() << ">\n";
+   txt.decNestLevel();
+   txt.writeln("</" + tags.back() + ">");
    tags.pop_back();
 };
 
 void XMLWriter::writeTag(string tag,StringMap attributes)
 {
-   ident();
-   out << "<" << tag;
+   txt.write("<" + tag);
    writeAttributes(attributes);
-   out << "/>\n";
+   txt.writeln(0,"/>");
 };
 
 void XMLWriter::writeTag(string tag, string content)
@@ -106,43 +92,34 @@ void XMLWriter::writeTag(string tag, string content)
       return;
    }
 
-   ident();
-
    // opening tag
-   out << "<" << tag;
-   out << ">";
+   txt.write("<" + tag + ">");
 
    // content
    writeContent(content);
 
    // closing tag
-   out << "</" << tag << ">\n";
+   txt.writeln(0,"</" + tag + ">");
 
 };
 
 void XMLWriter::writeTag(string tag,StringMap attributes,string content)
 {
 
-   ident();
-
    // opening tag
-   out << "<" << tag;
+   txt.write("<" + tag);
    writeAttributes(attributes);
-   out << ">";
+   txt.write(0,">");
 
    // content
    writeContent(content);
    
    // closing tag
-   out << "</" << tag << ">\n";
+   txt.writeln(0,"</" + tag + ">");
 
 };
 
 void XMLWriter::writeComment(string comment)
 {
-
-   ident();
-
-   out << "<!-- " << comment << " -->\n";
-
+   txt.writeln("<!-- " + comment + " -->");
 };

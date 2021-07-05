@@ -262,25 +262,22 @@ void Ili2Output::visitModel(Model *m)
             visit(e);
          }
       }
+      ili2.decNestLevel();
    }
-   ili2.decNestLevel();
 
    // all domaintypes
 
-   bool hasdomains = false;
    for (auto e : m->Element) {
-      if (e->isSubClassOf("DomainType")) {
-         if (e->ElementInPackage == nullptr) {
-            continue;
-         }
-         hasdomains = true;
+      if (e->ElementInPackage == nullptr) {
+         continue;
+      }
+      else if (e->isSubClassOf("DomainType")) {
+         ili2.writeln("");
+         ili2.writeln("DOMAIN");
+         break;
       }
    }
          
-   if (hasdomains) {
-      ili2.writeln("");
-      ili2.writeln("DOMAIN");
-   }
    ili2.incNestLevel();
    for (auto e : m->Element) {
       if (e->isSubClassOf("DomainType")) {
@@ -349,36 +346,31 @@ void Ili2Output::preVisitSubModel(SubModel *s)
    ili2.writeln("");
    ili2.write("TOPIC " + s->Name);
    if (s->_super != nullptr) {
-      ili2.writeln("");
-      ili2.incNestLevel();
-      ili2.write("EXTENDS " + get_path(s->_super));
-      ili2.decNestLevel();
+      ili2.write(0," EXTENDS " + get_path(s->_super));
    }
    ili2.writeln(0," =");
    ili2.incNestLevel();
 
    // all domaintypes
 
-   bool hasdomains = false;
    for (auto e : s->Element) {
-      if (e->isSubClassOf("DomainType")) {
-         if (e->ElementInPackage == nullptr) {
-            continue;
-         }
-         hasdomains = true;
+      if (e->ElementInPackage == nullptr) {
+         continue;
+      }
+      else if (e->isSubClassOf("DomainType")) {
+         ili2.writeln("");
+         ili2.writeln("DOMAIN");
+         break;
       }
    }
 
-   if (hasdomains) {
-      ili2.writeln("");
-      ili2.writeln("DOMAIN");
-   }
    ili2.incNestLevel();
    for (auto e : s->Element) {
       if (e->isSubClassOf("DomainType")) {
          if (e->ElementInPackage == nullptr) {
             continue;
          }
+         visit(e);
       }
    }
    ili2.decNestLevel();
@@ -511,6 +503,44 @@ void Ili2Output::visitSimpleConstraint(metamodel::SimpleConstraint *c)
       
 }
 
+static string get_properties(metamodel::Type* t)
+{
+   string properties = "";
+   if (t->Abstract) {
+      properties = "ABSTRACT";
+   }
+   if (t->Super != nullptr) {
+      if (properties == "") {
+         properties = "EXTENDED";
+      }
+      else {
+         properties += ",EXTENDED";
+      }
+   }
+   if (t->Generic) {
+      if (properties == "") {
+         properties = "GENERIC";
+      }
+      else {
+         properties += ",GENERIC";
+      }
+   }
+   if (t->Final) {
+      if (properties == "") {
+         properties = "FINAL";
+      }
+      else {
+         properties += ",FINAL";
+      }
+   }
+   if (properties == "") {
+      return "";
+   }
+   else {
+      return " (" + properties + ")";
+   }
+}  
+
 void Ili2Output::visitAttrOrParam(AttrOrParam *a)
 {
    
@@ -538,6 +568,7 @@ void Ili2Output::visitAttrOrParam(AttrOrParam *a)
    if (a->Type != nullptr) {
       try {
          DomainType *t = dynamic_cast<DomainType *>(a->Type);
+         // ili2.write(a->Name + get_properties(t) + ": "); // properties, to do !!!
          ili2.write(a->Name + ": ");
          if (t->Mandatory) {
             ili2.write(0,"MANDATORY ");
@@ -650,9 +681,6 @@ void Ili2Output::visitUnit(metamodel::Unit* u)
    if (u->Abstract) {
       ili2.write(0," (ABSTRACT)");
    }
-   if (u->Super != nullptr) {
-      ili2.write(" EXTENDS " + get_path(u->Super));
-   }
    if (u->Kind == Unit::DerivedU) {
       ili2.write(0," = ");
       write_expression(&ili2,u->Definition);
@@ -669,36 +697,6 @@ void Ili2Output::visitUnit(metamodel::Unit* u)
 
 }
 
-static string get_properties(metamodel::Type* t)
-{
-   string properties = "";
-   if (t->Abstract) {
-      properties = "ABSTRACT";
-   }
-   if (t->Generic) {
-      if (properties == "") {
-         properties = "GENERIC";
-      }
-      else {
-         properties += ",GENERIC";
-      }
-   }
-   if (t->Final) {
-      if (properties == "") {
-         properties = "FINAL";
-      }
-      else {
-         properties += ",FINAL";
-      }
-   }
-   if (properties == "") {
-      return "";
-   }
-   else {
-      return "(" + properties + ") ";
-   }
-}  
-
 void Ili2Output::visitDomainType(metamodel::DomainType* t)
 {
 
@@ -706,7 +704,7 @@ void Ili2Output::visitDomainType(metamodel::DomainType* t)
       return; // local attribute type, function argument type, COORD Axis Types
    }
 
-   ili2.write(t->Name + " " + get_properties(t) + "= ");
+   ili2.write(t->Name + get_properties(t) + " = ");
    write_type(&ili2,t);
    ili2.writeln(0,";");
 

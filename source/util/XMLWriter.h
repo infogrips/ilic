@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 
+#include "TextWriter.h"
 #include "StringMap.h"
 
 using namespace std;
@@ -23,7 +24,7 @@ namespace util {
       void writeTag(string tag, StringMap attributes,string content);
       void writeComment(string content);
    private:
-      ofstream out;
+      TextWriter txt;
       int nestLevel = 0;
       list<string> tags;
       void ident();

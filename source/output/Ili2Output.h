@@ -28,7 +28,6 @@ namespace output {
       void visitSimpleConstraint(metamodel::SimpleConstraint* c) override;
 
       void visitDomainType(metamodel::DomainType *t) override;
-//      void visitTextType(metamodel::TextType *t) override;
 
       void visitAttrOrParam(metamodel::AttrOrParam *a) override;
       void visitRole(metamodel::Role* r) override;

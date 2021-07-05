@@ -47,6 +47,9 @@ void TextWriter::incNestLevel()
 void TextWriter::decNestLevel()
 {
    nestlevel--;
+   if (nestlevel < 0) {
+      Log.internal_error("TextWriter: nestlevel is " + to_string(nestlevel));
+   }
 };
 
 void TextWriter::write(string buffer)
