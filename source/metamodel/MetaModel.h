@@ -153,6 +153,7 @@ namespace metamodel {
       string xmlns = ""; // 2.4
       string ili1Transfername = "";
       Ili1Format *ili1Format = nullptr;
+      string _ilifile = "internal";
       virtual string getClass() { return "Model"; }
       virtual string getBaseClass() { return "Package"; };
    };

@@ -9,6 +9,8 @@ using namespace input;
 using namespace parser;
 using namespace metamodel;
 
+extern string input_file;
+
 antlrcpp::Any Ili2Input::visitModelDef(Ili2Parser::ModelDefContext *ctx)
 {
 
@@ -103,6 +105,7 @@ antlrcpp::Any Ili2Input::visitModelDef(Ili2Parser::ModelDefContext *ctx)
       }
    }
 
+   m->_ilifile = input_file;
    add_model(m);
    add_package(m);
    push_context(m);

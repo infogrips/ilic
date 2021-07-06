@@ -9,7 +9,7 @@ using namespace std;
 
 namespace input {
    
-   void parseIli2(string input); 
+   void parseIli2(string ilifile); 
 
    class Ili2Input : public parser::Ili2ParserBaseVisitor {
    public:
@@ -112,7 +112,7 @@ namespace input {
       antlrcpp::Any visitFunctionCall(parser::Ili2Parser::FunctionCallContext *ctx) override;
       antlrcpp::Any visitFunctionCallArgument(parser::Ili2Parser::FunctionCallArgumentContext *ctx) override;
       antlrcpp::Any visitArgumentType(parser::Ili2Parser::ArgumentTypeContext *ctx) override;
-
+      
    };
 
 };

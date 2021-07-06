@@ -708,7 +708,7 @@ int main(int argc, char* argv[])
    Log.info("");
    Log.info("all models are:");
    for (Model *m : get_all_models()) {
-      Log.info(1, "model " + m->Name + ", iliversion=" + m->iliVersion);
+      Log.info(1, "model " + m->Name + ", iliversion=" + m->iliVersion + ", file=" + m->_ilifile);
    }
    if (multiple_iliversions) {
       Log.error("multiple iliversions found.");

@@ -11,6 +11,8 @@ using namespace input;
 using namespace parser;
 using namespace metamodel;
 
+string input_file = "";
+
 // general methods
 
 /*
@@ -38,14 +40,16 @@ static void close_inputstream(string input,ifstream &stream)
    }
 }
 
-void input::parseIli2(string input)
+void input::parseIli2(string ilifile)
 {
 
    try {
 
+      input_file = ilifile;
+
       // open input
       ifstream stream;
-      antlr4::ANTLRInputStream inputstream = open_inputstream(input,stream);
+      antlr4::ANTLRInputStream inputstream = open_inputstream(ilifile,stream);
       
       Log.debug("creating ili2 lexer ...");
       lexer::Ili2Lexer ili2lexer(&inputstream);
@@ -61,7 +65,7 @@ void input::parseIli2(string input)
       input::Ili2Input ili2input;
       ili2input.visit(ili2d);
 
-      close_inputstream(input,stream);
+      close_inputstream(ilifile,stream);
 
    }
    catch (exception e) {
