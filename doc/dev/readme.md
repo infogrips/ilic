@@ -25,5 +25,8 @@ a Java based utility a Java Runtime or JDK must be present on the development ma
 (java.exe has to work from the command line).
 
 ## Additional Information
++ [ilic architecture](./architecture.md)
 + [coding conventions](./codingconventions.md)
++ [general module api](./general_api.md)
++ [input module api](./input_api.md)
 + [output module api](./output_api.md)
