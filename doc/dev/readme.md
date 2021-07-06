@@ -27,6 +27,6 @@ a Java based utility a Java Runtime or JDK must be present on the development ma
 ## Additional Information
 + [ilic overall architecture](./architecture.md)
 + [coding conventions](./codingconventions.md)
-+ [general module api](./general_api.md)
++ [general api](./general_api.md)
 + [input module api](./input_api.md)
 + [output module api](./output_api.md)
