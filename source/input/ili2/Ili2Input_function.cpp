@@ -125,7 +125,7 @@ antlrcpp::Any Ili2Input::visitFunctionCall(parser::Ili2Parser::FunctionCallConte
    string functionref = visitPath(ctx->functionref);
    debug(ctx,"visitFunctionCall(" + functionref + ")");
 
-   FunctionDef *f = find_function(functionref);
+   FunctionDef *f = find_function(functionref,get_line(ctx));
    if (f == nullptr) {
       Log.error("function " + functionref + " unknown");
       return nullptr;

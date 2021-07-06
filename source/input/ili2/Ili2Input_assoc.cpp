@@ -92,8 +92,8 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
    c->Final = properties[FINAL];
    if (properties[EXTENDED]) {
       Package* p = get_package_context();
-      DataUnit* u = find_dataunit(get_path(p));
-      int line = ctx->properties()->start->getLine();
+      int line = get_line(ctx);
+      DataUnit* u = find_dataunit(get_path(p),line);
       if (u->Super == nullptr) {
          Log.error(string("EXTENDED can only by used in extended topics"), line);
       }
@@ -101,8 +101,8 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
          bool found = false;
          while (u->Super != nullptr) {
             DataUnit* uu = static_cast<DataUnit*>(u->Super);
-            Package* pp = find_package(get_path(uu));
-            Class* cc = find_association(pp, name1);
+            Package* pp = find_package(get_path(uu),line);
+            Class* cc = find_association(pp,name1,line);
             if (cc != nullptr) {
                found = true;
                break;
@@ -119,7 +119,7 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
    }
 
    if (ctx->associationRef() != nullptr) {
-      c->Super = find_association(ctx->associationRef()->getText());
+      c->Super = find_association(ctx->associationRef()->getText(),get_line(ctx->associationRef()));
       if (c->Super != nullptr) {
          c->Super->Sub.push_back(c);
       }
@@ -136,7 +136,7 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
    // metamodel::AttrOrParam *LTParent;
 
    if (ctx->assocoid != nullptr) {
-      c->Oid = find_domaintype(ctx->assocoid->getText());
+      c->Oid = find_domaintype(ctx->assocoid->getText(),get_line(ctx->assocoid));
       // DomainType *Oid; // RESTRICTION(TextType; NumType; AnyOIDType), to do !!!
    }
 

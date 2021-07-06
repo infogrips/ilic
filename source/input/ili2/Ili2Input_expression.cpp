@@ -545,7 +545,7 @@ antlrcpp::Any Ili2Input::visitNumericConst(parser::Ili2Parser::NumericConstConte
    Constant *c = visitDecConst(ctx->decConst());
    
    if (ctx->path() != nullptr) {
-      Unit *u = find_unit(ctx->unitref->getText());
+      Unit *u = find_unit(ctx->unitref->getText(),ctx->unitref->start->getLine());
       // unit assignment, to do !!!
    }
    
@@ -623,7 +623,7 @@ antlrcpp::Any Ili2Input::visitClassConst(parser::Ili2Parser::ClassConstContext *
    string val = visitPath(ctx->path());
    c->Value = val;
    
-   if (find_class(c->Value) == nullptr) {
+   if (find_class(c->Value,get_line(ctx)) == nullptr) {
       Log.error("class " + c->Value + " not found",ctx->start->getLine());
    }
 

@@ -54,15 +54,15 @@ antlrcpp::Any Ili2Input::visitRestrictedRef(parser::Ili2Parser::RestrictedRefCon
    
    if (ctx->typeref != nullptr) {
       // returns DomainType
-      r->BaseType = find_type(visitPath(ctx->typeref));
+      r->BaseType = find_type(visitPath(ctx->typeref),get_line(ctx->typeref));
    }
    else if (ctx->ANYCLASS() != nullptr) {
       // returns Class / Type
-      r->BaseType = find_class("INTERLIS.ANYCLASS");
+      r->BaseType = find_class("INTERLIS.ANYCLASS",get_line(ctx->ANYCLASS()->getSymbol()));
    }
    else {
       // returns Class / Type
-      r->BaseType = find_class("INTERLIS.ANYSTRUCTURE");
+      r->BaseType = find_class("INTERLIS.ANYSTRUCTURE", get_line(ctx->ANYSTRUCTURE()->getSymbol()));
    }
    
    if (ctx->restriction() != nullptr) {
@@ -98,7 +98,7 @@ antlrcpp::Any Ili2Input::visitRestriction(parser::Ili2Parser::RestrictionContext
 
    list<Type *> r;
    for (auto p : ctx->path()) {
-      Type *t = find_type(visitPath(p));
+      Type *t = find_type(visitPath(p),get_line(ctx));
       r.push_back(t);
    }
 

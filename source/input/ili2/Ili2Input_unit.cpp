@@ -55,7 +55,7 @@ antlrcpp::Any Ili2Input::visitUnitDef(parser::Ili2Parser::UnitDefContext *ctx)
       u->Abstract = true;
    }
    if (ctx->super != nullptr) {
-      u->Super = find_unit(ctx->super->getText());
+      u->Super = find_unit(ctx->super->getText(),ctx->super->start->getLine());
       if (u->Super != nullptr) {
          u->Super->Sub.push_back(u);
       }
@@ -148,7 +148,7 @@ antlrcpp::Any Ili2Input::visitDerivedUnit(parser::Ili2Parser::DerivedUnitContext
 
    if (ctx->unitref != nullptr) {
       Unit *u = static_cast<Unit *>(get_context());
-      u->Super = find_unit(ctx->unitref->getText());
+      u->Super = find_unit(ctx->unitref->getText(),ctx->unitref->start->getLine());
    }
    
    Log.decNestLevel();

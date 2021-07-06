@@ -130,7 +130,7 @@ antlrcpp::Any Ili2Input::visitImporting(parser::Ili2Parser::ImportingContext *ct
    debug(ctx,"visitImportDef()");
    Import *i = new Import();
    i->ImportingP = get_package_context();
-   i->ImportedP = find_model(ctx->importname->getText());
+   i->ImportedP = find_model(ctx->importname->getText(),get_line(ctx));
    if (ctx->UNQUALIFIED() != nullptr) {
       i->_unqualified = true;
    }
@@ -205,8 +205,8 @@ antlrcpp::Any Ili2Input::visitTopicDef(Ili2Parser::TopicDefContext *ctx)
    }
 
    if (ctx->topicbase != nullptr) {
-      s->_super = find_package(visitPath(ctx->topicbase));
-      d->Super = find_dataunit(visitPath(ctx->topicbase));
+      s->_super = find_package(visitPath(ctx->topicbase),get_line(ctx->topicbase));
+      d->Super = find_dataunit(visitPath(ctx->topicbase),get_line(ctx->topicbase));
       if (d->Super != nullptr) {
          s->_super->_sub.push_back(s);
          d->Super->Sub.push_back(d);
@@ -219,7 +219,7 @@ antlrcpp::Any Ili2Input::visitTopicDef(Ili2Parser::TopicDefContext *ctx)
    }
    // role from ASSOCIATION MetaDataUnit, to do !!!
    if (ctx->basketOid != nullptr) {
-      d->Oid = find_domaintype(ctx->basketOid->getText());
+      d->Oid = find_domaintype(ctx->basketOid->getText(),get_line(ctx->basketOid));
    }
    if (ctx->topicOid != nullptr) {
       // topicOid where???, to do !!!
@@ -234,7 +234,7 @@ antlrcpp::Any Ili2Input::visitTopicDef(Ili2Parser::TopicDefContext *ctx)
       */
       for (auto p : ctx->path()) {
          string path = visitPath(p);
-         DataUnit *du = find_dataunit(path);
+         DataUnit *du = find_dataunit(path,get_line(ctx));
          if (du != nullptr) {
             Dependency *dd = new Dependency();
             init_mmobject(dd,p->start->getLine());

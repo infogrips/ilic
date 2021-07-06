@@ -174,7 +174,7 @@ antlrcpp::Any Ili1Input::visitView(Ili1Parser::ViewContext *ctx)
       );
    }
    
-   if (find_model(name1) == nullptr) {
+   if (find_model(name1,get_line(ctx->modelname1)) == nullptr) {
       Log.error(
          "base model " + name1 + " unknown",
          ctx->modelname1->getLine()
@@ -184,7 +184,7 @@ antlrcpp::Any Ili1Input::visitView(Ili1Parser::ViewContext *ctx)
    View *v = new View();
    init_class(v,ctx->start->getLine());
    string reftable = get_package_context()->Name + "." + ctx->topicname->getText() + "." + ctx->tablename->getText();
-   Class *t = find_class(reftable);
+   Class *t = find_class(reftable,get_line(ctx));
    if (t == nullptr) {
       Log.error(
          "referenced table " + reftable + " not found",

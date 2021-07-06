@@ -8,33 +8,33 @@ using namespace metamodel;
 namespace metamodel {
 
    // golbal variables
-   
+
    bool ili23 = true;
    bool ili24 = true;
    string iliversion;
 
    static list <DataUnit*> AllDataUnits;
    static list <Package*> AllPackages;
-   static list <Type *> AllTypes;
-   static list <Unit *> AllUnits;
-   static list <Import *> AllImports;
-   static list <FunctionDef *> AllFunctions;
-   
+   static list <Type*> AllTypes;
+   static list <Unit*> AllUnits;
+   static list <Import*> AllImports;
+   static list <FunctionDef*> AllFunctions;
+
    // mmobject helpers
 
-   void init_mmobject(MMObject *o, int line)
+   void init_mmobject(MMObject* o, int line)
    {
       o->_line = line;
    }
-   
+
    // metaelement helpers
 
-   void init_metaelement(MetaElement *e, int line)
+   void init_metaelement(MetaElement* e, int line)
    {
       // list <DocText> Documentation;
       // ROLE from ASSOCIATION MetaAttributes
       // list <MetaAttribute *> MetaAttribute;
-      init_mmobject(e,line);
+      init_mmobject(e, line);
       /* to do !!!
       e->ElementInPackage = get_package_context();
       if (e->ElementInPackage != nullptr) {
@@ -42,9 +42,9 @@ namespace metamodel {
       } */
    }
 
-   void init_extendableme(ExtendableME *e, int line)
+   void init_extendableme(ExtendableME* e, int line)
    {
-      init_metaelement(e,line);
+      init_metaelement(e, line);
       // bool Abstract;
       // bool Final;
       // ROLE from ASSOCIATION Inheritance
@@ -55,53 +55,53 @@ namespace metamodel {
 
    // package helpers
 
-   void init_package(Package *p, int line)
+   void init_package(Package* p, int line)
    {
-      init_metaelement(p,line);
+      init_metaelement(p, line);
       // ROLE from ASSOCIATION PackageElements
       // list <MetaElement *> Element;
    }
 
    // Model helpers
 
-   Model *find_model(string name)
+   Model* find_model(string name, int line)
    {
 
-      for (Model *m : get_all_models()) {
+      for (Model* m : get_all_models()) {
          if (m->Name == name) {
             return m;
          }
       }
 
-      Log.error("model " + name + " not found.");
+      Log.error("model " + name + " not found.", line);
       return nullptr;
 
    }
 
    // Topic / DataUnit helpers
-   
-   void add_dataunit(DataUnit *u)
+
+   void add_dataunit(DataUnit* u)
    {
       if (u == nullptr) {
          return;
       }
-      for (DataUnit *uu : AllDataUnits) {
+      for (DataUnit* uu : AllDataUnits) {
          if (uu->Name == u->ElementInPackage->Name) {
-            Log.error("multiple declaration of topic " + u->ElementInPackage->Name,u->_line);
+            Log.error("multiple declaration of topic " + u->ElementInPackage->Name, u->_line);
             return;
          }
       }
       AllDataUnits.push_back(u);
    }
-   
-   DataUnit* find_dataunit(string name)
+
+   DataUnit* find_dataunit(string name, int line)
    {
-      for (DataUnit *u : AllDataUnits) {
+      for (DataUnit* u : AllDataUnits) {
          if (get_path(u) == (name + ".BASKET")) {
             return u;
          }
       }
-      Log.error("unknown topic " + name,get_package_context()->_line);
+      Log.error("unknown topic " + name, line);
       return nullptr;
    }
 
@@ -113,62 +113,65 @@ namespace metamodel {
       AllPackages.push_back(p);
    }
 
-   Package* find_package(string name)
+   Package* find_package(string name, int line)
    {
       for (Package* p : AllPackages) {
          if (get_path(p) == name) {
             return p;
          }
       }
-      Log.error("unknown package " + name, get_package_context()->_line);
+      Log.error("unknown package " + name, line);
       return nullptr;
    }
 
    // Unit helpers
 
-   void add_unit(Unit *u) 
+   void add_unit(Unit* u)
    {
       if (u == nullptr) {
          return;
       }
-      for (Unit *uu : AllUnits) {
+      for (Unit* uu : AllUnits) {
          if (uu->Name == u->Name) {
-            Log.error("multiple declaration of unit " + u->Name,u->_line);
+            Log.error("multiple declaration of unit " + u->Name, u->_line);
             return;
          }
       }
       AllUnits.push_back(u);
    }
 
-   Unit* find_unit(string name)
+   Unit* find_unit(string name, int line)
    {
-      for (Unit *u : AllUnits) {
+      for (Unit* u : AllUnits) {
          if (u->Name == name) {
+            return u;
+         }
+         else if (get_path(u) == name) {
             return u;
          }
          else if (u->_unitname == name) {
             return u;
          }
       }
-      Log.error("unknown unit " + name,get_package_context()->_line);
+      Log.error("unknown unit " + name, line);
       return nullptr;
    }
-   
+
    // Type helpers
 
-   void init_type(Type *t, int line)
+   void init_type(Type* t, int line)
    {
       init_extendableme(t, line);
       // FunctionDef *LFTParent;
    }
 
-   void add_type(Type *t)
+   void add_type(Type* t)
    {
       if (t == nullptr) {
          return;
       }
-		Log.debug("add_type " + t->Name + "(" + get_path(t) + ")");
-      for (Type *tt : AllTypes) {
+      Log.debug("add_type " + t->Name + "(" + get_path(t) + ")");
+      for (Type* tt : AllTypes) {
          if (tt->Name == t->Name) {
             // to do !!!
             // Log.error("multiple declarations of " + t->Name,t->_line);
@@ -178,20 +181,20 @@ namespace metamodel {
       AllTypes.push_back(t);
    }
 
-   static Type* find_type(string name,bool error)
+   static Type* find_type(string name, int line, bool error)
    {
 
       string search;
-      if (util::starts_with(name,"ILIC_")) {
+      if (util::starts_with(name, "ILIC_")) {
          search = name.substr(5);
       }
       else {
          search = name;
       }
 
-		Log.debug("find_type <" + search + ">");
+      Log.debug("find_type <" + search + ">");
 
-      for (Type *t : AllTypes) {
+      for (Type* t : AllTypes) {
          if (get_path(t) == search) {
             return t;
          }
@@ -204,31 +207,31 @@ namespace metamodel {
       }
 
       if (error) {
-         Log.error("type " + search + " not found.",get_package_context()->_line);
+         Log.error("type " + search + " not found.", line);
       }
 
       return nullptr;
 
    }
-   
-   Type* find_type(string name)
+
+   Type* find_type(string name, int line)
    {
-      return find_type(name,true);
+      return find_type(name, line, true);
    }
 
-   void init_domaintype(DomainType *t, int line)
+   void init_domaintype(DomainType* t, int line)
    {
       init_type(t, line);
    }
 
-   DomainType* find_domaintype(string name)
+   DomainType* find_domaintype(string name, int line)
    {
-      Type *t = find_type(name);
+      Type* t = find_type(name, line);
       if (t == nullptr) {
          return nullptr;
       }
       if (t->isSubClassOf("DomainType")) {
-         return static_cast<DomainType *>(t);
+         return static_cast<DomainType*>(t);
       }
       else {
          return nullptr;
@@ -237,17 +240,17 @@ namespace metamodel {
 
    // Class helpers
 
-   void init_class(Class *c,int line)
+   void init_class(Class* c, int line)
    {
       init_type(c, line);
    }
 
-   void add_class(Class *c)
+   void add_class(Class* c)
    {
       add_type(c);
    }
 
-   Class* find_class_object(string name,int kind)
+   Class* find_class_object(string name, int kind, int line)
    {
 
       string kinds;
@@ -261,18 +264,18 @@ namespace metamodel {
          kinds = "association";
       }
 
-      Type *t = find_type(name,false);
+      Type* t = find_type(name, line, false);
       if (t == nullptr) {
-         Log.error(kinds + " " + name + " not found",get_package_context()->_line);
+         Log.error(kinds + " " + name + " not found", get_package_context()->_line);
          return nullptr;
       }
-      
+
       if (t->getClass() != "Class") {
          Log.error(name + " is no " + kinds);
          return nullptr;
       }
 
-      Class *c = static_cast<Class *>(t);
+      Class* c = static_cast<Class*>(t);
       if (c->Kind != kind) {
          Log.error(name + " is no " + kinds);
          return nullptr;
@@ -281,10 +284,10 @@ namespace metamodel {
       return c;
 
    }
-      
-   Class* find_class(string name)
+
+   Class* find_class(string name, int line)
    {
-      Class *c;
+      Class* c;
       if (name == "ANYCLASS" || name == "INTERLIS.ANYCLASS" || name == "CLASS" || name == "INTERLIS.CLASS") {
          // singelton, to do !!!
          c = new Class();
@@ -298,70 +301,81 @@ namespace metamodel {
          c->Kind = Class::Structure;
       }
       else {
-         c = find_class_object(name,Class::ClassVal);
+         c = find_class_object(name, Class::ClassVal, line);
       }
       return c;
    }
-   
-   Class* find_class(Package *p,string name)
+
+   Class* find_class(Package* p, string name, int line)
    {
       if (p == nullptr) {
          return nullptr;
       }
       for (auto e : p->Element) {
          if (e->Name == name && e->getClass() == "Class") {
-            Class *c = static_cast<Class *>(e);
+            Class* c = static_cast<Class*>(e);
             if (c->Kind == Class::ClassVal) {
                return c;
             }
          }
       }
+      Log.error("class " + name + " not found", line);
       return nullptr;
    }
 
-   Class* find_structure(string name)
+   Class* find_structure(string name, int line)
    {
-      return find_class_object(name,Class::Structure);
+      Class* s = find_class_object(name, Class::Structure, line);
+      if (s == nullptr) {
+         Log.error("structure " + name + " not found", line);
+      }
+      return s;
    }
 
-   Class* find_structure(Package *p,string name)
+   Class* find_structure(Package* p, string name, int line)
    {
       if (p == nullptr) {
          return nullptr;
       }
       for (auto e : p->Element) {
          if (e->Name == name && e->getClass() == "Class") {
-            Class *c = static_cast<Class *>(e);
+            Class* c = static_cast<Class*>(e);
             if (c->Kind == Class::Structure) {
                return c;
             }
          }
       }
+      Log.error("structure " + name + " not found", line);
       return nullptr;
    }
 
-   Class* find_association(string name)
+   Class* find_association(string name, int line)
    {
-      return find_class_object(name,Class::Association);
+      Class* a = find_class_object(name, Class::Association, line);
+      if (a == nullptr) {
+         Log.error("association " + name + " not found", line);
+      }
+      return a;
    }
 
-   Class* find_association(Package *p,string name)
+   Class* find_association(Package* p, string name, int line)
    {
       if (p == nullptr) {
          return nullptr;
       }
       for (auto e : p->Element) {
          if (e->Name == name && e->getClass() == "Class") {
-            Class *c = static_cast<Class *>(e);
+            Class* c = static_cast<Class*>(e);
             if (c->Kind == Class::Association) {
                return c;
             }
          }
       }
+      Log.error("association " + name + " not found", line);
       return nullptr;
    }
 
-   AttrOrParam* find_attribute(Class *c,string name)
+   AttrOrParam* find_attribute(Class* c, string name,int line)
    {
       if (c == nullptr) {
          return nullptr;
@@ -371,35 +385,36 @@ namespace metamodel {
             return a;
          }
       }
+      Log.error("attribute " + name + " not found ", line);
       return nullptr;
    }
 
    // expression helpers
 
-   void init_expression(Expression *e, int line)
+   void init_expression(Expression* e, int line)
    {
-      init_mmobject(e,line);
+      init_mmobject(e, line);
    }
 
-   void init_factor(Factor *f, int line)
+   void init_factor(Factor* f, int line)
    {
-      init_expression(f,line);
+      init_expression(f, line);
    }
 
    // function helpers
 
-   void init_function(FunctionDef *f, int line)
+   void init_function(FunctionDef* f, int line)
    {
-      init_metaelement(f,line);
+      init_metaelement(f, line);
    }
 
-   void add_function(FunctionDef *function)
+   void add_function(FunctionDef* function)
    {
       if (function == nullptr) {
          return;
       }
-		Log.debug(">>> add_function " + function->Name + "(" + get_path(function) + ")");
-      for (FunctionDef *f : AllFunctions) {
+      Log.debug(">>> add_function " + function->Name + "(" + get_path(function) + ")");
+      for (FunctionDef* f : AllFunctions) {
          if (f->Name == function->Name) {
             // add domain type only once
             return;
@@ -408,12 +423,12 @@ namespace metamodel {
       AllFunctions.push_back(function);
    }
 
-   FunctionDef* find_function(string name)
+   FunctionDef* find_function(string name, int line)
    {
 
-		Log.debug(">>> find_function " + name);
+      Log.debug(">>> find_function " + name);
 
-      for (FunctionDef *f : AllFunctions) {
+      for (FunctionDef* f : AllFunctions) {
          if (get_path(f) == name) {
             return f;
          }
@@ -422,23 +437,23 @@ namespace metamodel {
          }
       }
 
-      Log.error("function " + name + " not found.",get_package_context()->_line);
+      Log.error("function " + name + " not found.", line);
       return nullptr;
 
    }
-   
-   // constraint helpers
-   
-   void init_constraint(Constraint *c,int line)
-   {
-      init_metaelement(c,line);
-   }
-               
-   // context helpers
-   
-   static list<MetaElement *> context;
 
-   void push_context(MetaElement *m)
+   // constraint helpers
+
+   void init_constraint(Constraint* c, int line)
+   {
+      init_metaelement(c, line);
+   }
+
+   // context helpers
+
+   static list<MetaElement*> context;
+
+   void push_context(MetaElement* m)
    {
       Log.debug(">>> push_context " + m->getClass() + ":" + m->Name);
       context.push_back(m);
@@ -454,15 +469,15 @@ namespace metamodel {
       }
    }
 
-   MetaElement * get_context(string classname)
+   MetaElement* get_context(string classname)
    {
-      list<MetaElement *> c;
+      list<MetaElement*> c;
       c = context;
       while (true) {
          if (c.empty()) {
             break;
          }
-         MetaElement *m = c.back();
+         MetaElement* m = c.back();
          if (m->isSubClassOf(classname)) {
             return m;
          }
@@ -473,7 +488,7 @@ namespace metamodel {
 
    Class* get_class_context()
    {
-      return dynamic_cast<Class *>(get_context("Class"));
+      return dynamic_cast<Class*>(get_context("Class"));
    }
 
    Package* get_package_context()
@@ -483,37 +498,21 @@ namespace metamodel {
 
    void pop_context()
    {
-      MetaElement *m = context.back();
+      MetaElement* m = context.back();
       Log.debug("<<< pop_context " + m->getClass() + ":" + m->Name);
       context.pop_back();
    }
-   
+
    // other helpers
-   
-   Type* any_to_type(antlrcpp::Any any) 
+
+   Type* any_to_type(antlrcpp::Any any)
    {
-      
+
       Log.debug(">>> any_to_type()");
-      Type *t;
+      Type* t;
 
       try {
-         t = any.as<TypeRelatedType *>();
-         Log.debug(">>> class=" + t->getClass());
-         return t;
-      }
-      catch (exception e) {
-      }
-      
-      try {
-         t = any.as<ClassRelatedType *>();
-         Log.debug(">>> class=" + t->getClass());
-         return t;
-      }
-      catch (exception e) {
-      }
-      
-      try {
-         t = any.as<BooleanType *>();
+         t = any.as<TypeRelatedType*>();
          Log.debug(">>> class=" + t->getClass());
          return t;
       }
@@ -521,15 +520,7 @@ namespace metamodel {
       }
 
       try {
-         t = any.as<TextType *>();
-         Log.debug(">>> class=" + t->getClass());
-         return t;
-      }
-      catch (exception e) {
-      }
-      
-      try {
-         t = any.as<BlackboxType *>();
+         t = any.as<ClassRelatedType*>();
          Log.debug(">>> class=" + t->getClass());
          return t;
       }
@@ -537,15 +528,7 @@ namespace metamodel {
       }
 
       try {
-         t = any.as<NumType *>();
-         Log.debug(">>> class=" + t->getClass());
-         return t;
-      }
-      catch (exception e) {
-      }
-      
-      try {
-         t = any.as<CoordType *>();
+         t = any.as<BooleanType*>();
          Log.debug(">>> class=" + t->getClass());
          return t;
       }
@@ -553,7 +536,7 @@ namespace metamodel {
       }
 
       try {
-         AnyOIDType *t = any.as<AnyOIDType *>();
+         t = any.as<TextType*>();
          Log.debug(">>> class=" + t->getClass());
          return t;
       }
@@ -561,7 +544,7 @@ namespace metamodel {
       }
 
       try {
-         AttributeRefType *t = any.as<AttributeRefType *>();
+         t = any.as<BlackboxType*>();
          Log.debug(">>> class=" + t->getClass());
          return t;
       }
@@ -569,7 +552,7 @@ namespace metamodel {
       }
 
       try {
-         t = any.as<EnumType *>();
+         t = any.as<NumType*>();
          Log.debug(">>> class=" + t->getClass());
          return t;
       }
@@ -577,7 +560,7 @@ namespace metamodel {
       }
 
       try {
-         t = any.as<EnumTreeValueType *>();
+         t = any.as<CoordType*>();
          Log.debug(">>> class=" + t->getClass());
          return t;
       }
@@ -585,7 +568,7 @@ namespace metamodel {
       }
 
       try {
-         t = any.as<LineType *>();
+         AnyOIDType* t = any.as<AnyOIDType*>();
          Log.debug(">>> class=" + t->getClass());
          return t;
       }
@@ -593,7 +576,7 @@ namespace metamodel {
       }
 
       try {
-         t = any.as<Class *>();
+         AttributeRefType* t = any.as<AttributeRefType*>();
          Log.debug(">>> class=" + t->getClass());
          return t;
       }
@@ -601,28 +584,70 @@ namespace metamodel {
       }
 
       try {
-         t = any.as<DomainType *>();
+         t = any.as<EnumType*>();
+         Log.debug(">>> class=" + t->getClass());
+         return t;
+      }
+      catch (exception e) {
+      }
+
+      try {
+         t = any.as<EnumTreeValueType*>();
+         Log.debug(">>> class=" + t->getClass());
+         return t;
+      }
+      catch (exception e) {
+      }
+
+      try {
+         t = any.as<LineType*>();
+         Log.debug(">>> class=" + t->getClass());
+         return t;
+      }
+      catch (exception e) {
+      }
+
+      try {
+         t = any.as<Class*>();
+         Log.debug(">>> class=" + t->getClass());
+         return t;
+      }
+      catch (exception e) {
+      }
+
+      try {
+         t = any.as<DomainType*>();
          Log.debug(">>> DomainType class=" + t->getClass());
          return t;
       }
       catch (exception e) {
       }
 
-      Log.internal_error("any_to_type: unsupported type",1);
+      Log.internal_error("any_to_type: unsupported type", 1);
       return nullptr;
 
    }
-      
-   DomainType* any_to_domaintype(antlrcpp::Any any) 
+
+   DomainType* any_to_domaintype(antlrcpp::Any any)
    {
-      Type *t = any_to_type(any);
+      Type* t = any_to_type(any);
       try {
-         return static_cast<DomainType *>(t);
+         return static_cast<DomainType*>(t);
       }
       catch (exception e) {
-         Log.internal_error("unable to cast " + t->getClass() + " to DomainType (" + e.what(),1);
+         Log.internal_error("unable to cast " + t->getClass() + " to DomainType (" + e.what(), 1);
          return nullptr;
       }
    }
-      
+
+   int get_line(antlr4::ParserRuleContext *ctx)
+   {
+      return ctx->start->getLine();
+   }
+
+   int get_line(antlr4::Token *token)
+   {
+      return token->getLine();
+   }
+
 }

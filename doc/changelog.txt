@@ -1,7 +1,12 @@
+ilic 0.9.1 (2021-07-06)
+-----------------------
+- INTERLIS model is imported by default
+
 ilic 0.9.0 (2021-06-30)
 -----------------------
 - all functions tested with roads example
 - INTERLIS 1.0 output
+- INTERLIS 2.3 output
 - XSD output
 - GML output
 

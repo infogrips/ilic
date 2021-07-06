@@ -98,8 +98,8 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
       c->Final = properties[FINAL];
       if (properties[EXTENDED]) {
          Package *p = get_package_context();
-         DataUnit* u = find_dataunit(get_path(p));
-         int line = ctx->properties()->start->getLine();
+         int line = get_line(ctx);
+         DataUnit* u = find_dataunit(get_path(p),line);
          if (u->Super == nullptr) {
             Log.error(string("EXTENDED can only by used in extended topics"),line);
          }
@@ -107,7 +107,7 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
             string superpath = get_path(u->Super);
             superpath = superpath.substr(0,superpath.length()-7); // without .BASKET
             string baseclass = superpath + "." + c->Name;
-            c->Super = find_class(baseclass);
+            c->Super = find_class(baseclass,line);
             bool found = false;
             while (u->Super != nullptr) {
                DataUnit *uu = static_cast<DataUnit *>(u->Super);
@@ -118,8 +118,8 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
                   package_path = package_path.substr(0,package_path.length()-7);
                }
 
-               Package* pp = find_package(package_path);
-               Class *cc = find_class(pp,name1);
+               Package* pp = find_package(package_path,line);
+               Class *cc = find_class(pp,name1,line);
                if (cc != nullptr) {
                   found = true;
                   break;
@@ -134,7 +134,7 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
    }
 
    if (ctx->classbase != nullptr) {
-      c->Super = find_class(ctx->classbase->getText());
+      c->Super = find_class(ctx->classbase->getText(),get_line(ctx->classbase));
       if (c->Super != nullptr) {
          c->Super->Sub.push_back(c);
       }
@@ -147,7 +147,7 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
    // metamodel::AttrOrParam *LTParent;
 
    if (ctx->classoid != nullptr) {
-      c->Oid = find_domaintype(ctx->classoid->getText());
+      c->Oid = find_domaintype(ctx->classoid->getText(),get_line(ctx->classoid));
       // DomainType *Oid; // RESTRICTION(TextType; NumType; AnyOIDType), to do !!!
    }
 
@@ -224,13 +224,13 @@ antlrcpp::Any Ili2Input::visitStructureDef(Ili2Parser::StructureDefContext *ctx)
       c->Final = properties[FINAL];
       if (properties[EXTENDED]) {
          string basestructure = c->ElementInPackage->Name + "." + c->Name;
-         c->Super = find_structure(basestructure);
+         c->Super = find_structure(basestructure,get_line(ctx->properties()));
          if (c->Super == nullptr) {
             Log.error("base structure " + basestructure + " not found");
          }
          Package* p = get_package_context();
-         DataUnit* u = find_dataunit(get_path(p));
-         int line = ctx->properties()->start->getLine();
+         int line = get_line(ctx);
+         DataUnit* u = find_dataunit(get_path(p),line);
          if (u->Super == nullptr) {
             Log.error(string("EXTENDED can only by used in extended topics"), line);
          }
@@ -238,8 +238,8 @@ antlrcpp::Any Ili2Input::visitStructureDef(Ili2Parser::StructureDefContext *ctx)
             bool found = false;
             while (u->Super != nullptr) {
                DataUnit* uu = static_cast<DataUnit*>(u->Super);
-               Package* pp = find_package(get_path(uu));
-               Class* cc = find_structure(pp, name1);
+               Package* pp = find_package(get_path(uu),line);
+               Class* cc = find_structure(pp, name1,line);
                if (cc != nullptr) {
                   found = true;
                   break;
@@ -254,7 +254,7 @@ antlrcpp::Any Ili2Input::visitStructureDef(Ili2Parser::StructureDefContext *ctx)
    }
 
    if (ctx->structurebase != nullptr) {
-      c->Super = find_structure(ctx->structurebase->getText());
+      c->Super = find_structure(ctx->structurebase->getText(),get_line(ctx->structurebase));
       if (c->Super != nullptr) {
          c->Super->Sub.push_back(c);
       }
@@ -450,7 +450,7 @@ antlrcpp::Any Ili2Input::visitAttributeDef(parser::Ili2Parser::AttributeDefConte
          }
          else {
             Class* s = static_cast<Class*>(c->Super);
-            AttrOrParam *aa = metamodel::find_attribute(s,name);
+            AttrOrParam *aa = metamodel::find_attribute(s,name,get_line(ctx));
             if (aa == nullptr) {
                Log.error("attribute " + name + " not found in baseclass", ctx->attributname->getLine());
             }
@@ -555,7 +555,7 @@ antlrcpp::Any Ili2Input::visitAttrType(parser::Ili2Parser::AttrTypeContext * ctx
       t = visitType(ctx->type());
    }
    else if (ctx->path() != nullptr) {
-      Type *tt = find_type(visitPath(ctx->path()));
+      Type *tt = find_type(visitPath(ctx->path()),get_line(ctx));
       t = static_cast<Type *>(tt->clone());
       t->Super = tt;
    }

@@ -349,7 +349,7 @@ antlrcpp::Any Ili2Input::visitConstraintsDef(parser::Ili2Parser::ConstraintsDefC
    debug(ctx,">>> visitSetConstraintsDef()");
    Log.incNestLevel();
    
-   Class *c = find_class(visit(ctx->path()));
+   Class *c = find_class(visit(ctx->path()),get_line(ctx));
    if (c != nullptr) {
       for (auto cctx : ctx->constraintDef()) {
          Constraint *cc = visitConstraintDef(cctx);

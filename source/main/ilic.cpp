@@ -40,7 +40,7 @@ string get_program_name()
 
 string get_version()
 {
-   return "0.9.0";
+   return "0.9.1";
 }
 
 string get_version_string()
@@ -693,12 +693,7 @@ int main(int argc, char* argv[])
    // compile all .ili files
 
    bool multiple_iliversions = false;
-   for (IliFile *f : AllIliFiles) {
-      // compile model INTERLIS first
-      if (f->getFilePath() == "INTERLIS") {
-         compile(f->getFilePath(),f->getIliVersion());
-      }
-   }
+   compile("INTERLIS","2.3");
    for (IliFile *f : AllIliFiles) {
       if (f->getFilePath() == "INTERLIS") {
          continue;

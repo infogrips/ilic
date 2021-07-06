@@ -441,7 +441,7 @@ antlrcpp::Any Ili2Input::visitNumericType(parser::Ili2Parser::NumericTypeContext
       t->Circular = true;
    }
    if (ctx->unitref != nullptr) {
-      t->Unit = find_unit(visitPath(ctx->unitref));
+      t->Unit = find_unit(visitPath(ctx->unitref),ctx->unitref->start->getLine());
    }
    if (ctx->CLOCKWISE() != nullptr) {
       t->Clockwise = true;
@@ -720,7 +720,7 @@ antlrcpp::Any Ili2Input::visitLineType(parser::Ili2Parser::LineTypeContext *ctx)
    
    if (ctx->coordref != nullptr) {
       try {
-         t->CoordType = dynamic_cast<CoordType *>(find_domaintype(visitPath(ctx->coordref)));
+         t->CoordType = dynamic_cast<CoordType *>(find_domaintype(visitPath(ctx->coordref),get_line(ctx)));
       }
       catch (exception e) {
          string path = visitPath(ctx->coordref);
@@ -735,7 +735,7 @@ antlrcpp::Any Ili2Input::visitLineType(parser::Ili2Parser::LineTypeContext *ctx)
    if (ctx->lineattrstruct != nullptr) {
       string path = visitPath(ctx->lineattrstruct);
       try {
-         t->LAStructure = find_structure(path);
+         t->LAStructure = find_structure(path,get_line(ctx->lineattrstruct));
       }
       catch (exception e) {
          Log.error(path + " is no structure type");
@@ -744,7 +744,7 @@ antlrcpp::Any Ili2Input::visitLineType(parser::Ili2Parser::LineTypeContext *ctx)
    
    if (ctx->lineattrstruct != nullptr) {
       //string overlap = ctx->lineattrstruct->getText();
-      t->LAStructure = find_structure(ctx->lineattrstruct->getText());
+      t->LAStructure = find_structure(ctx->lineattrstruct->getText(),get_line(ctx->lineattrstruct));
       // assign, to do !!!
    }
 
@@ -866,7 +866,7 @@ antlrcpp::Any Ili2Input::visitLineFormTypeDecl(parser::Ili2Parser::LineFormTypeD
    
    t->Name = ctx->lineformtype->getText();
    
-   DomainType *s = find_domaintype(ctx->linestructurename->getText());
+   DomainType *s = find_domaintype(ctx->linestructurename->getText(),get_line(ctx->linestructurename));
    if (s != nullptr) {
       // to do !!!
    }
@@ -960,10 +960,10 @@ antlrcpp::Any Ili2Input::visitClassType(parser::Ili2Parser::ClassTypeContext *ct
    Class *t;
    
    if (ctx->CLASS() != nullptr) {
-      t = find_class("ANYCLASS"); // restriction, to do !!!
+      t = find_class("ANYCLASS",get_line(ctx->CLASS()->getSymbol())); // restriction, to do !!!
    }
    else {
-      t = find_class("ANYSTRUCTURE"); // restriction, to do !!!
+      t = find_class("ANYSTRUCTURE", get_line(ctx->STRUCTURE()->getSymbol())); // restriction, to do !!!
    }
    
    Log.decNestLevel();
