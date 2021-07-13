@@ -60,10 +60,12 @@ static void visitDataUnit(MetaModelTreeVisitor* visitor, DataUnit* t);
 static void debug1(MMObject *o,string classname)
 {
    Log.debug(">>> visit" + classname + "(path=" + get_path(o) + ", line=" + to_string(o->_line) + ")");
+   Log.incNestLevel();
 }
 
 static void debug2(MMObject *o,string classname)
 {
+   Log.decNestLevel();
    Log.debug("<<< visit" + o->getClass() + "(path=" + get_path(o) + ", line=" + to_string(o->_line) + ")");
 }
 
@@ -358,8 +360,6 @@ static void visitPackage(MetaModelTreeVisitor *visitor, Package *t)
       debug2(t,"Package");
    }
    
-   Log.incNestLevel();
-
    for (auto *me : t->Element) {
       if (me->getClass() == "Package") {
          visitPackage(visitor,static_cast<Package *>(me));
@@ -471,8 +471,6 @@ static void visitPackage(MetaModelTreeVisitor *visitor, Package *t)
       }
    }
    
-   Log.decNestLevel();
-
 }
 
 static void visitIli1Format(MetaModelTreeVisitor *visitor, Ili1Format *t)
@@ -614,14 +612,14 @@ static void visitDomainType(MetaModelTreeVisitor *visitor, DomainType *t)
       GenericDef *GenericDef;
    */
 
+   if (visitor->visitDomainTypeOverride()) {
+      debug1(t,"DomainType");
+   }
+
    try {
 
       visitType(visitor,t);
-      if (visitor->visitDomainTypeOverride()) {
-         debug1(t,"DomainType");
-         visitor->visitDomainType(t);
-         debug2(t,"DomainType");
-      }
+      visitor->visitDomainType(t);
 
       for (auto v : t->ForDataUnit) {
          visitDataUnit(visitor, v);
@@ -630,10 +628,14 @@ static void visitDomainType(MetaModelTreeVisitor *visitor, DomainType *t)
       for (auto v : t->Constraint) {
          visitConstraint(visitor, v);
       }
-
+      
    }
    catch (string e){
       accept_exception(e,"ignoreVisit");
+   }
+
+   if (visitor->visitDomainTypeOverride()) {
+      debug2(t,"DomainType");
    }
 
 }
@@ -1255,16 +1257,16 @@ static void visitNumType(MetaModelTreeVisitor *visitor, NumType *t)
       Unit *Unit;
    */
 
-   try {
-      visitDomainType(visitor,t);
-      if (visitor->visitNumTypeOverride()) {
-         debug1(t,"NumType");
+   visitDomainType(visitor,t);
+   if (visitor->visitNumTypeOverride()) {
+      debug1(t,"NumType");
+      try {
          visitor->visitNumType(t);
-         debug2(t,"NumType");
       }
-   }
-   catch (string e){
-      accept_exception(e,"ignoreVisit");
+      catch (string e){
+         accept_exception(e,"ignoreVisit"); // for NumType, why??, to do !!!
+      }
+      debug2(t,"NumType");
    }
 
 }
@@ -2135,7 +2137,12 @@ static void preVisitModel(MetaModelTreeVisitor *visitor,Model *m)
 {
    if (visitor->preVisitModelOverride()) {
       Log.debug(">>> preVisitModel(" + get_path(m) + ")");
-      visitor->preVisitModel(m);
+      try {
+         visitor->preVisitModel(m);
+      }
+      catch (string e){
+         accept_exception(e,"ignoreVisit");
+      }
       Log.debug("<<< preVisitModel(" + get_path(m) + ")");
    }
 }
@@ -2144,7 +2151,12 @@ static void postVisitModel(MetaModelTreeVisitor *visitor,Model *m)
 {
    if (visitor->postVisitModelOverride()) {
       Log.debug(">>> postVisitModel(" + get_path(m) + ")");
-      visitor->postVisitModel(m);
+      try {
+         visitor->postVisitModel(m);
+      }
+      catch (string e){
+         accept_exception(e,"ignoreVisit");
+      }
       Log.debug("<<< postVisitModel(" + get_path(m) + ")");
    }
 }
@@ -2169,44 +2181,30 @@ static void visitModel(MetaModelTreeVisitor *visitor, Model *m)
       Ili1Format *ili1Format;
    */
 
-   try {
-      preVisitModel(visitor,m);
-   }
-   catch (string e){
-      accept_exception(e,"ignoreVisit");
-   }
+   preVisitModel(visitor,m);
 
+   if (visitor->visitModelOverride()) {
+      debug1(m,"Model");
+   }
+   
    try {
-      
-      if (visitor->visitModelOverride()) {
-         debug1(m,"Model");
-         visitor->visitModel(m);
-         debug2(m,"Model");
-      }
-      
+      visitor->visitModel(m);
       visitPackage(visitor,m);
-      
-      Log.incNestLevel();
-      
       for (auto i : get_all_imports()) {
          if (i->ImportingP->Name == m->Name) {
             visitImport(visitor,i);
          }
-      }
-      
-      Log.decNestLevel();
-
-   }
-   catch (string e) {
-      accept_exception(e, "ignoreVisit");
-   }
-
-   try {
-      postVisitModel(visitor,m);
+      }      
    }
    catch (string e){
       accept_exception(e, "ignoreVisit");
    }
+   
+   if (visitor->visitModelOverride()) {
+      debug2(m,"Model");
+   }
+
+   postVisitModel(visitor,m);
 
 }
 
@@ -2214,7 +2212,12 @@ static void preVisit(MetaModelTreeVisitor *visitor)
 {
    if (visitor->preVisitOverride()) {
       Log.debug(">>> preVisit()");
-      visitor->preVisit();
+      try {
+         visitor->preVisit();
+      }
+      catch (string e){
+         accept_exception(e,"ignoreVisit");
+      }
       Log.debug("<<< preVisit()");
    }
 }
@@ -2223,7 +2226,12 @@ static void postVisit(MetaModelTreeVisitor *visitor)
 {
    if (visitor->postVisitOverride()) {
       Log.debug(">>> postVisit()");
-      visitor->postVisit();
+      try {
+         visitor->postVisit();
+      }
+      catch (string e){
+         accept_exception(e, "ignoreVisit");
+      }
       Log.debug("<<< postVisit()");
    }
 }

@@ -207,9 +207,7 @@ antlrcpp::Any Ili2Input::visitTextType(parser::Ili2Parser::TextTypeContext *ctx)
    init_domaintype(t,ctx->start->getLine());
 
    // MetaElement
-   // t->Name = "TEXT";
-   t->ElementInPackage = get_package_context();
-   get_package_context()->Element.push_back(t);
+   t->Name = "TEXT";
 
    // TextType
    if (ctx->MTEXT() != nullptr) {
@@ -260,8 +258,6 @@ antlrcpp::Any Ili2Input::visitEnumerationType(parser::Ili2Parser::EnumerationTyp
 
    // MetaElement
    t->Name = "TOP";
-   t->ElementInPackage = get_package_context();
-   get_package_context()->Element.push_back(t);
    
    // EnumType
    if (ctx->ORDERED() != nullptr) {
@@ -346,8 +342,6 @@ antlrcpp::Any Ili2Input::visitEnumTreeValueType(parser::Ili2Parser::EnumTreeValu
    init_domaintype(t,ctx->start->getLine());
 
    // ASSOCIATION PackageElements
-   t->ElementInPackage = get_package_context();
-   get_package_context()->Element.push_back(t);
 
    Log.incNestLevel();
    debug(ctx,"<<< visitEnumTreeValueType()");
@@ -425,8 +419,6 @@ antlrcpp::Any Ili2Input::visitNumericType(parser::Ili2Parser::NumericTypeContext
    
    // MetaElement
    t->Name = "TYPE"; // not set here
-   t->ElementInPackage = get_package_context();
-   get_package_context()->Element.push_back(t);
 
    // NumType
    if (ctx->NUMERIC() == nullptr) {
@@ -498,9 +490,6 @@ antlrcpp::Any Ili2Input::visitFormattedType(parser::Ili2Parser::FormattedTypeCon
    t->Name = "TYPE";
 
    // ASSOCIATION PackageElements
-   t->ElementInPackage = get_package_context();
-   get_package_context()->Element.push_back(t);
-   
    t->Format = ctx->typeref->getText();
    if (ctx->min != nullptr) {
       t->Min = visitString(ctx->min);
@@ -536,9 +525,6 @@ antlrcpp::Any Ili2Input::visitCoordinateType(parser::Ili2Parser::CoordinateTypeC
    init_domaintype(t,ctx->start->getLine());
 
    // ASSOCIATION PackageElements
-   t->ElementInPackage = get_package_context();
-   get_package_context()->Element.push_back(t);
-
    if (ctx->rotationDef() != nullptr) {
       /* rotationDef
       : ROTATION nullaxis=POSNUMBER RARROW pihalfaxis=POSNUMBER
@@ -893,8 +879,6 @@ antlrcpp::Any Ili2Input::visitOIDType(parser::Ili2Parser::OIDTypeContext* ctx)
    if (ctx->ANY() != nullptr) {
       t = new AnyOIDType();
       init_domaintype(t, ctx->ANY()->getSymbol()->getLine());
-      t->ElementInPackage = get_package_context();
-      get_package_context()->Element.push_back(t);
    }
    else if (ctx->numericType() != nullptr) {
       NumType* nt = visitNumericType(ctx->numericType());
@@ -928,8 +912,6 @@ antlrcpp::Any Ili2Input::visitBlackboxType(parser::Ili2Parser::BlackboxTypeConte
 
    // MetaElement
    t->Name = "BLACKBOX";
-   t->ElementInPackage = get_package_context();
-   get_package_context()->Element.push_back(t);
 
    // BlackboxType
    if (ctx->XML() != nullptr) {

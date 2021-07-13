@@ -193,8 +193,6 @@ antlrcpp::Any Ili2Input::visitTopicDef(Ili2Parser::TopicDefContext *ctx)
       
    // MetaElement Attributes
    s->Name = name1;
-   s->ElementInPackage = get_package_context();
-   get_package_context()->Element.push_back(s);
 
    d->Name = "BASKET";
    d->ElementInPackage = s;

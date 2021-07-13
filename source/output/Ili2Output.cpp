@@ -34,6 +34,23 @@ namespace output {
    static Model *act_model = nullptr;
 }
 
+static void write_type(TextWriter *ili2,Type *t);
+
+string multiplicity_to_string(Multiplicity m)
+{
+   string multiplicity = "{";
+   if (m.Min == m.Max) {
+      multiplicity = to_string(m.Min);
+   }
+   else if (m.Max == -1) {
+      multiplicity = to_string(m.Min) + "..*";
+   }
+   else {
+      multiplicity = to_string(m.Min) + ".." + to_string(m.Max);
+   }
+   return multiplicity + "}";
+}
+
 static void write_texttype(TextWriter *ili2,TextType *t) 
 {
    ili2->write(0, "TEXT*" + to_string(t->MaxLength));
@@ -160,6 +177,35 @@ static void write_referencetype(TextWriter *ili2,ReferenceType *t)
 
 }
 
+static void write_multivalue(TextWriter *ili2,MultiValue *t) 
+{
+
+   /* class TypeRelatedType : public DomainType { // ABSTRACT
+   public:
+      // Role from ASSOCIATION BaseType
+      Type *BaseType = nullptr;
+   */
+
+   /* class MultiValue : public TypeRelatedType {
+   public:
+      bool Ordered = false;
+      Multiplicity Multiplicity;
+      list<Type *> TypeRestriction;
+   */
+
+   if (t->Ordered) {
+      ili2->write(0,"LIST ");
+   }
+   else {
+      ili2->write(0,"BAG ");
+   }
+
+   ili2->write(0,multiplicity_to_string(t->Multiplicity));
+   ili2->write(0," OF ???");
+//   write_type(ili2,t->TypeRestriction.front()); // multiple type restrictions, to do !!!
+
+}
+
 static void write_type(TextWriter *ili2,Type *t) 
 {
    try {
@@ -183,6 +229,9 @@ static void write_type(TextWriter *ili2,Type *t)
       }
       else if (t->getClass() == "ReferenceType") {
          write_referencetype(ili2,static_cast<ReferenceType *>(t));
+      }
+      else if (t->getClass() == "MultiValue") {
+         write_multivalue(ili2,static_cast<MultiValue *>(t));
       }
       else {
          Log.internal_error("write_class(): <" + t->getClass() + "> not implemented yet",1);
@@ -629,17 +678,6 @@ void Ili2Output::visitRole(Role *r)
       strongness = "<#>--";
    }
    
-   string multiplicity;
-   if (r->Multiplicity.Min == r->Multiplicity.Max) {
-      multiplicity = to_string(r->Multiplicity.Min);
-   }
-   else if (r->Multiplicity.Max == -1) {
-      multiplicity = to_string(r->Multiplicity.Min) + "..*";
-   }
-   else {
-      multiplicity = to_string(r->Multiplicity.Min) + ".." + to_string(r->Multiplicity.Max);
-   }
-   
    string target = "???";
    for (auto b : get_all_baseclasses()) {
       if (b->CRT != r) {
@@ -648,7 +686,7 @@ void Ili2Output::visitRole(Role *r)
       target = get_path(b->BaseClass);
    }
 
-   ili2.writeln(r->Name + " " + strongness + " {" + multiplicity + "} " + target + ";");
+   ili2.writeln(r->Name + " " + strongness + " " + multiplicity_to_string(r->Multiplicity) + " " + target + ";");
 
 }
 

@@ -20,6 +20,10 @@ int count_metaelement(list <MetaElement*> l, string class_name)
 void write_expression(TextWriter *tw,Expression *e)
 {
 
+   if (e == nullptr) {
+      return; // shound not be null (ie. functions), to do !!!
+   }
+
    Log.debug(">>> write_expression " + e->getClass());
    Log.incNestLevel();
 

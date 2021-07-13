@@ -59,6 +59,7 @@ namespace metamodel {
    Class* find_class(Package *p,string name,int line);
    Class* find_structure(string name,int line );
    Class* find_structure(Package *p,string name,int line);
+   View* find_view(string name, int line);
    Class* find_association(string name,int line);
    Class* find_association(Package *p,string name,int line);
    AttrOrParam* find_attribute(Class *c,string name,int line);
@@ -80,5 +81,6 @@ namespace metamodel {
    DomainType* any_to_domaintype(antlrcpp::Any any);
    int get_line(antlr4::ParserRuleContext *ctx);
    int get_line(antlr4::Token *token);
+   int get_line(antlr4::tree::TerminalNode* node);
 
 }

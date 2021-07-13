@@ -60,8 +60,6 @@ antlrcpp::Any Ili2Input::visitFunctionDef(parser::Ili2Parser::FunctionDefContext
 
    // MetaElement attributes
    f->Name = name;
-   f->ElementInPackage = get_package_context();
-   get_package_context()->Element.push_back(f);
    
    // FunctionDef attributes
    if (ctx->EXPLANATION() != nullptr) {
@@ -119,15 +117,15 @@ antlrcpp::Any Ili2Input::visitFunctionCall(parser::Ili2Parser::FunctionCallConte
    */
 
    /* functionCall
-   : functionref=path LPAREN functionCallArgument (COMMA functionCallArgument)* RPAREN
+   : functionname=NAME LPAREN functionCallArgument (COMMA functionCallArgument)* RPAREN
    */
 
-   string functionref = visitPath(ctx->functionref);
-   debug(ctx,"visitFunctionCall(" + functionref + ")");
+   string functionname = ctx->functionname->getText();
+   debug(ctx,"visitFunctionCall(" + functionname + ")");
 
-   FunctionDef *f = find_function(functionref,get_line(ctx));
+   FunctionDef *f = find_function(functionname,get_line(ctx));
    if (f == nullptr) {
-      Log.error("function " + functionref + " unknown");
+      Log.error("function " + functionname + " unknown");
       return nullptr;
    }
 
@@ -231,7 +229,6 @@ antlrcpp::Any Ili2Input::visitArgumentType(parser::Ili2Parser::ArgumentTypeConte
       t = tt;
    }
    
-   //t->ElementInPackage = nullptr;
    //t->LFTParent = dynamic_cast<FunctionDef *>(get_context());
 
    Log.decNestLevel();

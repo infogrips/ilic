@@ -56,14 +56,9 @@ namespace input {
       antlrcpp::Any visitRelation(parser::Ili2Parser::RelationContext *ctx) override;
       antlrcpp::Any visitFactor(parser::Ili2Parser::FactorContext *ctx) override;
       antlrcpp::Any visitViewDef(parser::Ili2Parser::ViewDefContext *ctx) override;
-      antlrcpp::Any visitProjection(parser::Ili2Parser::ProjectionContext *ctx) override;
-      antlrcpp::Any visitJoin(parser::Ili2Parser::JoinContext *ctx) override;
-      antlrcpp::Any visitIliunion(parser::Ili2Parser::IliunionContext *ctx) override;
-      antlrcpp::Any visitAggregation(parser::Ili2Parser::AggregationContext *ctx) override;
-      antlrcpp::Any visitInspection(parser::Ili2Parser::InspectionContext *ctx) override;
       antlrcpp::Any visitRenamedViewableRef(parser::Ili2Parser::RenamedViewableRefContext *ctx) override;
       antlrcpp::Any visitSelection(parser::Ili2Parser::SelectionContext *ctx) override;
-      antlrcpp::Any visitViewAttributes(parser::Ili2Parser::ViewAttributesContext *ctx) override;
+      antlrcpp::Any visitViewAttribute(parser::Ili2Parser::ViewAttributeContext *ctx) override;
       antlrcpp::Any visitConstraintDef(parser::Ili2Parser::ConstraintDefContext *ctx) override;
       antlrcpp::Any visitConstraintsDef(parser::Ili2Parser::ConstraintsDefContext *ctx) override;
       antlrcpp::Any visitMandatoryConstraint(parser::Ili2Parser::MandatoryConstraintContext *ctx) override;

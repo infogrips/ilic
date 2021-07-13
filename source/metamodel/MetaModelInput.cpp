@@ -35,11 +35,10 @@ namespace metamodel {
       // ROLE from ASSOCIATION MetaAttributes
       // list <MetaAttribute *> MetaAttribute;
       init_mmobject(e, line);
-      /* to do !!!
       e->ElementInPackage = get_package_context();
       if (e->ElementInPackage != nullptr) {
          e->ElementInPackage->Element.push_back(e);
-      } */
+      }
    }
 
    void init_extendableme(ExtendableME* e, int line)
@@ -132,7 +131,7 @@ namespace metamodel {
          return;
       }
       for (Unit* uu : AllUnits) {
-         if (uu->Name == u->Name) {
+         if (get_path(uu) == get_path(u)) {
             Log.error("multiple declaration of unit " + u->Name, u->_line);
             return;
          }
@@ -142,11 +141,13 @@ namespace metamodel {
 
    Unit* find_unit(string name, int line)
    {
+//Log.message(">>> search for unit " + name);
       for (Unit* u : AllUnits) {
-         if (u->Name == name) {
+//Log.message("<<< " + get_path(u));
+         if (get_path(u) == name) {
             return u;
          }
-         else if (get_path(u) == name) {
+         else if (u->Name == name) {
             return u;
          }
          else if (u->_unitname == name) {
@@ -373,6 +374,15 @@ namespace metamodel {
       }
       Log.error("association " + name + " not found", line);
       return nullptr;
+   }
+
+   View* find_view(string name, int line)
+   {
+      Class *v = find_class_object(name, Class::ViewVal, line);
+      if (v == nullptr) {
+         Log.error("view " + name + " not found", line);
+      }
+      return static_cast<View *>(v);
    }
 
    AttrOrParam* find_attribute(Class* c, string name,int line)
@@ -648,6 +658,11 @@ namespace metamodel {
    int get_line(antlr4::Token *token)
    {
       return token->getLine();
+   }
+   
+   int get_line(antlr4::tree::TerminalNode* node)
+   {
+      return node->getSymbol()->getLine();
    }
 
 }

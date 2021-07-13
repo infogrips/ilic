@@ -83,8 +83,6 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
 
    // MetaElement Attributes
    c->Name = name1;
-   c->ElementInPackage = get_package_context();
-   get_package_context()->Element.push_back(c);
 
    // ExtendableME Attributes
    map<string,bool> properties = get_properties(ctx->properties(),vector<string>({ABSTRACT,EXTENDED,FINAL,OID}));
@@ -117,7 +115,7 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
    if (properties[OID]) {
       // to do !!!
    }
-
+   
    if (ctx->associationRef() != nullptr) {
       c->Super = find_association(ctx->associationRef()->getText(),get_line(ctx->associationRef()));
       if (c->Super != nullptr) {
@@ -126,6 +124,7 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
    }
    
    if (ctx->DERIVED() != nullptr) {
+      // from view
       // to do !!!
    }
 
@@ -136,8 +135,8 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
    // metamodel::AttrOrParam *LTParent;
 
    if (ctx->assocoid != nullptr) {
-      c->Oid = find_domaintype(ctx->assocoid->getText(),get_line(ctx->assocoid));
-      // DomainType *Oid; // RESTRICTION(TextType; NumType; AnyOIDType), to do !!!
+      DomainType *t = find_domaintype(ctx->assocoid->getText(),get_line(ctx->assocoid));
+      c->Oid = t;
    }
 
    // role from ASSOCIATION DerivedAssoc
@@ -163,7 +162,8 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
    }
 
    for (auto cctx : ctx->constraintDef()) {
-      // to do !!!
+      Constraint *cc = visitConstraintDef(cctx);
+      c->Constraints.push_back(cc);
    }
 
    Log.decNestLevel();

@@ -416,7 +416,7 @@ antlrcpp::Any Ili2Input::visitFactor(parser::Ili2Parser::FactorContext *ctx)
    
    Factor *f = nullptr;
 
-   if (ctx->objectpath != nullptr) {
+   if (ctx->objectOrAttributePath() != nullptr) {
       PathOrInspFactor *pif = visitObjectOrAttributePath(ctx->objectpath);
       f = pif;
    }

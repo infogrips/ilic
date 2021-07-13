@@ -301,7 +301,7 @@ namespace metamodel {
       virtual string getBaseClass() { return "MMObject"; };
    };
 
-   // bag type
+   // bag or list type
 
    class MultiValue : public TypeRelatedType {
       // MetaElement.Name := "Type" because always defined

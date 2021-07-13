@@ -17,49 +17,71 @@ using namespace parser;
 
 namespace util {
 
+   // constructor
+
    IliFile::IliFile(string ilifile)
    {
       this->filepath = ilifile;
    }
 
+   // visitor interface
+
    antlrcpp::Any IliFile::visitIliFile(IliFileParser::IliFileContext *context)
    {
       // root method
-      Log.debug("vistIliFile()");
-      return visitChildren(context);
+      Log.debug(">>> visitIliFile(" + filepath + ")");
+      Log.incNestLevel();
+      antlrcpp::Any result = visitChildren(context);
+      Log.decNestLevel();
+      Log.debug("<<< visitILiFile(" + filepath + ")");
+      return result;
    }
 
    antlrcpp::Any IliFile::visitVersion(IliFileParser::VersionContext *context)
    {
+      Log.debug(">>> visitVersion()");
       if (context->majorversion != nullptr) {
          this->iliversion = context->majorversion->getText() + "." + context->minorversion->getText();
       }
       else {
          this->iliversion = "1.0";
       }
-      Log.debug("visitVersion(" + this->iliversion + ")");
-      return visitChildren(context);
+      antlrcpp::Any result = visitChildren(context);
+      Log.debug("<<< visitVersion(" + this->iliversion + ")");
+      return result;
    }
 
    antlrcpp::Any IliFile::visitModelName(IliFileParser::ModelNameContext *context)
    {
-      Log.debug("visitModelName()");
-      this->models.push_back(context->modelname->getText());
-      return visitChildren(context);
+      Log.debug(">>> visitModelName()");
+      string name = context->modelname->getText();
+      this->models.push_back(name);
+      antlrcpp::Any result = visitChildren(context);
+      Log.debug("<<< visitModelName(" + name + ")");
+      return result;
    }
 
    antlrcpp::Any IliFile::visitTranslationOf(IliFileParser::TranslationOfContext *context)
    {
-      Log.debug("vistTranslationOf()");
-      return visitChildren(context);
+      Log.debug(">>> vistTranslationOf()");
+      Log.incNestLevel();
+      antlrcpp::Any result = visitChildren(context);
+      Log.decNestLevel();
+      Log.debug("<<< vistTranslationOf()");
+      return result;
    }
 
    antlrcpp::Any IliFile::visitModelImport(IliFileParser::ModelImportContext *context)
    {
-      Log.debug("vistModelImport()");
-      this->imports.push_back(context->modelname->getText());
-      return visitChildren(context);
+      Log.debug(">>> vistModelImport()");
+      string modelname = context->modelname->getText();
+      this->imports.push_back(modelname);
+      antlrcpp::Any result = visitChildren(context);
+      Log.debug("<<< vistModelImport(" + modelname + ")");
+      return result;
    }
+   
+   // public interface
 
    string IliFile::getFilePath()
    {
@@ -141,8 +163,9 @@ namespace util {
       stream.open(filepath);
       if (!stream.is_open()) {
          Log.error("unable to open " + filepath);
-         return nullptr;
+         exit(1);
       }
+
       antlr4::ANTLRInputStream input(stream);
       lexer::IliFileLexer lexer(&input);
       lexer.removeErrorListeners();
@@ -157,31 +180,33 @@ namespace util {
       }
 
       // run parser
-      Log.debug("loading " + filepath + " ...");
-      Log.incNestLevel();
       util::IliFile *ilifile = new IliFile(filepath);
       ilifile->visitIliFile(context);
-      Log.decNestLevel();
-      Log.debug(filepath + " loaded.");
 
       return ilifile;
 
    }
 
-   bool loadIliFilesByFile(string filepath)
+   IliFile* loadIliFilesByFile(string filepath)
    {
-      addIliFile(loadIliFile(filepath),false);
-      return true;
+      IliFile *f = loadIliFile(filepath);
+      if (f != nullptr) {
+         addIliFile(f,false);
+         return f;
+      }
+      else {
+         return nullptr;
+      }
    }
 
-   bool loadIliFilesByModel(string modelname)
+   IliFile* loadIliFilesByModel(string modelname)
    {
       
       // model already loaded?
       for (IliFile *ilifile : AllIliFiles) {
          for (string mname : ilifile->getModels()) {
             if (mname == modelname) {
-               return true;
+               return ilifile;
             }
          }
       }
@@ -189,12 +214,12 @@ namespace util {
       if (modelname == "INTERLIS") {
          IliFile *interlis = new IliFile("INTERLIS");
          addIliFile(interlis,true);
-         return true;
+         return interlis;
       }
 
       if (!auto_search) {
          Log.error("model " + modelname + " not found (no_auto).");
-         return false;
+         return nullptr;
       }
 
       ifstream stream;
@@ -236,7 +261,7 @@ namespace util {
                      if (model == modelname) {
 								ff->setAutoSearch(true);
                         addIliFile(ff, true);
-                        return true;
+                        return ff;
                      }
                   }
                }
@@ -245,7 +270,7 @@ namespace util {
       }
       if (!stream.is_open()) {
          Log.error("model " + modelname + " not found in ilidirs.");
-         return false;
+         return nullptr;
       }
 
       // create lexer
@@ -261,10 +286,11 @@ namespace util {
       // execute parser
       util::IliFile *ilifile = new IliFile(filepath);
       ilifile->visitIliFile(context);
+      ilifile->setAutoSearch(true);
 
       addIliFile(ilifile,true);
 
-      return true;
+      return ilifile;
       
    }
 

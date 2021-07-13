@@ -43,7 +43,7 @@ namespace util {
    extern list<IliFile *> AllIliFiles;
    void setAutoSearch(bool auto_search);
    void setIliDirs(string ilidirs);
-   bool loadIliFilesByFile(string filepath);
-   bool loadIliFilesByModel(string modelname);
+   IliFile* loadIliFilesByFile(string filepath);
+   IliFile* loadIliFilesByModel(string modelname);
 
 };

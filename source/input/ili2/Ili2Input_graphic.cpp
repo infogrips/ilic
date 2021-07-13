@@ -11,17 +11,6 @@ using namespace metamodel;
 
 /*
 
-   class Graphic : public ExtendableME {
-      // MetaElement.Name := Name as defined in the INTERLIS-Model
-   public:
-      Expression *Where;
-      // role from ASSOCIATION GraphicBase
-      Class *Base;
-      // role from ASSOCIATION GraphicRule
-      list<DrawingRule *> DrawingRule;
-      virtual string getClass() { return "Graphic"; }
-   };
-
    struct SignParamAssignment : public MMObject {
    public:
       AttrOrParam *Param;
@@ -54,17 +43,28 @@ antlrcpp::Any Ili2Input::visitGraphicDef(parser::Ili2Parser::GraphicDefContext *
 
    /* graphicDef
    : GRAPHIC graphicname1=NAME properties? // ABSTRACT|FINAL
-     (EXTENDS path)?
+     (EXTENDS ((INTERLIS DOT)? SIGN | path))?
      (BASED ON path)? EQUAL
      (selection)*
      (drawingRule)*
      END graphicname2=NAME SEMI
    */
 
+   /* class Graphic : public ExtendableME {
+      // MetaElement.Name := Name as defined in the INTERLIS-Model
+   public:
+      Expression *Where;
+      // role from ASSOCIATION GraphicBase
+      Class *Base;
+      // role from ASSOCIATION GraphicRule
+      list<DrawingRule *> DrawingRule;
+      virtual string getClass() { return "Graphic"; }
+   */
+
    string name1 = ctx->graphicname1->getText();
    string name2 = ctx->graphicname2->getText();
    
-   debug(ctx,"visitGrahicDef(" + name1 + ")");
+   debug(ctx,">>> visitGrahicDef(" + name1 + ")");
    
    if (name1 != name2) {
       Log.warning(name2 + " does not match " + name1,ctx->graphicname2->getLine());
@@ -91,11 +91,35 @@ antlrcpp::Any Ili2Input::visitGraphicDef(parser::Ili2Parser::GraphicDefContext *
    }
    
    for (auto s : ctx->selection()) {
-      // to do !!!
+      if (g->Where == nullptr) {
+         g->Where = visitSelection(s);
+      }
+      else {
+
+         /* struct CompoundExpr : public Expression {
+         public:
+            CompoundExpr_OperationType Operation = Relation_Equal;
+            list <Expression *> SubExpressions; // LIST
+         */
+
+         if (g->Where->getClass() != "CompoundExpression") {
+            CompoundExpr *e = new CompoundExpr();
+            e->Operation = CompoundExpr_OperationType::And;
+            e->SubExpressions.push_back(g->Where);
+            Expression* ee = visitSelection(s);
+            e->SubExpressions.push_back(ee);
+         }
+         else {
+            CompoundExpr *e = static_cast<CompoundExpr *>(g->Where);
+            Expression* ee = visitSelection(s);
+            e->SubExpressions.push_back(ee);
+         }
+         
+      }
    }
    
    for (auto r : ctx->drawingRule()) {
-      // to do !!!
+      g->DrawingRule.push_back(visitDrawingRule(r));
    }
    
    return g;
@@ -113,8 +137,15 @@ antlrcpp::Any Ili2Input::visitDrawingRule(parser::Ili2Parser::DrawingRuleContext
    
    string name = ctx->drawingrulename->getText();
    
-   debug(ctx,"visitDrawingRule(" + name + ")");
-   return nullptr;
+   debug(ctx,">>> visitDrawingRule(" + name + ")");
+   Log.incNestLevel();
+
+   DrawingRule *r = new DrawingRule();
+   // to do !!!
+
+   Log.decNestLevel();
+   debug(ctx,"<<< visitDrawingRule(" + name + ")");
+   return r;
 
 }
              

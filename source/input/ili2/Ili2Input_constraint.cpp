@@ -87,7 +87,7 @@ antlrcpp::Any Ili2Input::visitMandatoryConstraint(parser::Ili2Parser::MandatoryC
    Log.incNestLevel();
    
    SimpleConstraint *c = new SimpleConstraint();
-   init_constraint(c,ctx->start->getLine());
+   init_constraint(c,get_line(ctx));
    c->Kind = SimpleConstraint::MandC;
    c->LogicalExpression = visitExpression(ctx->expression());
    if (!is_boolean_expression(c->LogicalExpression)) {
@@ -120,17 +120,20 @@ antlrcpp::Any Ili2Input::visitPlausibilityConstraint(parser::Ili2Parser::Plausib
    debug(ctx,"visitPlausibilityConstraint()");
 
    SimpleConstraint *c = new SimpleConstraint();
-   init_constraint(c,ctx->start->getLine());
+   init_constraint(c,get_line(ctx));
    c->Kind = SimpleConstraint::MandC;
    c->LogicalExpression = visitExpression(ctx->expression());
+   if (!is_boolean_expression(c->LogicalExpression)) {
+      Log.error("expression must return a boolean value", ctx->expression()->start->getLine());
+   }
    if (ctx->LESSEQUAL() != nullptr) {
       c->_percentage_operation = SimpleConstraint::LessEqual;
    }
    else if (ctx->GREATEREQUAL() != nullptr) {
       c->_percentage_operation = SimpleConstraint::GreaterEqual;
    }
-   if (!is_boolean_expression(c->LogicalExpression)) {
-      Log.error("expression must return a boolean value", ctx->expression()->start->getLine());
+   if (ctx->percentage != nullptr) {
+      c->Percentage = stod(ctx->percentage->getText());
    }
       
    return c;
@@ -168,7 +171,7 @@ antlrcpp::Any Ili2Input::visitExistenceConstraint(parser::Ili2Parser::ExistenceC
    Log.incNestLevel();
 
    ExistenceConstraint *c = new ExistenceConstraint();
-   init_constraint(c,ctx->start->getLine());
+   init_constraint(c,get_line(ctx));
 
    /* to do !!!
    c->Attr = visitAttributePath(ctx->attributePath());
@@ -191,18 +194,6 @@ antlrcpp::Any Ili2Input::visitUniquenessConstraint(parser::Ili2Parser::Uniquenes
    : UNIQUE 
      (WHERE expression COLON)?
      (globalUniqueness | localUniqueness) SEMI
-
-   globalUniqueness
-   : uniqueEl
-   ;
-
-   uniqueEl
-   : objectOrAttributePath (COMMA objectOrAttributePath)*
-
-   localUniqueness
-   : LPAREN LOCAL RPAREN structureattributename=NAME
-     (RARROW structureattributename=NAME)* COLON
-     attributename=NAME (COMMA attributename=NAME)*
    */
 
    /* class UniqueConstraint : public Constraint { // 2.4 struct -> class
@@ -215,7 +206,7 @@ antlrcpp::Any Ili2Input::visitUniquenessConstraint(parser::Ili2Parser::Uniquenes
    debug(ctx,"visitUniquenessConstraint()");
    
    UniqueConstraint *c = new UniqueConstraint();
-   init_constraint(c,ctx->start->getLine());
+   init_constraint(c,get_line(ctx));
    
    if (ctx->WHERE() != nullptr) {
       //c->Where = visitExpression(ctx->expression());
@@ -244,8 +235,27 @@ antlrcpp::Any Ili2Input::visitGlobalUniqueness(parser::Ili2Parser::GlobalUniquen
    : uniqueEl
    */
 
-   debug(ctx,"visitGlobalUniqueness()");
-   return visitUniqueEl(ctx->uniqueEl());
+   /* uniqueEl
+   : objectOrAttributePath (COMMA objectOrAttributePath)*
+   */
+
+   /* struct PathOrInspFactor : public Factor {
+   public:
+      list <PathEl *> PathEls; // LIST
+      View *Inspection = nullptr;
+      string _path = "";
+   */
+
+   debug(ctx,">>> visitGlobalUniqueness()");
+   Log.incNestLevel();
+   
+   list<PathOrInspFactor *> result;
+   // to do !!!
+
+   Log.decNestLevel();
+   debug(ctx,"<<< visitGlobalUniqueness()");
+   
+   return result;
 
 }
 
@@ -255,7 +265,6 @@ antlrcpp::Any Ili2Input::visitUniqueEl(parser::Ili2Parser::UniqueElContext *ctx)
    /* uniqueEl
    : objectOrAttributePath (COMMA objectOrAttributePath)*
    */
-
 
    debug(ctx,"visitUniqueEl()");
    
@@ -283,9 +292,23 @@ antlrcpp::Any Ili2Input::visitLocalUniqueness(parser::Ili2Parser::LocalUniquenes
      attributename=NAME (COMMA attributename=NAME)*
    */
 
-   debug(ctx,"visitLocalUniqueness()");
+   /* struct PathOrInspFactor : public Factor {
+   public:
+      list <PathEl *> PathEls; // LIST
+      View *Inspection = nullptr;
+      string _path = "";
+   */
+
+   debug(ctx,">>> visitLocalUniqueness()");
+   Log.incNestLevel();
+   
+   list<PathOrInspFactor *> result;
    // to do !!!
-   return nullptr;
+
+   Log.decNestLevel();
+   debug(ctx,"<<< visitLocalUniqueness()");
+   
+   return result;
 
 }
 
@@ -313,7 +336,9 @@ antlrcpp::Any Ili2Input::visitSetConstraint(parser::Ili2Parser::SetConstraintCon
    debug(ctx,">>> visitSetConstraint()");
    Log.incNestLevel();
    
-   SetConstraint *c = nullptr;
+   SetConstraint *c = new SetConstraint();
+   init_constraint(c,get_line(ctx));
+   // to do !!!
 
    Log.decNestLevel();
    debug(ctx,"<<< visitSetConstraint()");
@@ -331,36 +356,20 @@ antlrcpp::Any Ili2Input::visitConstraintsDef(parser::Ili2Parser::ConstraintsDefC
      END SEMI
    */
 
-   /* class Class : public Type {
-      // MetaElement.Name := StructureName, ClassName,
-      //                     AssociationName, ViewName
-      //                     as defined in the INTERLIS-Model
-   public:
-      enum {Structure,ClassVal,ViewVal,Association} Kind;
-      Multiplicity Multiplicity; // for associations only
-      list<Constraint *> Constraints;
-      bool EmbeddedRoleTransfer = false;
-      bool ili1OptionalTable = false;
-      // ...
-      // from from ASSOCIATION ClassConstraint
-      list<Constraint *> Constraint;
-   */
-
-   debug(ctx,">>> visitSetConstraintsDef()");
+   debug(ctx,">>> visitConstraintsDef()");
    Log.incNestLevel();
    
    Class *c = find_class(visit(ctx->path()),get_line(ctx));
    if (c != nullptr) {
-      for (auto cctx : ctx->constraintDef()) {
+      for (auto cctx : ctx->constraintDef()) { // ???, to do !!!
          Constraint *cc = visitConstraintDef(cctx);
          c->Constraint.push_back(cc);
       }
    }
 
    Log.decNestLevel();
-   debug(ctx,"<<< visitSetConstraintsDef()");
+   debug(ctx,"<<< visitConstraintsDef()");
    
    return nullptr;
 
 }
-

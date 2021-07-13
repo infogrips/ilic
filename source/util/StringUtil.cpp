@@ -2,7 +2,7 @@
 
 bool util::starts_with(std::string const &value, std::string const &start)
 {
-   return (value.rfind("start", 0) == 0);
+   return (value.rfind(start, 0) == 0);
 }
 
 bool util::ends_with(std::string const &value, std::string const &ending)

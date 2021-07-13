@@ -11,18 +11,33 @@ antlrcpp::Any Ili2Input::visitPath(parser::Ili2Parser::PathContext * ctx)
 {
 
    /* path
-   : (INTERLIS | NAME) (DOT NAME)*
+   : INTERLIS
+   | (INTERLIS DOT)? SIGN
+   | (INTERLIS DOT)? NAME
+   | NAME (DOT NAME)*
    */
-      
+         
    string path = "";
-   for (auto n : ctx->NAME()) {
-      string name = n->getSymbol()->getText();
-      if (path == "") {
-         path = name;
+   
+   if (ctx->SIGN() != nullptr) {
+      path = "INTERLIS.SIGN";
+   }
+   else {
+
+      if (ctx->INTERLIS() != nullptr) {
+         path = "INTERLIS";
       }
-      else {
-         path += "." + name;
+   
+      for (auto n : ctx->NAME()) {
+         string name = n->getSymbol()->getText();
+         if (path == "") {
+            path = name;
+         }
+         else {
+            path += "." + name;
+         }
       }
+      
    }
 
    debug(ctx,"visitPath(" + path + ")");

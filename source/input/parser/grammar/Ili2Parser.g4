@@ -21,7 +21,10 @@ decimal
    ;
    
 path
-   : (INTERLIS | NAME) (DOT NAME)*
+   : INTERLIS
+   | (INTERLIS DOT)? SIGN
+   | (INTERLIS DOT)? NAME
+   | NAME (DOT NAME)*
    ;
    
 interlis2Def
@@ -382,7 +385,7 @@ derivedUnit
    ;
 
 composedUnit
-   : LPAREN unitref=expression RPAREN
+   : LPAREN path ((STAR | SLASH) path)*  RPAREN
    ;
 
 metaDataBasketDef
@@ -550,7 +553,7 @@ attributeRef
    ;
 
 functionCall
-   : functionref=path LPAREN (functionCallArgument (COMMA functionCallArgument)*)? RPAREN // 2.4 function argument optional
+   : functionname=NAME LPAREN (functionCallArgument (COMMA functionCallArgument)*)? RPAREN // 2.4 function argument optional
    ;
 
 functionCallArgument
@@ -584,8 +587,9 @@ viewDef
      (baseExtensionDef)*
      (selection)*
      EQUAL
-     viewAttributes?
-     (constraintDef)*
+     ATTRIBUTE?
+     viewAttribute*
+     constraintDef*
      END viewname2=NAME SEMI
    ;
 
@@ -613,9 +617,8 @@ aggregation
    ;
 
 inspection
-   : AREA INSPECTION OF renamedViewableRef
-     RARROW structureorlineattributename=NAME
-     (RARROW structureorlineattributename=NAME)*
+   : AREA? INSPECTION OF renamedViewableRef
+     (RARROW structureorlineattributename=NAME)+
    ;
 
 renamedViewableRef
@@ -631,19 +634,18 @@ selection
    : WHERE expression SEMI
    ;
 
-viewAttributes
-   : ATTRIBUTE?
-     (ALL OF basename=NAME SEMI
-      | attributeDef
-      | attributename=NAME properties? // ABSTRACT|EXTENDED|FINAL|TRANSIENT
+viewAttribute
+   : ALL OF basename=NAME SEMI
+   | attributeDef
+   | attributename=NAME properties? // ABSTRACT|EXTENDED|FINAL|TRANSIENT
         COLONEQUAL factor SEMI 
-     )*
    ;
 
 graphicDef
    : GRAPHIC graphicname1=NAME properties? // ABSTRACT|FINAL
-     (EXTENDS path)?
-     (BASED ON path)? EQUAL
+     (EXTENDS ((INTERLIS DOT)? SIGN))?
+     (BASED ON path)? 
+     EQUAL
      (selection)*
      (drawingRule)*
      END graphicname2=NAME SEMI
@@ -665,8 +667,7 @@ signParamAssignment
      COLONEQUAL ( 
        LCURLY metaObjectRef RCURLY
        | factor
-       | ACCORDING enumpath=attributePath
-         LPAREN enumAssignment (COMMA enumAssignment)* RPAREN
+       | ACCORDING enumpath=attributePath LPAREN enumAssignment (COMMA enumAssignment)* RPAREN
      )
    ;
 

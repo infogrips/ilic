@@ -47,8 +47,6 @@ antlrcpp::Any Ili2Input::visitUnitDef(parser::Ili2Parser::UnitDefContext *ctx)
       u->Name = name;
    }
    add_unit(u);
-   u->ElementInPackage = get_package_context();
-   get_package_context()->Element.push_back(u);
 
    // ExtendableME Attributes
    if (ctx->ABSTRACT() != nullptr) {
@@ -71,7 +69,8 @@ antlrcpp::Any Ili2Input::visitUnitDef(parser::Ili2Parser::UnitDefContext *ctx)
    }
    else if (ctx->composedUnit() != nullptr) {
       u->Kind = Unit::ComposedU;
-      u->Definition = visitComposedUnit(ctx->composedUnit());
+      Expression *e = visitComposedUnit(ctx->composedUnit());
+      u->Definition = e;
    }
    
    Log.decNestLevel();
@@ -88,10 +87,9 @@ antlrcpp::Any Ili2Input::visitDerivedUnit(parser::Ili2Parser::DerivedUnitContext
      LBRACE unitref=path RBRACE
    */
 
-   /* struct Constant : public Factor {
+   /* struct Expression : public MMObject { // ABSTRACT
    public:
-      string Value;
-      enum {Undefined, Numeric, Text, Enumeration} Kind;
+      string _type;
    */
 
    debug(ctx,">>> visitDerivedUnit()");
@@ -162,28 +160,24 @@ antlrcpp::Any Ili2Input::visitComposedUnit(parser::Ili2Parser::ComposedUnitConte
 {
 
    /* composedUnit
-   : LPAREN unitref=expression RPAREN
+   : LPAREN path ((STAR | SLASH) path)*  RPAREN
    */
 
-   /* class Unit : public ExtendableME {
-      // MetaElement.Name := ShortName as defined in the INTERLIS-Model
+   /* struct Expression : public MMObject { // ABSTRACT
    public:
-      enum { BaseU, DerivedU, ComposedU } Kind;
-      Expression *Definition = nullptr;
-      // role from ASSOCIATION NumUnit
-      list <NumType *> Num;
-      string _unitshort = "";
+      string _type;
    */
 
    debug(ctx,">>> visitComposedUnit()");
- 
-   Unit *u = new Unit();
-   init_extendableme(u,ctx->start->getLine());
-
-   u->Kind = Unit::ComposedU;
-   u->Definition = visitExpression(ctx->expression());
+   Log.incNestLevel();
    
+   Expression *e = new Expression();
+   init_mmobject(e,get_line(ctx));
+      
+   Log.decNestLevel();
    debug(ctx,"<<< visitComposedUnit()");
-   return u;
+
+   return e; // do to !!!
    
 }
+

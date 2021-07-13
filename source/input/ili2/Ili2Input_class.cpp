@@ -68,8 +68,8 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
    }
 
    string name2 = ctx->classname2->getText();
-   if (util::starts_with(name1,"ILIC_")) {
-      name1 = name1.substr(5);
+   if (util::starts_with(name2,"ILIC_")) {
+      name2 = name2.substr(5);
    }
 
    if (name1 != name2) {
@@ -79,7 +79,7 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
       );
    }
 
-   debug(ctx,"visitClassDef(" + name1 + ")");
+   debug(ctx,">>> visitClassDef(" + name1 + ")");
    Log.incNestLevel();
 
    // init Class
@@ -88,8 +88,6 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
 
    // MetaElement Attributes
    c->Name = name1;
-   c->ElementInPackage = get_package_context();
-   get_package_context()->Element.push_back(c);
 
    // ExtendableME Attributes
    if (ctx->properties() != nullptr) {
@@ -171,7 +169,7 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
 
    for (auto cctx : ctx->classOrStructureDef()->constraintDef()) {
       Constraint *cc = visitConstraintDef(cctx);
-      c->Constraint.push_back(cc);
+      c->Constraints.push_back(cc);
    }
 
    for (auto pctx : ctx->classOrStructureDef()->parameterDef()) {
@@ -180,7 +178,9 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
    }
 
    pop_context();
+
    Log.decNestLevel();
+   debug(ctx,"<<< visitClassDef(" + name1 + ")");
    
    return c;
 
@@ -198,6 +198,10 @@ antlrcpp::Any Ili2Input::visitStructureDef(Ili2Parser::StructureDefContext *ctx)
 
    string name1 = ctx->structurename1->getText();
    string name2 = ctx->structurename2->getText();
+
+   debug(ctx,">>> visitStructureDef(" + name1 + ")");
+   Log.incNestLevel();
+
    if (name1 != name2) {
       Log.error(
          "structurename " + name2 + " must match " + name1,
@@ -205,17 +209,12 @@ antlrcpp::Any Ili2Input::visitStructureDef(Ili2Parser::StructureDefContext *ctx)
       );
    }
 
-   debug(ctx,"visitStructureDef(" + name1 + ")");
-   Log.incNestLevel();
-
    // init Class
    Class *c = new Class();
    init_type(c,ctx->structurename1->getLine());
 
    // MetaElement Attributes
    c->Name = name1;
-   c->ElementInPackage = get_package_context();
-   get_package_context()->Element.push_back(c);
 
    // ExtendableME Attributes
    if (ctx->properties() != nullptr) {
@@ -294,7 +293,9 @@ antlrcpp::Any Ili2Input::visitStructureDef(Ili2Parser::StructureDefContext *ctx)
    }
 
    pop_context();
+
    Log.decNestLevel();
+   debug(ctx,"<<< visitStructureDef(" + name1 + ")");
    
    return c;
 
