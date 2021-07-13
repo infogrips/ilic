@@ -40,13 +40,13 @@ string multiplicity_to_string(Multiplicity m)
 {
    string multiplicity = "{";
    if (m.Min == m.Max) {
-      multiplicity = to_string(m.Min);
+      multiplicity += to_string(m.Min);
    }
    else if (m.Max == -1) {
-      multiplicity = to_string(m.Min) + "..*";
+      multiplicity += to_string(m.Min) + "..*";
    }
    else {
-      multiplicity = to_string(m.Min) + ".." + to_string(m.Max);
+      multiplicity += to_string(m.Min) + ".." + to_string(m.Max);
    }
    return multiplicity + "}";
 }

@@ -31,14 +31,35 @@ namespace metamodel {
 
    void init_metaelement(MetaElement* e, int line)
    {
+
       // list <DocText> Documentation;
       // ROLE from ASSOCIATION MetaAttributes
       // list <MetaAttribute *> MetaAttribute;
+
       init_mmobject(e, line);
-      e->ElementInPackage = get_package_context();
-      if (e->ElementInPackage != nullptr) {
-         e->ElementInPackage->Element.push_back(e);
+      MMObject *ctx = get_context();
+      if (ctx == nullptr) {
+         return;
       }
+
+      string context = ctx->getClass();
+      if (context == "Model" || context == "SubModel") {
+         e->ElementInPackage = static_cast<Package *>(ctx);
+         if (e->ElementInPackage != nullptr) {
+            e->ElementInPackage->Element.push_back(e);
+         }
+      }
+      else if (context == "Class") {
+         // more init ???, to do !!!
+         e->ElementInPackage = nullptr;
+      }
+      else if (context == "FunctionDef") {
+         e->ElementInPackage = nullptr;
+         Type *t = static_cast<Type *>(e);
+         FunctionDef *f = static_cast<FunctionDef *>(ctx);
+         t->LFTParent = f;
+      }
+
    }
 
    void init_extendableme(ExtendableME* e, int line)

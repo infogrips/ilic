@@ -547,6 +547,24 @@ antlrcpp::Any Ili2Input::visitAttrType(parser::Ili2Parser::AttrTypeContext * ctx
    | restrictedRef
    */
 
+   /* class Type : public ExtendableME { // ABSTRACT
+   public:
+      // role from ASSOCIATION LocalType
+      metamodel::AttrOrParam *LTParent = nullptr;
+      // role from ASSOCIATION AttrOrParamType
+      list<AttrOrParam *> AttrOrParam;
+      // role form ASSOCIATION BaseType
+      list<TypeRelatedType *> TRT;
+      // role from ASSOCIATION LocalFType
+      FunctionDef *LFTParent = nullptr;
+      // role from ASSOCIATION ResultType
+      list <FunctionDef *> Function;
+      // role form ASSOCIATION ArgumentType
+      list<Argument *> Argument;
+      Type *_other_type = nullptr; // AttrType by reference, CoordType axis types
+      metamodel::AttrOrParam *_attr = nullptr;
+   */
+
    debug(ctx,">>> visitAttrType()");
    Log.incNestLevel();
 

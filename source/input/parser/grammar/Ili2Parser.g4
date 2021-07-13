@@ -23,6 +23,7 @@ decimal
 path
    : INTERLIS
    | (INTERLIS DOT)? SIGN
+   | (INTERLIS DOT)? REFSYSTEM
    | (INTERLIS DOT)? NAME
    | NAME (DOT NAME)*
    ;
