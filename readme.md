@@ -11,7 +11,7 @@ On foreign libraries contained in folder /lib some license restrictions may appl
 Windows 7 or higher is required to run ilic.
 
 ## Installation
-In order to install ilic, extract the [.zip](https://www.infogrips.ch/download/ilic.zip) file into a directory.
+In order to install ilic, extract the [.zip](https://www.infogrips.ch/products/ilic.zip) file into a directory.
 
 ## Documentation
 
