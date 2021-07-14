@@ -805,7 +805,9 @@ antlrcpp::Any Ili2Input::visitLineForm(parser::Ili2Parser::LineFormContext *ctx)
          lf.push_back(f);
 	   }
 		else {
-			 Log.error("unknown lineform " + lineform,t->start->getLine());
+         LineForm *f = find_lineform(lineform,get_line(t));
+         f->Name = lineform;
+         lf.push_back(f);
 		}
 		// assignment, to do !!!
    }
@@ -852,7 +854,7 @@ antlrcpp::Any Ili2Input::visitLineFormTypeDef(parser::Ili2Parser::LineFormTypeDe
    Log.incNestLevel();
    
    for (auto d : ctx->lineFormTypeDecl()) {
-      visitLineFormTypeDecl(d);
+      add_lineform(visitLineFormTypeDecl(d));
    }
 
    Log.decNestLevel();
@@ -866,26 +868,29 @@ antlrcpp::Any Ili2Input::visitLineFormTypeDecl(parser::Ili2Parser::LineFormTypeD
 {
 
    /* lineFormTypeDecl
-   : lineformtype=NAME COLON linestructurename=NAME SEMI
+   : lineformname=NAME COLON structureref=path SEMI
    */   
    
+   /* class LineForm : public MetaElement {
+      // MetaElement.Name := LineFormName as defined in the INTERLIS-Model
+   public:
+      // role from ASSOCIATION LineFormStructure
+      Class *Structure = nullptr;
+   */
+
    debug(ctx,">>> visitLineFormTypeDecl()");
    Log.incNestLevel();
    
-   DomainType *t = new DomainType();
-   init_mmobject(t,ctx->start->getLine());
+   LineForm *f = new LineForm();
+   init_lineform(f,get_line(ctx));
    
-   t->Name = ctx->lineformtype->getText();
-   
-   DomainType *s = find_domaintype(ctx->linestructurename->getText(),get_line(ctx->linestructurename));
-   if (s != nullptr) {
-      // to do !!!
-   }
+   f->Name = ctx->lineformname->getText();
+   f->Structure = find_structure(visitPath(ctx->path()),get_line(ctx->structureref));
 
    Log.decNestLevel();
    debug(ctx,"<<< visitLineFormTypeDecl()");
    
-   return t;
+   return f;
    
 }
 

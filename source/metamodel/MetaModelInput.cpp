@@ -19,6 +19,7 @@ namespace metamodel {
    static list <Unit*> AllUnits;
    static list <Import*> AllImports;
    static list <FunctionDef*> AllFunctions;
+   static list <LineForm*> AllLineForms;
 
    // mmobject helpers
 
@@ -471,6 +472,47 @@ namespace metamodel {
       }
 
       Log.error("function " + name + " not found.", line);
+      return nullptr;
+
+   }
+
+   // lineform helpers
+
+   void init_lineform(LineForm* f, int line)
+   {
+      init_metaelement(f, line);
+   }
+
+   void add_lineform(LineForm* lineform)
+   {
+      if (lineform == nullptr) {
+         return;
+      }
+      Log.debug("add_lineform " + lineform->Name + "(" + get_path(lineform) + ")");
+      for (LineForm* f : AllLineForms) {
+         if (f->Name == lineform->Name) {
+            // add domain type only once
+            return;
+         }
+      }
+      AllLineForms.push_back(lineform);
+   }
+
+   LineForm* find_lineform(string name, int line)
+   {
+
+      Log.debug("find_lineform " + name);
+
+      for (LineForm* f : AllLineForms) {
+         if (get_path(f) == name) {
+            return f;
+         }
+         else if (get_path(f) == get_parent_path(f) + "." + name) {
+            return f;
+         }
+      }
+
+      Log.error("lineform " + name + " not found.", line);
       return nullptr;
 
    }

@@ -365,7 +365,7 @@ lineFormTypeDef
    ;
    
 lineFormTypeDecl
-   : lineformtype=NAME (COLON linestructurename=NAME)? SEMI
+   : lineformname=NAME COLON structureref=path SEMI
    ;
    
 unitDecl

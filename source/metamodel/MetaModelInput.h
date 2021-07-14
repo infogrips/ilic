@@ -69,6 +69,11 @@ namespace metamodel {
    void add_function(FunctionDef *function);
    FunctionDef* find_function(string name,int line);
 
+   // LineForm helpers
+   void init_lineform(LineForm *f, int line);
+   void add_lineform(LineForm *lineform);
+   LineForm* find_lineform(string name,int line);
+
    // Expression helpers
    void init_expression(Expression *e, int line);
    void init_factor(Factor *f, int line);
