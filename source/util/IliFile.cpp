@@ -126,12 +126,20 @@ namespace util {
    {
       while (true) {
          int pos = dirs.find(";");
+         string dir;
          if (pos > 0) {
-            ilidirs.push_back(dirs.substr(0,pos));
-            dirs = dirs.substr(pos);
+            dir = dirs.substr(0,pos);
+            dirs = dirs.substr(pos+1);
          }
          else {
-            ilidirs.push_back(dirs);
+            dir = dirs;
+         }
+         if (dir != "" && !filesystem::is_directory(dir)) {
+            Log.error("ilidirs: " + dir + " is not a directory");
+            exit(1);
+         }
+         ilidirs.push_back(dir);
+         if (pos < 0) {
             break;
          }
       }

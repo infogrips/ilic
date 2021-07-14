@@ -343,7 +343,7 @@ antlrcpp::Any Ili2Input::visitEnumTreeValueType(parser::Ili2Parser::EnumTreeValu
 
    // ASSOCIATION PackageElements
 
-   Log.incNestLevel();
+   Log.decNestLevel();
    debug(ctx,"<<< visitEnumTreeValueType()");
 
    return t;
@@ -456,8 +456,8 @@ antlrcpp::Any Ili2Input::visitFormattedType(parser::Ili2Parser::FormattedTypeCon
 {
 
    /* formattedType
-   : (FORMAT BASED ON typeref=path formatDef)? (min=STRING DOTDOT max=STRING)?
-	| FORMAT typeref=path min=STRING DOTDOT max=STRING
+   : (FORMAT BASED ON structref=path formatDef)? (min=STRING DOTDOT max=STRING)?
+	| FORMAT formatref=path min=STRING DOTDOT max=STRING
    */
 
    /* class NumType : public DomainType {
@@ -484,14 +484,39 @@ antlrcpp::Any Ili2Input::visitFormattedType(parser::Ili2Parser::FormattedTypeCon
    debug(ctx,">>> visitFormattedType()");
    Log.incNestLevel();
 
-   FormattedType *t = new FormattedType;
-   init_domaintype(t,ctx->start->getLine());
+   FormattedType *t = new FormattedType();
+   init_domaintype(t,get_line(ctx));
 
    t->Name = "TYPE";
 
    // ASSOCIATION PackageElements
-   t->Format = ctx->typeref->getText();
-   if (ctx->min != nullptr) {
+   if (ctx->BASED() != nullptr) {
+      Type *tt = find_type(ctx->structref->getText(),get_line(ctx));
+      if (tt->getClass() == "Class") {
+         t->Struct = static_cast<Class*>(tt);
+      }
+      else {
+         Log.error(ctx->structref->getText() + " must be a structure", get_line(ctx->structref));
+      }
+      t->Format = "a:b:c"; // visitFormatDef(ctx->formatDef()); to do !!!
+      if (ctx->min != nullptr) {
+         t->Min = visitString(ctx->min);
+         t->Max = visitString(ctx->max);
+      }
+   }
+   else if (ctx->FORMAT() != nullptr) {
+      Type *f = find_type(ctx->formatref->getText(),get_line(ctx->formatref));
+      if (f->getClass() == "FormattedType") {
+         delete(t);
+         t = static_cast<FormattedType *>(f->clone());
+         t->Min = visitString(ctx->min);
+         t->Max = visitString(ctx->max);
+      }
+      else {
+         Log.error(ctx->formatref->getText() + " must be a formatted type",get_line(ctx));
+      }
+   }
+   else {
       t->Min = visitString(ctx->min);
       t->Max = visitString(ctx->max);
    }
@@ -980,7 +1005,7 @@ antlrcpp::Any Ili2Input::visitFormatDef(parser::Ili2Parser::FormatDefContext *ct
 
    debug(ctx,">>> visitFormatDef()");
    debug(ctx,"<<< visitFormatDef()");
-   return nullptr;
+   return "a:b:c"; // to do !!!
 
 }
 

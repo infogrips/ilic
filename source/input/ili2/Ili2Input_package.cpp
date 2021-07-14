@@ -39,29 +39,29 @@ antlrcpp::Any Ili2Input::visitModelDef(Ili2Parser::ModelDefContext *ctx)
      END modelname2=NAME DOT
    */
    
-   string modelname1 = ctx->modelname1->getText();
-   if (modelname1 == "ILIC_INTERLIS") {
-      modelname1 = "INTERLIS";
+   string name1 = ctx->modelname1->getText();
+   if (name1 == "ILIC_INTERLIS") {
+      name1 = "INTERLIS";
    }
-   string modelname2 = ctx->modelname2->getText();
-   if (modelname2 == "ILIC_INTERLIS") {
-      modelname2 = "INTERLIS";
+   string name2 = ctx->modelname2->getText();
+   if (name2 == "ILIC_INTERLIS") {
+      name2 = "INTERLIS";
    }
 
-   debug(ctx,">>> visitModelDef(" + ctx->modelname1->getText() + ")");
+   debug(ctx,">>> visitModelDef(" + name1 + ")");
    Log.incNestLevel();
-   if (modelname1 != modelname2) {
+   if (name1 != name2) {
       Log.warning(
-         "modelname " + modelname2 + " must match " + modelname1,
+         "modelname " + name2 + " must match " + name1,
          ctx->modelname2->getLine()
       );
    }
    
    Model *m = new Model();
-   init_package(m,ctx->modelname1->getLine());
+   init_package(m,get_line(ctx));
 
    // Model Attributes
-   m->Name = modelname1;
+   m->Name = name1;
    m->iliVersion = iliversion;
    if (ctx->contracted != nullptr) {
       m->Contracted = true;
@@ -81,7 +81,9 @@ antlrcpp::Any Ili2Input::visitModelDef(Ili2Parser::ModelDefContext *ctx)
    else {
       m->Kind = Model::NormalM;
    }
-   m->Language = ctx->language->getText();
+   if (ctx->language != nullptr) {
+      m->Language = ctx->language->getText();
+   }
    m->At = visitString(ctx->issuerurl);
    m->Version = visitString(ctx->modelversion);
    if (ctx->modelversion_expl != nullptr) { // nullptr test required, because modelversion_expl is optional
@@ -182,7 +184,7 @@ antlrcpp::Any Ili2Input::visitTopicDef(Ili2Parser::TopicDefContext *ctx)
    
    string name1 = ctx->topicname1->getText();
 
-   debug(ctx,"visitTopicDef(" + name1 + ")");
+   debug(ctx,">>> visitTopicDef(" + name1 + ")");
    Log.incNestLevel();
 
    // init topic
@@ -265,6 +267,7 @@ antlrcpp::Any Ili2Input::visitTopicDef(Ili2Parser::TopicDefContext *ctx)
 
    pop_context();
    Log.decNestLevel();
+   debug(ctx,"<<< visitTopicDef(" + name1 + ")");
 
    return nullptr;
 

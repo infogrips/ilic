@@ -181,58 +181,56 @@ static string get_operation_type(int operation,Expression *e1,Expression *e2)
    if (operation == CompoundExpr_OperationType::And) {
       if (e1->_type != "BooleanType") {
          Log.error("and: term is not of boolean type",e1->_line);
-         return "???";
       }
       if (e2->_type != "BooleanType") {
          Log.error("and: term is not of boolean type",e1->_line);
-         return "???";
       }
       return "BooleanType";
    }
    else if (operation == CompoundExpr_OperationType::Or) {
       if (e1->_type != "BooleanType") {
          Log.error("or: term is not of boolean type",e1->_line);
-         return "???";
       }
       if (e2->_type != "BooleanType") {
          Log.error("or: term is not of boolean type",e1->_line);
-         return "???";
       }
       return "BooleanType";
    }
    else if (operation == CompoundExpr_OperationType::Mult) {
       if (e1->_type != "NumericType") {
          Log.error("*: term is not of numeric type",e1->_line);
-         return "???";
       }
       if (e2->_type != "NumericType") {
          Log.error("*: term is not of numeric type",e1->_line);
-         return "???";
       }
       return "NumericType";
    }
    else if (operation == CompoundExpr_OperationType::Div) {
       if (e1->_type != "NumericType") {
          Log.error("/: term is not of numeric type",e1->_line);
-         return "???";
       }
       if (e2->_type != "NumericType") {
          Log.error("/: term is not of numeric type",e1->_line);
-         return "???";
       }
       return "NumericType";
    }
    else if (operation == CompoundExpr_OperationType::Relation_Equal) {
-      if (e1->_type != e2->_type) {
-         Log.error("==: term1 and term2 have not the same type",e1->_line);
-         return "???";
+      if (e1->_type == "???") {
+      }
+      else if (e2->_type == "???") {
+      }
+      else if (e1->_type != e2->_type) {
+         Log.error("==: term1 and term2 have not the same type (" + e1->_type + "<>" + e2->_type + ")",e1->_line);
       }
       return "BooleanType";
    }
    else if (operation == CompoundExpr_OperationType::Relation_NotEqual) {
-      if (e1->_type != e2->_type) {
-         Log.error("!=: term1 and term2 have not the same type",e1->_line);
-         return "???";
+      if (e1->_type == "???") {
+      }
+      else if (e2->_type == "???") {
+      }
+      else if (e1->_type != e2->_type) {
+         Log.error("!=: term1 and term2 have not the same type (" + e1->_type + "<>" + e2->_type + ")",e1->_line);
       }
       return "BooleanType";
    }

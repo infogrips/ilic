@@ -13,7 +13,7 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
 {
 
    /* associationDef
-   : ASSOCIATION associationname1=NAME properties? // ABSTRACT|EXTENDED|FINAL|OID +++
+   : ASSOCIATION (associationname1=NAME)? properties? // ABSTRACT|EXTENDED|FINAL|OID +++
      (EXTENDS associationRef)?
      (DERIVED FROM renamedViewableRef)? +++
      EQUAL
@@ -22,7 +22,7 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
      ATTRIBUTE? (attributeDef)*
      (CARDINALITY EQUAL cardinality SEMI)? +++
      (constraintDef)*
-     END associationname2=NAME SEMI
+     END (associationname2=NAME)? SEMI
    */
 
    /* class Class : public Type {
@@ -67,10 +67,17 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
       list<Constraint *> Constraint;
    */
 
-   string name1 = ctx->associationname1->getText();
-   string name2 = ctx->associationname2->getText();
+   string name1 = "???";
+   if (ctx->associationname1 != nullptr) {
+      name1 = ctx->associationname1->getText();
+   }
    
-   debug(ctx,"visitAssociationDef(" + name1 + ")");
+   string name2 = "???";
+   if (ctx->associationname2 != nullptr) {
+      name2 = ctx->associationname2->getText();
+   }
+   
+   debug(ctx,">>> visitAssociationDef(" + name1 + ")");
    Log.incNestLevel();
    
    if (name1 != name2) {
@@ -79,7 +86,7 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
 
    // init Class
    Class *c = new Class();
-   init_type(c,ctx->associationname1->getLine());
+   init_type(c,get_line(ctx));
 
    // MetaElement Attributes
    c->Name = name1;
@@ -167,6 +174,7 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
    }
 
    Log.decNestLevel();
+   debug(ctx,"<<< visitAssociationDef(" + name1 + ")");
    
    return c;
 
@@ -252,8 +260,15 @@ antlrcpp::Any Ili2Input::visitRoleDef(parser::Ili2Parser::RoleDefContext *ctx)
       r->Multiplicity = visitCardinality(ctx->cardinality());
    }
 
+/* to do !!!
    for (auto rr : ctx->restrictedRef()) {
+      Log.message(">>> gugus");
       RestrictedRef *rrr = visitRestrictedRef(rr);
+      Log.message("<<< gugus1");
+      if (rrr == nullptr) {
+         continue;
+      }
+      Log.message("<<< gugus2");
       for (auto t : rrr->TypeRestriction) {
          if (!t->isSubClassOf("Class")) {
             Log.error(t->getClass() + " must be extension of class",t->_line);
@@ -273,6 +288,7 @@ antlrcpp::Any Ili2Input::visitRoleDef(parser::Ili2Parser::RoleDefContext *ctx)
       };
       add_baseclass(b);
    }
+*/
    
    return r;
    

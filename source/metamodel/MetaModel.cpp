@@ -114,20 +114,31 @@ namespace metamodel {
       
    string get_type_path(Type* t)
    {
+
+      string path;
+
       if (t->Name == "C1" || t->Name == "C2" || t->Name == "C3" ) {
-         return get_path(t->_other_type) + "." + t->Name;
+         path = get_path(t->_other_type) + "." + t->Name;
+      }
+      else if (t->ElementInPackage != nullptr) {
+         // class / structure
+         path = get_path(t->ElementInPackage) + "." + t->Name;
+      }
+      else if (t->LTParent != nullptr) {
+         // class attribute
+         path = get_path(t->LTParent) + "." + t->Name;
       }
       else if (t->LFTParent != nullptr) {
          // function argument
-         return get_path(t->LFTParent) + "." + t->Name + ".TYPE";
-      }
-      else if (t->_attr == nullptr) {
-         return get_parent_path(t) + "." + t->Name;
+         path = get_path(t->LFTParent) + "." + t->Name + ".TYPE";
       }
       else {
          // local attribute type
-         return get_path(t->_attr) + ".TYPE";
+         path = get_path(t->_attr) + ".TYPE";
       }
+
+      return path;
+
    }
       
    string get_path(MMObject* o)

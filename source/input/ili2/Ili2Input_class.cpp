@@ -75,7 +75,7 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
    if (name1 != name2) {
       Log.warning(
          "classname " + name2 + " must match " + name1,
-         ctx->classname2->getLine()
+         get_line(ctx->classname2)
       );
    }
 
@@ -84,7 +84,7 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
 
    // init Class
    Class *c = new Class();
-   init_type(c,ctx->classname1->getLine());
+   init_type(c,get_line(ctx->classname1));
 
    // MetaElement Attributes
    c->Name = name1;

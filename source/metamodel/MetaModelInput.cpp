@@ -50,8 +50,10 @@ namespace metamodel {
          }
       }
       else if (context == "Class") {
-         // more init ???, to do !!!
-         e->ElementInPackage = nullptr;
+         e->ElementInPackage = get_package_context();
+         if (e->ElementInPackage != nullptr) {
+            e->ElementInPackage->Element.push_back(e);
+         }
       }
       else if (context == "FunctionDef") {
          e->ElementInPackage = nullptr;

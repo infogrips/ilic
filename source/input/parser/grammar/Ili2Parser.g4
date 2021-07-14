@@ -152,7 +152,7 @@ restriction
    ;
 
 associationDef
-   : ASSOCIATION associationname1=NAME
+   : ASSOCIATION (associationname1=NAME)?
      properties? // ABSTRACT|EXTENDED|FINAL|OID
      (EXTENDS associationRef)?
      (DERIVED FROM renamedViewableRef)? EQUAL
@@ -161,7 +161,7 @@ associationDef
      ATTRIBUTE? (attributeDef)*
      (CARDINALITY EQUAL cardinality SEMI)?
      (constraintDef)*
-     END associationname2=NAME SEMI
+     END (associationname2=NAME)? SEMI
    ;
 
 associationRef
@@ -279,9 +279,9 @@ numericConst
    ;
 
 formattedType
-   : (FORMAT BASED ON typeref=path formatDef)?
+   : (FORMAT BASED ON structref=path formatDef)?
      (min=STRING DOTDOT max=STRING)?
-	| FORMAT typeref=path min=STRING DOTDOT max=STRING
+	| FORMAT formatref=path min=STRING DOTDOT max=STRING
    ;
 
 formatDef 
