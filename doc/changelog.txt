@@ -1,3 +1,16 @@
+ilic 0.9.3 (2021-07-14)
+-----------------------
+- tested with model VSADSSMINI_2020_LV95
+- tested with model SIA405_LKMap_2015_LV95
+- crash on non existing ilidirs fixed
+- automatic ordering of input files
+
+ilic 0.9.2 (2021-07-07)
+-----------------------
+- crash on non exising ili files fixed
+- problem with INTERLIS in path expressions fixed
+- model search display
+
 ilic 0.9.1 (2021-07-06)
 -----------------------
 - INTERLIS model is imported by default
