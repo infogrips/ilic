@@ -152,7 +152,6 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
    // role from ASSOCIATION DerivedAssoc
    // View *View;
 
-   add_type(c);
    add_class(c);
    push_context(c);
 
@@ -268,7 +267,6 @@ antlrcpp::Any Ili2Input::visitStructureDef(Ili2Parser::StructureDefContext *ctx)
    // role from ASSOCIATION DerivedAssoc
    // View *View;
 
-   add_type(c);
    add_class(c);
    push_context(c);
 

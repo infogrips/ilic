@@ -172,6 +172,8 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
       Constraint *cc = visitConstraintDef(cctx);
       c->Constraints.push_back(cc);
    }
+   
+   pop_context();
 
    Log.decNestLevel();
    debug(ctx,"<<< visitAssociationDef(" + name1 + ")");

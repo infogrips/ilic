@@ -46,9 +46,7 @@ namespace metamodel {
       string context = ctx->getClass();
       if (context == "Model" || context == "SubModel") {
          e->ElementInPackage = static_cast<Package *>(ctx);
-         if (e->ElementInPackage != nullptr) {
-            e->ElementInPackage->Element.push_back(e);
-         }
+         e->ElementInPackage->Element.push_back(e);
       }
       else if (context == "Class") {
          e->ElementInPackage = get_package_context();
@@ -527,11 +525,27 @@ namespace metamodel {
    // context helpers
 
    static list<MetaElement*> context;
+   
+   static string get_context_string()
+   {
+      string cstring = "";
+      for (auto c : context) {
+         cstring += ">>>" + c->getClass() + ":" + c->Name;
+      }
+      return cstring;
+   }
 
    void push_context(MetaElement* m)
    {
-      Log.debug(">>> push_context " + m->getClass() + ":" + m->Name);
       context.push_back(m);
+      Log.debug(">>> push_context " + get_context_string());
+   }
+
+   void pop_context()
+   {
+      MetaElement* m = context.back();
+      Log.debug("<<< pop_context " + get_context_string());
+      context.pop_back();
    }
 
    MetaElement* get_context()
@@ -569,13 +583,6 @@ namespace metamodel {
    Package* get_package_context()
    {
       return dynamic_cast<Package*>(get_context("Package"));
-   }
-
-   void pop_context()
-   {
-      MetaElement* m = context.back();
-      Log.debug("<<< pop_context " + m->getClass() + ":" + m->Name);
-      context.pop_back();
    }
 
    // other helpers
