@@ -80,7 +80,7 @@ antlrcpp::Any Ili2Input::visitExpression(parser::Ili2Parser::ExpressionContext *
    Expression *e = visitOrTerm(ctx->orTerm());
 
    Log.decNestLevel();
-   debug(ctx, "<<< visitExpression()");
+   debug(ctx, "<<< visitExpression(" + e->_type + ")");
    
    return e;
 
@@ -125,10 +125,11 @@ antlrcpp::Any Ili2Input::visitOrTerm(parser::Ili2Parser::OrTermContext *ctx)
       
    if (e->_type != "BooleanType") {
       Log.error("term is not of boolean type", e->_line);
+      e->_type = "BooleanType";
    }
 
    Log.decNestLevel();
-   debug(ctx, "<<< visitOrTerm()");
+   debug(ctx, "<<< visitOrTerm(" + e->_type + ")");
    return e;
    
 }
@@ -161,10 +162,11 @@ antlrcpp::Any Ili2Input::visitAndTerm(parser::Ili2Parser::AndTermContext *ctx)
 
    if (e->_type != "BooleanType") {
       Log.error("term is not of boolean type", e->_line);
+      e->_type = "BooleanType";
    }
 
    Log.decNestLevel();
-   debug(ctx, "<<< visitAndTerm()");
+   debug(ctx, "<<< visitAndTerm(" + e->_type + ")");
    return e;
    
 }
@@ -262,6 +264,7 @@ antlrcpp::Any Ili2Input::visitOtherTerm(parser::Ili2Parser::OtherTermContext *ct
       UnaryExpr *u = new UnaryExpr();
       init_mmobject(u,ctx->start->getLine());
       u->SubExpression = visitTerm(ctx->term1);
+      u->_type = u->SubExpression->_type;
       e = u;
    }
    else {
@@ -288,7 +291,7 @@ antlrcpp::Any Ili2Input::visitOtherTerm(parser::Ili2Parser::OtherTermContext *ct
    }
 
    Log.decNestLevel();
-   debug(ctx, "<<< visitOtherTerm()");
+   debug(ctx, "<<< visitOtherTerm(" + e->_type + ")");
    return e;
    
 }
@@ -307,14 +310,7 @@ antlrcpp::Any Ili2Input::visitTerm(parser::Ili2Parser::TermContext *ctx)
    
    Expression *e = nullptr;;
    
-   if (ctx->factor() != nullptr) {
-      /* struct Factor : public Expression { // ABSTRACT
-      public:
-      */
-      Factor *f = visitFactor(ctx->factor());
-      e = f;
-   }
-   else {
+   if (ctx->NOT() != nullptr || ctx->DEFINED() != nullptr) {
       /* struct UnaryExpr : public Expression {
       public:
          enum {Not, Defined} Operation;
@@ -324,13 +320,22 @@ antlrcpp::Any Ili2Input::visitTerm(parser::Ili2Parser::TermContext *ctx)
       UnaryExpr *u = new UnaryExpr();
       init_mmobject(u,ctx->start->getLine());
       if (ctx->NOT() != nullptr) {
+         debug(ctx,"NOT");
          u->Operation = UnaryExpr::Not;
       }
-      else {
+      else if (ctx->DEFINED() != nullptr) {
+         debug(ctx,"DEFINED");
          u->Operation = UnaryExpr::Defined;
       }
       u->_type = "BooleanType";
       e = u;
+   }
+   else {
+      /* struct Factor : public Expression { // ABSTRACT
+      public:
+      */
+      Factor *f = visitFactor(ctx->factor());
+      e = f;
    }
 
    Log.decNestLevel();

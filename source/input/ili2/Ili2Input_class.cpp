@@ -523,7 +523,9 @@ antlrcpp::Any Ili2Input::visitAttrTypeDef(parser::Ili2Parser::AttrTypeDefContext
       t = m;
    }
    
-   t->_attr = dynamic_cast<AttrOrParam *>(get_context());
+   if (t != nullptr) {
+      t->_attr = dynamic_cast<AttrOrParam *>(get_context());
+   }
 
    Log.decNestLevel();
    if (t != nullptr) {
@@ -568,15 +570,17 @@ antlrcpp::Any Ili2Input::visitAttrType(parser::Ili2Parser::AttrTypeContext * ctx
    debug(ctx,">>> visitAttrType()");
    Log.incNestLevel();
 
-   Type *t;
+   Type *t = nullptr;
 
    if (ctx->type() != nullptr) {
       t = visitType(ctx->type());
    }
    else if (ctx->path() != nullptr) {
       Type *tt = find_type(visitPath(ctx->path()),get_line(ctx));
-      t = static_cast<Type *>(tt->clone());
-      t->Super = tt;
+      if (tt != nullptr) {
+         t = static_cast<Type *>(tt->clone());
+         t->Super = tt;
+      }
    }
    else if (ctx->referenceAttr() != nullptr) {
       ReferenceType *rt = visitReferenceAttr(ctx->referenceAttr());
@@ -586,25 +590,25 @@ antlrcpp::Any Ili2Input::visitAttrType(parser::Ili2Parser::AttrTypeContext * ctx
       RestrictedRef *r =  visitRestrictedRef(ctx->restrictedRef());
       t = r->BaseType;
    }
-   
-   try {
-      if (get_context()->getClass() == "FunctionDef") {
-         t->LFTParent = dynamic_cast<FunctionDef*>(get_context());
-      }
-      else {
-         t->LTParent = dynamic_cast<AttrOrParam*>(get_context());
-      }
-   }
-   catch (exception e) {
-      Log.internal_error("LTParent: " + string(e.what()),1);
-   }
-   t->ElementInPackage = nullptr;
 
-   Log.decNestLevel();
    if (t != nullptr) {
+      try {
+         if (get_context()->getClass() == "FunctionDef") {
+            t->LFTParent = dynamic_cast<FunctionDef*>(get_context());
+         }
+         else {
+            t->LTParent = dynamic_cast<AttrOrParam*>(get_context());
+         }
+      }
+      catch (exception e) {
+         Log.internal_error("LTParent: " + string(e.what()),1);
+      }
+      t->ElementInPackage = nullptr;
+      Log.decNestLevel();
       debug(ctx,"<<< visitAttrType() " + t->Name + ":" + t->getClass());
    }
    else {
+      Log.decNestLevel();
       debug(ctx,"<<< visitAttrType() ???");
    }
 

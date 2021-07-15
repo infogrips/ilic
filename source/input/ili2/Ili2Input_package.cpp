@@ -145,18 +145,6 @@ antlrcpp::Any Ili2Input::visitImporting(parser::Ili2Parser::ImportingContext *ct
 
 }
 
-static void checkTopicDef(Ili2Parser::TopicDefContext *ctx,SubModel *s)
-{
-   string topicname1 = ctx->topicname1->getText();
-   string topicname2 = ctx->topicname2->getText();
-   if (topicname1 != topicname2) {
-      Log.warning(
-         "topicname " + topicname2 + " must match " + topicname1,
-         ctx->topicname2->getLine()
-      );
-   }
-}
-
 antlrcpp::Any Ili2Input::visitTopicDef(Ili2Parser::TopicDefContext *ctx)
 {
 
@@ -182,16 +170,60 @@ antlrcpp::Any Ili2Input::visitTopicDef(Ili2Parser::TopicDefContext *ctx)
      END topicname2=NAME SEMI
    */
    
+   /* class Model : public Package {
+   public:
+      string iliVersion;
+      bool Contracted = false;
+      enum { NormalM, TypeM, RefSystemM, SymbologyM } Kind;
+      string Language = "en";
+      string At = "";
+      string Version = "";
+      string VersionExplanation = "";
+      bool NoIncrementalTransfer = true; // 2.4
+      string CharSetIANAName = ""; // 2.4
+      string xmlns = ""; // 2.4
+      string ili1Transfername = "";
+      Ili1Format *ili1Format = nullptr;
+      string _ilifile = "internal";
+      virtual string getClass() { return "Model"; }
+      virtual string getBaseClass() { return "Package"; };
+   */
+
+   /* class SubModel : public Package {
+      // MetaElement.Name := TopicName as defined in the INTERLIS-Model
+   public:
+   */
+
+   /* class DataUnit : public ExtendableME {
+   public:
+      // Name (EXTENDED): TEXT := "BASKET";
+      bool ViewUnit = false;
+      string DataUnitName;
+      // role from ASSOCIATION MetaDataUnit 
+      list <MetaBasketDef *> MetaBasketDef;
+      // role from ASSOCIATION BasketOID
+      DomainType *Oid = nullptr; // RESTRICTION(TextType; NumType; AnyOIDType);
+   */
+
    string name1 = ctx->topicname1->getText();
+   string name2 = ctx->topicname2->getText();
 
    debug(ctx,">>> visitTopicDef(" + name1 + ")");
    Log.incNestLevel();
 
+   if (name1 != name2) {
+      Log.warning(
+         "topicname " + name2 + " must match " + name1,
+         get_line(ctx->topicname2)
+      );
+   }
+
    // init topic
    SubModel *s = new SubModel();
-   init_package(s,ctx->topicname1->getLine());
+   init_package(s,get_line(ctx->topicname1));
+
    DataUnit *d = new DataUnit();
-   init_extendableme(d,ctx->topicname1->getLine());
+   init_extendableme(d,get_line(ctx->topicname1));
       
    // MetaElement Attributes
    s->Name = name1;
@@ -248,7 +280,6 @@ antlrcpp::Any Ili2Input::visitTopicDef(Ili2Parser::TopicDefContext *ctx)
       }
    }
 
-   checkTopicDef(ctx,s);
    add_dataunit(d);
    add_package(s);
    push_context(s);
