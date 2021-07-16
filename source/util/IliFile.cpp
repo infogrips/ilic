@@ -166,7 +166,11 @@ namespace util {
    static IliFile* loadIliFile(string filepath)
    {
 
-      // create lexer
+      Log.debug(">>> loadIliFile(" + filepath + ")");
+      Log.incNestLevel();
+
+      // open file
+      Log.debug("opening file " + filepath);
       ifstream stream;
       stream.open(filepath);
       if (!stream.is_open()) {
@@ -174,11 +178,14 @@ namespace util {
          exit(1);
       }
 
+      // create lexer
+      Log.debug("creating lexer");
       antlr4::ANTLRInputStream input(stream);
       lexer::IliFileLexer lexer(&input);
       lexer.removeErrorListeners();
 
       // create parser
+      Log.debug("creating lexer");
       antlr4::CommonTokenStream tokens(&lexer);
       parser::IliFileParser parser(&tokens);
       parser::IliFileParser::IliFileContext *context = parser.iliFile();
@@ -188,8 +195,12 @@ namespace util {
       }
 
       // run parser
+      Log.debug("running parser");
       util::IliFile *ilifile = new IliFile(filepath);
       ilifile->visitIliFile(context);
+
+      Log.decNestLevel();
+      Log.debug("<<< loadIliFile(" + filepath + ")");
 
       return ilifile;
 

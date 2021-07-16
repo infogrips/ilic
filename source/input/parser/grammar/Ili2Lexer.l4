@@ -424,6 +424,14 @@ MTEXT
    : 'MTEXT'
    ;
 
+NAME_CONST
+   : 'NAME'
+   ;
+
+URI
+   : 'URI'
+   ;
+
 ALL
    : 'ALL'
    ;

@@ -67,30 +67,47 @@ using namespace metamodel;
 
 */
 
-antlrcpp::Any Ili2Input::visitExpression(parser::Ili2Parser::ExpressionContext *ctx)
+antlrcpp::Any Ili2Input::visitExpression(parser::Ili2Parser::ExpressionContext* ctx)
 {
 
    /* expression
-   : orTerm
+   : term1 ({ili24}? IMPL term1)?
    */
 
-   debug(ctx,">>> visitExpression()");
+   debug(ctx, ">>> visitExpression()");
    Log.incNestLevel();
 
-   Expression *e = visitOrTerm(ctx->orTerm());
+   Expression* e = nullptr;
+   if (ili23) {
+      e = visitTerm1(ctx->term1().front());
+   }
+   else {
+      // 2.4 to do !!!
+   }
 
    Log.decNestLevel();
-   debug(ctx, "<<< visitExpression(" + e->_type + ")");
+   if (e != nullptr) {
+      debug(ctx, "<<< visitExpression(" + e->_type + ")");
+   }
+   else {
+      debug(ctx, "<<< visitExpression(???)");
+   }
    
    return e;
 
 }
 
-antlrcpp::Any Ili2Input::visitOrTerm(parser::Ili2Parser::OrTermContext *ctx)
+antlrcpp::Any Ili2Input::visitTerm1(parser::Ili2Parser::Term1Context *ctx)
 {
 
-   /* orTerm
-   : andTerm (OR andTerm)*
+   /* term1
+   : term2 (operator1 term2)*
+   */
+
+   /* operator1
+   : OR
+   | {ili24}? PLUS
+   | {ili24}? MINUS
    */
 
    /* struct CompoundExpr : public Expression {
@@ -104,69 +121,101 @@ antlrcpp::Any Ili2Input::visitOrTerm(parser::Ili2Parser::OrTermContext *ctx)
       list <Expression*> SubExpressions;
    */
 
-   debug(ctx,">>> visitOrTerm()");
+   debug(ctx,">>> visitTerm1()");
    Log.incNestLevel();
    
    Expression *e = nullptr;
 
-   if (ctx->andTerm().size() == 1) {
-      e = visitAndTerm(ctx->andTerm().front());
+   if (ctx->term2().size() == 1) {
+      e = visitTerm2(ctx->term2().front());
+      if (ili23 && e->_type != "BooleanType") {
+         Log.error("term is not of boolean type", e->_line);
+         e->_type = "BooleanType";
+      }
    }
    else {
-      CompoundExpr *ot = new CompoundExpr();
-      ot->Operation = CompoundExpr_OperationType::Or;
-      ot->_type = "BooleanType";
-      for (auto t : ctx->andTerm()) {
-         Expression *at = visitAndTerm(t);
-         ot->SubExpressions.push_back(at);
+      CompoundExpr *ce = new CompoundExpr();
+      if (ctx->operator1().front()->OR() != nullptr) {
+         ce->Operation = CompoundExpr_OperationType::Or;
+         ce->_type = "BooleanType";
       }
-      e = ot;
+      else if (ctx->operator1().front()->PLUS() != nullptr) {
+         ce->Operation = CompoundExpr_OperationType::Plus;
+         ce->_type = "NumType";
+      }
+      else if (ctx->operator1().front()->MINUS() != nullptr) {
+         ce->Operation = CompoundExpr_OperationType::Minus;
+         ce->_type = "NumType";
+      }
+      for (auto t : ctx->term2()) {
+         Expression *e2 = visitTerm2(t);
+         ce->SubExpressions.push_back(e2);
+      }
+      e = ce;
    }
       
-   if (e->_type != "BooleanType") {
-      Log.error("term is not of boolean type", e->_line);
-      e->_type = "BooleanType";
-   }
-
    Log.decNestLevel();
-   debug(ctx, "<<< visitOrTerm(" + e->_type + ")");
+   debug(ctx, "<<< visitTerm1(" + e->_type + ")");
    return e;
    
 }
 
-antlrcpp::Any Ili2Input::visitAndTerm(parser::Ili2Parser::AndTermContext *ctx)
+antlrcpp::Any Ili2Input::visitTerm2(parser::Ili2Parser::Term2Context *ctx)
 {
 
-   /* andTerm
-   : otherTerm ((AND | {ili24}? STAR | {ili24}? SLASH) otherTerm)*
+   /* term2
+   : term3 (operator2 term3)*
+   */
+   
+   /* operator2
+   : AND
+   | {ili24}? STAR
+   | {ili24}? SLASH
    */
 
-   debug(ctx,">>> visitAndTerm()");
+   debug(ctx,">>> visitTerm2()");
    Log.incNestLevel();
 
    Expression *e = nullptr;
 
-   if (ctx->otherTerm().size() == 1) {
-      e = visitOtherTerm(ctx->otherTerm().front());
+   if (ctx->term3().size() == 1) {
+      e = visitTerm3(ctx->term3().front());
+      if (ili23 && e != nullptr && e->_type != "BooleanType") {
+         Log.error("term is not of boolean type", e->_line);
+         e->_type = "BooleanType";
+      }
    }
    else {
-      CompoundExpr *at = new CompoundExpr();
-      at->Operation = CompoundExpr_OperationType::And;
-      at->_type = "BooleanType";
-      for (auto t : ctx->otherTerm()) {
-         Expression *pt = visitOtherTerm(t);
-         at->SubExpressions.push_back(pt);
+      CompoundExpr *ce = new CompoundExpr();
+      if (ctx->operator2().front()->AND() != nullptr) {
+         ce->Operation = CompoundExpr_OperationType::And;
+         ce->_type = "BooleanType";
       }
-      e = at;
-   }
-
-   if (e->_type != "BooleanType") {
-      Log.error("term is not of boolean type", e->_line);
-      e->_type = "BooleanType";
+      else if (ctx->operator2().front()->STAR() != nullptr) {
+         ce->Operation = CompoundExpr_OperationType::Mult;
+         ce->_type = "NumType";
+      }
+      else if (ctx->operator2().front()->SLASH() != nullptr) {
+         ce->Operation = CompoundExpr_OperationType::Div;
+         ce->_type = "NumType";
+      }
+      for (auto t : ctx->term3()) {
+         Expression *e2 = visitTerm3(t);
+         if (e2 != nullptr) {
+            ce->SubExpressions.push_back(e2);
+         }
+      }
+      e = ce;
    }
 
    Log.decNestLevel();
-   debug(ctx, "<<< visitAndTerm(" + e->_type + ")");
+   if (e != nullptr) {
+      debug(ctx, "<<< visitTerm2(" + e->_type + ")");
+   }
+   else {
+      debug(ctx, "<<< visitTerm2(???)");
+   }
+
    return e;
    
 }
@@ -243,19 +292,19 @@ static string get_operation_type(int operation,Expression *e1,Expression *e2)
 
 }
    
-antlrcpp::Any Ili2Input::visitOtherTerm(parser::Ili2Parser::OtherTermContext *ctx)
+antlrcpp::Any Ili2Input::visitTerm3(parser::Ili2Parser::Term3Context *ctx)
 {
 
-   /* otherTerm
+   /* term3
    : term1=term (relation term2=term)?
    */
 
-   debug(ctx,">>> visitOtherTerm()");
+   debug(ctx,">>> visitTerm3()");
    Log.incNestLevel();
 
    Expression *e = nullptr;
 
-   if (ctx->term2 == nullptr) {
+   if (ctx->t2 == nullptr) {
       /* struct UnaryExpr : public Expression {
       public:
          enum {Not, Defined} Operation;
@@ -263,8 +312,13 @@ antlrcpp::Any Ili2Input::visitOtherTerm(parser::Ili2Parser::OtherTermContext *ct
       */
       UnaryExpr *u = new UnaryExpr();
       init_mmobject(u,ctx->start->getLine());
-      u->SubExpression = visitTerm(ctx->term1);
-      u->_type = u->SubExpression->_type;
+      u->SubExpression = visitTerm(ctx->t1);
+      if (u->SubExpression != nullptr) {
+         u->_type = u->SubExpression->_type;
+      }
+      else {
+         u->_type = "???";
+      }
       e = u;
    }
    else {
@@ -282,16 +336,32 @@ antlrcpp::Any Ili2Input::visitOtherTerm(parser::Ili2Parser::OtherTermContext *ct
       CompoundExpr *c = new CompoundExpr();
       init_mmobject(c,ctx->start->getLine());
       c->Operation = static_cast<CompoundExpr_OperationType>(visitRelation(ctx->relation()));
-      Expression *e1 = visitTerm(ctx->term1);
-      c->SubExpressions.push_back(e1);
-      Expression *e2 = visitTerm(ctx->term2);
-      c->SubExpressions.push_back(e2);
-      c->_type = get_operation_type(c->Operation,e1,e2);
+      Expression *e1 = visitTerm(ctx->t1);
+      if (e1 != nullptr) {
+         c->SubExpressions.push_back(e1);
+      }
+      Expression *e2 = visitTerm(ctx->t2);
+      if (e2 != nullptr) {
+         c->SubExpressions.push_back(e2);
+      }
+      if (e1 != nullptr && e2 != nullptr) {
+         c->_type = get_operation_type(c->Operation,e1,e2);
+      }
+      else {
+         c->_type = "???";
+      }
       e = c;
    }
 
    Log.decNestLevel();
-   debug(ctx, "<<< visitOtherTerm(" + e->_type + ")");
+
+   if (e != nullptr) {
+      debug(ctx, "<<< visitTerm3(" + e->_type + ")");
+   }
+   else {
+      debug(ctx, "<<< visitTerm3(???)");
+   }
+
    return e;
    
 }
@@ -309,7 +379,7 @@ antlrcpp::Any Ili2Input::visitTerm(parser::Ili2Parser::TermContext *ctx)
    Log.incNestLevel();
    
    Expression *e = nullptr;;
-   
+
    if (ctx->NOT() != nullptr || ctx->DEFINED() != nullptr) {
       /* struct UnaryExpr : public Expression {
       public:
@@ -334,12 +404,21 @@ antlrcpp::Any Ili2Input::visitTerm(parser::Ili2Parser::TermContext *ctx)
       /* struct Factor : public Expression { // ABSTRACT
       public:
       */
-      Factor *f = visitFactor(ctx->factor());
-      e = f;
+      if (ctx->factor() != nullptr) { // ???, to do !!!
+         Factor *f = visitFactor(ctx->factor());
+         e = f;
+      }
    }
 
    Log.decNestLevel();
-   debug(ctx, "<<< visitTerm(" + e->_type + ")");
+
+   if (e != nullptr) {
+      debug(ctx, "<<< visitTerm(" + e->_type + ")");
+   }
+   else {
+      debug(ctx, "<<< visitTerm(???)");
+   }
+
    return e;
    
 }
@@ -424,13 +503,14 @@ antlrcpp::Any Ili2Input::visitFactor(parser::Ili2Parser::FactorContext *ctx)
       f = pif;
    }
    else if (ctx->inspection() != nullptr) {
-      f = visitInspection(ctx->inspection());
+      f = visitInspection(ctx->inspection()); // ???, to do !!!
    }
    else if (ctx->INSPECTION() != nullptr) {
       // to do !!!
    }
    else if (ctx->functionCall() != nullptr) {
-      f = visitFunctionCall(ctx->functionCall());
+      FunctionCall *fc = visitFunctionCall(ctx->functionCall());
+      f = fc;
    }
    else if (ctx->PARAMETER() != nullptr) {
       // to do !!!

@@ -193,6 +193,9 @@ namespace metamodel {
       if (t == nullptr) {
          return;
       }
+      if (util::starts_with(t->Name, "ILIC_")) {
+         t->Name = t->Name.substr(5);
+      }
       Log.debug("add_type " + t->Name + "(" + get_path(t) + ")");
       for (Type* tt : AllTypes) {
          if (tt->Name == t->Name) {
@@ -273,38 +276,21 @@ namespace metamodel {
       add_type(c);
    }
 
-   Class* find_class_object(string name, int kind, int line)
+   Class* find_class_object(string name,string restriction, int line)
    {
-
-      string kinds;
-      if (kind == Class::ClassVal) {
-         kinds = "class";
-      }
-      else if (kind == Class::Structure) {
-         kinds = "structure";
-      }
-      else if (kind == Class::Association) {
-         kinds = "association";
-      }
 
       Type* t = find_type(name, line, false);
       if (t == nullptr) {
-         Log.error(kinds + " " + name + " not found", get_package_context()->_line);
+         Log.error(restriction + " " + name + " not found",line);
          return nullptr;
       }
 
       if (t->getClass() != "Class") {
-         Log.error(name + " is no " + kinds);
+         Log.error(name + " is no " + restriction,line);
          return nullptr;
       }
 
-      Class* c = static_cast<Class*>(t);
-      if (c->Kind != kind) {
-         Log.error(name + " is no " + kinds);
-         return nullptr;
-      }
-
-      return c;
+      return static_cast<Class*>(t);
 
    }
 
@@ -324,7 +310,11 @@ namespace metamodel {
          c->Kind = Class::Structure;
       }
       else {
-         c = find_class_object(name, Class::ClassVal, line);
+         c = find_class_object(name,"class", line);
+         if (c != nullptr && c->Kind != Class::ClassVal) {
+            Log.error(name + " is no class");
+            c = nullptr;
+         }
       }
       return c;
    }
@@ -348,11 +338,12 @@ namespace metamodel {
 
    Class* find_structure(string name, int line)
    {
-      Class* s = find_class_object(name, Class::Structure, line);
-      if (s == nullptr) {
-         Log.error("structure " + name + " not found", line);
+      Class* c = find_class_object(name,"structure", line);
+      if (c != nullptr && c->Kind != Class::Structure) {
+         Log.error(name + " is no structure");
+         c = nullptr;
       }
-      return s;
+      return c;
    }
 
    Class* find_structure(Package* p, string name, int line)
@@ -374,11 +365,12 @@ namespace metamodel {
 
    Class* find_association(string name, int line)
    {
-      Class* a = find_class_object(name, Class::Association, line);
-      if (a == nullptr) {
-         Log.error("association " + name + " not found", line);
+      Class* c = find_class_object(name,"association", line);
+      if (c != nullptr && c->Kind != Class::Association) {
+         Log.error(name + " is no association");
+         c = nullptr;
       }
-      return a;
+      return c;
    }
 
    Class* find_association(Package* p, string name, int line)
@@ -400,9 +392,10 @@ namespace metamodel {
 
    View* find_view(string name, int line)
    {
-      Class *v = find_class_object(name, Class::ViewVal, line);
-      if (v == nullptr) {
-         Log.error("view " + name + " not found", line);
+      Class *v = find_class_object(name,"view",line);
+      if (v != nullptr && v->Kind != Class::ViewVal) {
+         Log.error(name + " is no view");
+         v = nullptr;
       }
       return static_cast<View *>(v);
    }
@@ -417,7 +410,7 @@ namespace metamodel {
             return a;
          }
       }
-      Log.error("attribute " + name + " not found ", line);
+      Log.error("attribute " + name + " not found", line);
       return nullptr;
    }
 
@@ -445,7 +438,7 @@ namespace metamodel {
       if (function == nullptr) {
          return;
       }
-      Log.debug(">>> add_function " + function->Name + "(" + get_path(function) + ")");
+      Log.debug("add_function " + function->Name + "(" + get_path(function) + ")");
       for (FunctionDef* f : AllFunctions) {
          if (f->Name == function->Name) {
             // add domain type only once
@@ -458,7 +451,7 @@ namespace metamodel {
    FunctionDef* find_function(string name, int line)
    {
 
-      Log.debug(">>> find_function " + name);
+      Log.debug("find_function " + name);
 
       for (FunctionDef* f : AllFunctions) {
          if (get_path(f) == name) {
@@ -469,7 +462,7 @@ namespace metamodel {
          }
       }
 
-      Log.error("function " + name + " not found.", line);
+      Log.error("function " + name + " not found", line);
       return nullptr;
 
    }

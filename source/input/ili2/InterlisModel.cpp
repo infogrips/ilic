@@ -36,8 +36,8 @@ string input::getInterlisModel23()
    source += "      CANDELA [cd] EXTENDS LUMINOUS_INTENSITY;\n";
    source += "\n";
    source += "   DOMAIN\n";
-   source += "      URI (FINAL) = TEXT*1023;\n";
-   source += "      NAME (FINAL) = TEXT*255;\n";
+   source += "      ILIC_URI (FINAL) = TEXT*1023;\n";
+   source += "      ILIC_NAME (FINAL) = TEXT*255;\n";
    source += "      INTERLIS_1_DATE (FINAL) = TEXT*8;\n";
    source += "      BOOLEAN (FINAL) = (\n";
    source += "         false,\n";
@@ -81,13 +81,13 @@ string input::getInterlisModel23()
    source += "!!   ): BOOLEAN;\n";
    source += "   \n";
    source += "   CLASS ILIC_METAOBJECT (ABSTRACT) =\n";
-   source += "      Name: MANDATORY NAME;\n";
+   source += "      Name: MANDATORY ILIC_NAME;\n";
    source += "      UNIQUE Name;\n";
    source += "   END ILIC_METAOBJECT;\n";
    source += "   \n";
    source += "   CLASS METAOBJECT_TRANSLATION =\n";
-   source += "      Name: MANDATORY NAME;\n";
-   source += "      NameInBaseLanguage: MANDATORY NAME;\n";
+   source += "      Name: MANDATORY ILIC_NAME;\n";
+   source += "      NameInBaseLanguage: MANDATORY ILIC_NAME;\n";
    source += "      UNIQUE Name;\n";
    source += "      UNIQUE NameInBaseLanguage;\n";
    source += "   END METAOBJECT_TRANSLATION;\n";

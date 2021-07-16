@@ -224,6 +224,8 @@ constant
 textType
    : MTEXT (STAR maxlength=POSNUMBER)?
    | TEXT (STAR maxlength=POSNUMBER)?
+   | NAME_CONST
+   | URI
    ;
 
 textConst
@@ -486,19 +488,31 @@ constraintsDef
    ;
 
 expression
-   : orTerm // ({ili24}? IMPL orTerm)?
+   : term1 ({ili24}? IMPL term1)?
    ;
 
-orTerm
-   : andTerm ((OR | {ili24}? PLUS | {ili24}? MINUS) andTerm)*
+term1
+   : term2 (operator1 term2)*
+   ;
+   
+operator1
+   : OR
+   | {ili24}? PLUS
+   | {ili24}? MINUS
    ;
 
-andTerm
-   : otherTerm ((AND | {ili24}? STAR | {ili24}? SLASH) otherTerm)*
+term2
+   : term3 (operator2 term3)*
+   ;
+   
+operator2
+   : AND
+   | {ili24}? STAR
+   | {ili24}? SLASH
    ;
 
-otherTerm
-   : term1=term (relation term2=term)?
+term3
+   : t1=term (relation t2=term)?
    ;
 
 term

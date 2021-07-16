@@ -1,5 +1,5 @@
 
-ilic 0.9.3 (builddate=2021-07-15, platform=win32)
+ilic 0.9.3 (builddate=2021-07-16, platform=win32)
 
    Distributed by the Coordination of Geographic Information
    and Geographic Information Systems Group (COSIG), CH-3084 Wabern.

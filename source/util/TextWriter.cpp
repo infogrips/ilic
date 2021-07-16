@@ -72,31 +72,31 @@ void TextWriter::write(int nestlevel,string buffer)
 void TextWriter::writeln(string buffer)
 {
    write(buffer);
-   out << "\n";
+   out << "\n" << flush;
 };
 
 void TextWriter::writelnNoIdent(string buffer)
 {
    writeNoIdent(buffer);
-   out << "\n";
+   out << "\n" << flush;
 };
 
 void TextWriter::writelnIncNestLevel(string buffer)
 {
    incNestLevel();
    write(buffer);
-   out << "\n";
+   out << "\n" << flush;
 };
 
 void TextWriter::writelnDecNestLevel(string buffer)
 {
    decNestLevel();
    write(buffer);
-   out << "\n";
+   out << "\n" << flush;
 };
 
 void TextWriter::writeln(int nestlevel,string buffer)
 {
    write(nestlevel,buffer);
-   out << "\n";
+   out << "\n" << flush;
 };

@@ -197,7 +197,7 @@ antlrcpp::Any Ili2Input::visitTextType(parser::Ili2Parser::TextTypeContext *ctx)
    /* textType
    : MTEXT (STAR maxLength=POSNUMBER)?
    | TEXT (STAR maxLength=POSNUMBER)?
-   | NAME
+   | NAME_CONST
    | URI
    */
 
@@ -222,7 +222,7 @@ antlrcpp::Any Ili2Input::visitTextType(parser::Ili2Parser::TextTypeContext *ctx)
          t->MaxLength = stoi(ctx->maxlength->getText());
       }
    }
-   else if (ctx->TEXT() != nullptr) {
+   else if (ctx->NAME_CONST() != nullptr) {
       t->Kind = TextType::NameVal;
    }
    else {

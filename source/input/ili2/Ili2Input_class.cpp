@@ -105,7 +105,7 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
             string superpath = get_path(u->Super);
             superpath = superpath.substr(0,superpath.length()-7); // without .BASKET
             string baseclass = superpath + "." + c->Name;
-            c->Super = find_class(baseclass,line);
+            c->Super = find_class_object(baseclass,"class or structure",line);
             bool found = false;
             while (u->Super != nullptr) {
                DataUnit *uu = static_cast<DataUnit *>(u->Super);
@@ -132,7 +132,7 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
    }
 
    if (ctx->classbase != nullptr) {
-      c->Super = find_class(ctx->classbase->getText(),get_line(ctx->classbase));
+      c->Super = find_class_object(ctx->classbase->getText(),"class or structure",get_line(ctx->classbase));
       if (c->Super != nullptr) {
          c->Super->Sub.push_back(c);
       }

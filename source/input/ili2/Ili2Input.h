@@ -49,9 +49,9 @@ namespace input {
       antlrcpp::Any visitBlackboxType(parser::Ili2Parser::BlackboxTypeContext *ctx) override;
       antlrcpp::Any visitClassType(parser::Ili2Parser::ClassTypeContext *ctx) override;
       antlrcpp::Any visitExpression(parser::Ili2Parser::ExpressionContext *ctx) override;
-      antlrcpp::Any visitOrTerm(parser::Ili2Parser::OrTermContext *ctx) override;
-      antlrcpp::Any visitAndTerm(parser::Ili2Parser::AndTermContext *ctx) override;
-      antlrcpp::Any visitOtherTerm(parser::Ili2Parser::OtherTermContext *ctx) override;
+      antlrcpp::Any visitTerm1(parser::Ili2Parser::Term1Context *ctx) override;
+      antlrcpp::Any visitTerm2(parser::Ili2Parser::Term2Context *ctx) override;
+      antlrcpp::Any visitTerm3(parser::Ili2Parser::Term3Context *ctx) override;
       antlrcpp::Any visitTerm(parser::Ili2Parser::TermContext *ctx) override;
       antlrcpp::Any visitRelation(parser::Ili2Parser::RelationContext *ctx) override;
       antlrcpp::Any visitFactor(parser::Ili2Parser::FactorContext *ctx) override;

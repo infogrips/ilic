@@ -55,6 +55,7 @@ namespace metamodel {
    // Class helpers
    void init_class(Class *c,int line);
    void add_class(Class *c);
+   Class* find_class_object(string name, string restriction, int line);
    Class* find_class(string name,int line);
    Class* find_class(Package *p,string name,int line);
    Class* find_structure(string name,int line );

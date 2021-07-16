@@ -761,7 +761,7 @@ namespace metamodel {
    };
 
    enum CompoundExpr_OperationType {
-      Implication, And, Or, Mult, Div, // 2.4
+      Implication, And, Or, Plus, Minus, Mult, Div, // 2.4 Implication, Plus, Minus
       Relation_Equal, Relation_NotEqual,
       Relation_LessOrEqual, Relation_GreaterOrEqual,
       Relation_Less, Relation_Greater

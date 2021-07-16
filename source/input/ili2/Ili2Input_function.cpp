@@ -112,7 +112,6 @@ antlrcpp::Any Ili2Input::visitFunctionCall(parser::Ili2Parser::FunctionCallConte
    public:
       FunctionDef *Function;
       list <ActualArgument *> Arguments;
-      virtual string getClass() { return "FunctionCall"; }
    };
    */
 
@@ -121,23 +120,18 @@ antlrcpp::Any Ili2Input::visitFunctionCall(parser::Ili2Parser::FunctionCallConte
    */
 
    string functionname = ctx->functionname->getText();
-   debug(ctx,"visitFunctionCall(" + functionname + ")");
-
-   FunctionDef *f = find_function(functionname,get_line(ctx));
-   if (f == nullptr) {
-      Log.error("function " + functionname + " unknown");
-      return nullptr;
-   }
+   debug(ctx,">>> visitFunctionCall(" + functionname + ")");
 
    FunctionCall *c = new FunctionCall();
-   init_factor(c,ctx->start->getLine());
+   init_factor(c,get_line(ctx));
    
-   c->Function = f;
+   c->Function = find_function(functionname,get_line(ctx));
    
    for (auto actx : ctx->functionCallArgument()) {
       c->Arguments.push_back(visitFunctionCallArgument(actx));
    }
 
+   debug(ctx,"<<< visitFunctionCall(" + functionname + ")");
    return c;
 
 }
