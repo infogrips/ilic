@@ -221,17 +221,16 @@ antlrcpp::Any Ili2Input::visitTopicDef(Ili2Parser::TopicDefContext *ctx)
    // init topic
    SubModel *s = new SubModel();
    init_package(s,get_line(ctx->topicname1));
+   s->Name = name1;
+   add_package(s);
+   push_context(s);
 
+   // init dataunit
    DataUnit *d = new DataUnit();
    init_extendableme(d,get_line(ctx->topicname1));
-      
-   // MetaElement Attributes
-   s->Name = name1;
-
    d->Name = "BASKET";
-   d->ElementInPackage = s;
-   s->Element.push_back(d);
-   
+   add_dataunit(d);
+
    // ExtendableME Attributes
    if (ctx->properties() != nullptr) {
       map<string,bool> properties = get_properties(ctx->properties(),vector<string>({ABSTRACT,FINAL}));
@@ -240,11 +239,13 @@ antlrcpp::Any Ili2Input::visitTopicDef(Ili2Parser::TopicDefContext *ctx)
    }
 
    if (ctx->topicbase != nullptr) {
-      s->_super = find_package(visitPath(ctx->topicbase),get_line(ctx->topicbase));
-      d->Super = find_dataunit(visitPath(ctx->topicbase),get_line(ctx->topicbase));
-      if (d->Super != nullptr) {
-         s->_super->_sub.push_back(s);
-         d->Super->Sub.push_back(d);
+      s->_super = find_topic(visitPath(ctx->topicbase),get_line(ctx->topicbase));
+      if (s->_super != nullptr) {
+         d->Super = find_dataunit(get_path(s->_super),get_line(ctx->topicbase));
+         if (d->Super != nullptr) {
+            s->_super->_sub.push_back(s);
+            d->Super->Sub.push_back(d);
+         }
       }
    }
 
@@ -280,10 +281,6 @@ antlrcpp::Any Ili2Input::visitTopicDef(Ili2Parser::TopicDefContext *ctx)
       }
    }
 
-   add_dataunit(d);
-   add_package(s);
-   push_context(s);
-
    // metaDataBasketDef
    // unitDecl
    // functionDef
@@ -295,8 +292,29 @@ antlrcpp::Any Ili2Input::visitTopicDef(Ili2Parser::TopicDefContext *ctx)
    // viewDef
    // graphicDef
    visitChildren(ctx);
-
    pop_context();
+   
+   if (!d->Abstract) {
+      for (auto e : s->Element) {
+         if (e->isSubClassOf("ExtendableME") && e->getClass() != "DataUnit") {
+            ExtendableME *ee = static_cast<ExtendableME *>(e);
+            if (ee->Abstract && ee->Sub.size() == 0) {
+               Log.error("concrete topic " + s->Name + " can not contain abstract element " + e->Name + " without concrete extension (1)",e->_line);
+            }
+         }
+      }
+      if (s->_super != nullptr) {
+         for (auto e : s->_super->Element) {
+            if (e->isSubClassOf("ExtendableME") && e->getClass() != "DataUnit") {
+               ExtendableME* ee = static_cast<ExtendableME*>(e);
+               if (ee->Abstract && ee->Sub.size() == 0) {
+                  Log.error("concrete topic " + s->Name + " can not contain abstract element " + e->Name + " without concrete extension (2)", s->_line);
+               }
+            }
+         }
+      }
+   }
+
    Log.decNestLevel();
    debug(ctx,"<<< visitTopicDef(" + name1 + ")");
 

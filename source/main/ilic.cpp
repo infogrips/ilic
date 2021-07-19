@@ -40,7 +40,7 @@ string get_program_name()
 
 string get_version()
 {
-   return "0.9.3";
+   return "0.9.4";
 }
 
 string get_version_string()
@@ -657,18 +657,19 @@ int main(int argc, char* argv[])
    Log.info("");
    Log.info("loading ili files from command line ...");
    Log.incNestLevel();
-   setAutoSearch(!no_auto);
-   setIliDirs(ilidirs);
+   set_autosearch(!no_auto);
+   set_ilidirs(ilidirs);
    for (auto arg : arguments.getKeys()) {
       string value = arguments.get(arg);
       if (arg.find("ilifile") == 0) {
-         Log.info("loading " + value + " ...");
+         Log.infoNoNL("loading " + value);
          Log.incNestLevel();
-         if (!loadIliFilesByFile(value)) {
+         if (!load_ilifiles_by_file(value)) {
+            Log.infoAppend(value + ", not done.");
             abort(1);
          }
          Log.decNestLevel();
-         Log.info(value + " loaded.");
+         Log.infoAppend(value + ", done.");
       }      
    }
    Log.decNestLevel();
@@ -688,15 +689,16 @@ int main(int argc, char* argv[])
             else if (modelname == "INTERLIS") {
                continue;
             }
-            Log.info("searching for model " + modelname + " ...");
+            Log.infoNoNL("searching for model " + modelname);
             Log.incNestLevel();
-            IliFile *f = loadIliFilesByModel(modelname);
+            IliFile *f = load_ilifiles_by_model(modelname);
             if (f == nullptr) {
+               Log.infoAppend(", not found.");
                abort(1);
             }
             loaded_models[modelname] = true;
             Log.decNestLevel();
-            Log.info("model " + modelname + " found in " + f->getFilePath() + ".");
+            Log.infoAppend(", found in " + f->getFilePath() + ".");
          }
       }
       if (fcount == AllIliFiles.size()) {
@@ -740,7 +742,7 @@ int main(int argc, char* argv[])
 
    // compile all .ili files
    bool multiple_iliversions = false;
-   compile(loadIliFilesByModel("INTERLIS"));
+   compile(load_ilifiles_by_model("INTERLIS"));
    while (true) {
       bool all_compiled = true;
       for (IliFile *f : AllIliFiles) {

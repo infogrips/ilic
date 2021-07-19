@@ -754,7 +754,7 @@ namespace metamodel {
 
    struct UnaryExpr : public Expression {
    public:
-      enum {Not, Defined} Operation;
+      enum {Not, Defined, None} Operation;
       Expression *SubExpression = nullptr;
       virtual string getClass() { return "UnaryExpr"; }
       virtual string getBaseClass() { return "Expression"; };
