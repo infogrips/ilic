@@ -1,3 +1,8 @@
+ilic 0.9.4 (2021-07-19)
+-----------------------
+- tested with models in models.interlis.ch
+- improved loading, searching display
+
 ilic 0.9.3 (2021-07-14)
 -----------------------
 - tested with model VSADSSMINI_2020_LV95

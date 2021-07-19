@@ -92,8 +92,11 @@ antlrcpp::Any Ili2Input::visitRestrictedRef(parser::Ili2Parser::RestrictedRefCon
    }
       
    Log.decNestLevel();
-   if (r == nullptr || r->BaseType == nullptr) {
+   if (r == nullptr) {
       debug(ctx,"<<< visitRestrictedRef() returns nullptr");
+   }
+   else if (r->BaseType == nullptr) {
+      debug(ctx,"<<< visitRestrictedRef() BaseType is nullptr");
    }
    else {
       debug(ctx,"<<< visitRestrictedRef() returns " + r->BaseType->getClass());

@@ -128,10 +128,6 @@ antlrcpp::Any Ili2Input::visitTerm1(parser::Ili2Parser::Term1Context *ctx)
 
    if (ctx->term2().size() == 1) {
       e = visitTerm2(ctx->term2().front());
-      if (ili23 && e->_type != "BooleanType") {
-         Log.error("term is not of boolean type", e->_line);
-         e->_type = "BooleanType";
-      }
    }
    else {
       CompoundExpr *ce = new CompoundExpr();
@@ -180,10 +176,6 @@ antlrcpp::Any Ili2Input::visitTerm2(parser::Ili2Parser::Term2Context *ctx)
 
    if (ctx->term3().size() == 1) {
       e = visitTerm3(ctx->term3().front());
-      if (ili23 && e != nullptr && e->_type != "BooleanType") {
-         Log.error("term is not of boolean type", e->_line);
-         e->_type = "BooleanType";
-      }
    }
    else {
       CompoundExpr *ce = new CompoundExpr();
@@ -271,7 +263,7 @@ static string get_operation_type(int operation,Expression *e1,Expression *e2)
       else if (e2->_type == "???") {
       }
       else if (e1->_type != e2->_type) {
-         Log.error("==: term1 and term2 have not the same type (" + e1->_type + "<>" + e2->_type + ")",e1->_line);
+         Log.error("==: term1 and term2 have incompatible datatypes (" + e1->_type + "<>" + e2->_type + ")",e1->_line);
       }
       return "BooleanType";
    }
@@ -281,7 +273,7 @@ static string get_operation_type(int operation,Expression *e1,Expression *e2)
       else if (e2->_type == "???") {
       }
       else if (e1->_type != e2->_type) {
-         Log.error("!=: term1 and term2 have not the same type (" + e1->_type + "<>" + e2->_type + ")",e1->_line);
+         Log.error("!=: term1 and term2 have incompatible datatypes (" + e1->_type + "<>" + e2->_type + ")",e1->_line);
       }
       return "BooleanType";
    }
@@ -296,15 +288,15 @@ antlrcpp::Any Ili2Input::visitTerm3(parser::Ili2Parser::Term3Context *ctx)
 {
 
    /* term3
-   : term1=term (relation term2=term)?
+   : t1=term (relation t2=term)?
    */
 
    debug(ctx,">>> visitTerm3()");
    Log.incNestLevel();
 
    Expression *e = nullptr;
-
-   if (ctx->t2 == nullptr) {
+   
+   if (ctx->relation() == nullptr) {
       /* struct UnaryExpr : public Expression {
       public:
          enum {Not, Defined} Operation;
@@ -378,12 +370,12 @@ antlrcpp::Any Ili2Input::visitTerm(parser::Ili2Parser::TermContext *ctx)
    debug(ctx,">>> visitTerm()");
    Log.incNestLevel();
    
-   Expression *e = nullptr;;
+   Expression *e = nullptr;
 
-   if (ctx->NOT() != nullptr || ctx->DEFINED() != nullptr) {
+   if (ctx->expression() != nullptr) {
       /* struct UnaryExpr : public Expression {
       public:
-         enum {Not, Defined} Operation;
+         enum {Not, Defined, None} Operation;
          Expression *SubExpression;
       };
       */
@@ -393,21 +385,28 @@ antlrcpp::Any Ili2Input::visitTerm(parser::Ili2Parser::TermContext *ctx)
          debug(ctx,"NOT");
          u->Operation = UnaryExpr::Not;
       }
-      else if (ctx->DEFINED() != nullptr) {
-         debug(ctx,"DEFINED");
-         u->Operation = UnaryExpr::Defined;
+      else {
+         u->Operation = UnaryExpr::None;
       }
-      u->_type = "BooleanType";
+      u->SubExpression = visitExpression(ctx->expression());
+      if (u->SubExpression != nullptr) {
+         u->_type = u->SubExpression->_type;
+      }
+      else {
+         u->_type = "???";
+      }
       e = u;
    }
    else {
       /* struct Factor : public Expression { // ABSTRACT
       public:
       */
-      if (ctx->factor() != nullptr) { // ???, to do !!!
-         Factor *f = visitFactor(ctx->factor());
-         e = f;
-      }
+      UnaryExpr *u = new UnaryExpr();
+      u->Operation = UnaryExpr::Defined;
+      Factor *f = visitFactor(ctx->factor());
+      u->SubExpression = f;
+      u->_type = "BooleanType";
+      e = u;
    }
 
    Log.decNestLevel();
@@ -682,6 +681,10 @@ antlrcpp::Any Ili2Input::visitEnumConst(parser::Ili2Parser::EnumConstContext *ct
       else {
          c->Value = c->Value + "." + n->getText();
       }
+   }
+   
+   if (c->Value == "true" || c->Value == "INTERLIS.true") {
+      c->_type = "BooleanType";
    }
 
    Log.decNestLevel();

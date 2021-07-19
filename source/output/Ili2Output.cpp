@@ -684,6 +684,7 @@ void Ili2Output::visitRole(Role *r)
          continue;
       }
       target = get_path(b->BaseClass);
+      break; // more than one target, to do !!
    }
 
    ili2.writeln(r->Name + " " + strongness + " " + multiplicity_to_string(r->Multiplicity) + " " + target + ";");

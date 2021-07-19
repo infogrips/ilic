@@ -117,15 +117,18 @@ namespace util {
    static bool auto_search=true;
    static list<string> ilidirs;
    
-   void setAutoSearch(bool auto_search)
+   void set_autosearch(bool auto_search)
    {
       util::auto_search = auto_search;
    }
    
-   void setIliDirs(string dirs)
+   void set_ilidirs(string dirs)
    {
       while (true) {
-         int pos = dirs.find(";");
+         int pos = dirs.find(";"); // for ili2c compatiblity
+         if (pos < 0) {
+            pos = dirs.find(",");
+         }
          string dir;
          if (pos > 0) {
             dir = dirs.substr(0,pos);
@@ -145,7 +148,7 @@ namespace util {
       }
    }
    
-   static void addIliFile(IliFile *ilifile,bool front) 
+   static void add_ilifile(IliFile *ilifile,bool front) 
    {
       if (ilifile == nullptr) {
          return;
@@ -163,7 +166,7 @@ namespace util {
       }
    }
 
-   static IliFile* loadIliFile(string filepath)
+   static IliFile* load_ilifile(string filepath)
    {
 
       Log.debug(">>> loadIliFile(" + filepath + ")");
@@ -185,7 +188,7 @@ namespace util {
       lexer.removeErrorListeners();
 
       // create parser
-      Log.debug("creating lexer");
+      Log.debug("creating parser");
       antlr4::CommonTokenStream tokens(&lexer);
       parser::IliFileParser parser(&tokens);
       parser::IliFileParser::IliFileContext *context = parser.iliFile();
@@ -206,11 +209,11 @@ namespace util {
 
    }
 
-   IliFile* loadIliFilesByFile(string filepath)
+   IliFile* load_ilifiles_by_file(string filepath)
    {
-      IliFile *f = loadIliFile(filepath);
+      IliFile *f = load_ilifile(filepath);
       if (f != nullptr) {
-         addIliFile(f,false);
+         add_ilifile(f,false);
          return f;
       }
       else {
@@ -218,7 +221,7 @@ namespace util {
       }
    }
 
-   IliFile* loadIliFilesByModel(string modelname)
+   IliFile* load_ilifiles_by_model(string modelname)
    {
       
       // model already loaded?
@@ -232,7 +235,7 @@ namespace util {
       
       if (modelname == "INTERLIS") {
          IliFile *interlis = new IliFile("INTERLIS");
-         addIliFile(interlis,true);
+         add_ilifile(interlis,true);
          return interlis;
       }
 
@@ -274,12 +277,12 @@ namespace util {
                   if (path == f->getFilePath()) {
                      continue; // .ili already loaded
                   }
-                  IliFile *ff = loadIliFile(path);
+                  IliFile *ff = load_ilifile(path);
                   for (string model : ff->getModels()) {
                      // search for model in .ili file
                      if (model == modelname) {
 								ff->setAutoSearch(true);
-                        addIliFile(ff, true);
+                        add_ilifile(ff, true);
                         return ff;
                      }
                   }
@@ -307,7 +310,7 @@ namespace util {
       ilifile->visitIliFile(context);
       ilifile->setAutoSearch(true);
 
-      addIliFile(ilifile,true);
+      add_ilifile(ilifile,true);
 
       return ilifile;
       

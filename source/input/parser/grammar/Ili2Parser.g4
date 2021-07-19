@@ -148,7 +148,7 @@ restrictedRef
    ;
 
 restriction
-   : RESTRICTION LPAREN path (COMMA path)* RPAREN
+   : RESTRICTION LPAREN path (SEMI path)* RPAREN
    ;
 
 associationDef
@@ -517,8 +517,8 @@ term3
 
 term
    : factor                       
-   | NOT? LPAREN expression RPAREN // predicate
-   | DEFINED LPAREN factor RPAREN
+   | (NOT? LPAREN expression RPAREN)
+   | (DEFINED LPAREN factor RPAREN)
    ;
    
 relation
@@ -568,7 +568,7 @@ attributeRef
    ;
 
 functionCall
-   : functionname=NAME LPAREN (functionCallArgument (COMMA functionCallArgument)*)? RPAREN // 2.4 function argument optional
+   : functionname=path LPAREN (functionCallArgument (COMMA functionCallArgument)*)? RPAREN // 2.4 function argument optional
    ;
 
 functionCallArgument

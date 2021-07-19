@@ -41,9 +41,9 @@ namespace util {
    };
 
    extern list<IliFile *> AllIliFiles;
-   void setAutoSearch(bool auto_search);
-   void setIliDirs(string ilidirs);
-   IliFile* loadIliFilesByFile(string filepath);
-   IliFile* loadIliFilesByModel(string modelname);
+   void set_autosearch(bool auto_search);
+   void set_ilidirs(string ilidirs);
+   IliFile* load_ilifiles_by_file(string filepath);
+   IliFile* load_ilifiles_by_model(string modelname);
 
 };

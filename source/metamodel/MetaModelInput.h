@@ -27,6 +27,8 @@ namespace metamodel {
    MetaElement* get_context();
    Class* get_class_context();
    Package* get_package_context();
+   SubModel* get_topic_context();
+   Model* get_model_context();
    void pop_context();
 
    // package helpers
@@ -40,6 +42,7 @@ namespace metamodel {
    DataUnit* find_dataunit(string name,int line);
    void add_package(Package* p);
    Package* find_package(string name,int line);
+   SubModel* find_topic(string name,int line);
 
    // Unit helpers
    void add_unit(Unit *u);
@@ -49,6 +52,7 @@ namespace metamodel {
    void init_type(Type *t, int line);
    void add_type(Type *t);
    Type* find_type(string name,int line);
+   string get_type_string(Type *t);
    void init_domaintype(DomainType *t, int line);
    DomainType* find_domaintype(string name,int line);
    

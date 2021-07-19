@@ -154,6 +154,9 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
 
    for (auto rctx : ctx->roleDef()) {
       Role *r = visitRoleDef(rctx);
+      if (r->Abstract && !c->Abstract) {
+         Log.error("concrete association " + get_path(c) + " can not contain abstract role " + r->Name);
+      }
       r->Association = c;
       c->Role.push_back(r);
    }
@@ -262,15 +265,11 @@ antlrcpp::Any Ili2Input::visitRoleDef(parser::Ili2Parser::RoleDefContext *ctx)
       r->Multiplicity = visitCardinality(ctx->cardinality());
    }
 
-/* to do !!!
    for (auto rr : ctx->restrictedRef()) {
-      Log.message(">>> gugus");
       RestrictedRef *rrr = visitRestrictedRef(rr);
-      Log.message("<<< gugus1");
       if (rrr == nullptr) {
          continue;
       }
-      Log.message("<<< gugus2");
       for (auto t : rrr->TypeRestriction) {
          if (!t->isSubClassOf("Class")) {
             Log.error(t->getClass() + " must be extension of class",t->_line);
@@ -290,7 +289,6 @@ antlrcpp::Any Ili2Input::visitRoleDef(parser::Ili2Parser::RoleDefContext *ctx)
       };
       add_baseclass(b);
    }
-*/
    
    return r;
    

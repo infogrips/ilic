@@ -49,9 +49,20 @@ namespace metamodel {
          e->ElementInPackage->Element.push_back(e);
       }
       else if (context == "Class") {
-         e->ElementInPackage = get_package_context();
-         if (e->ElementInPackage != nullptr) {
-            e->ElementInPackage->Element.push_back(e);
+         if (e->getClass() == "AttrOrParam") {
+            e->ElementInPackage = nullptr;
+            AttrOrParam* t = static_cast<AttrOrParam*>(e);
+            t->AttrParent = static_cast<Class *>(ctx); // reverse Role, to do !!!
+         }
+         else if (e->isSubClassOf("Constraint")) {
+            e->ElementInPackage = nullptr;
+            Constraint* c = static_cast<Constraint*>(e);
+            c->ToClass = static_cast<Class *>(ctx); // reverse Role, to do !!!
+         }
+         else if (e->getClass() == "Role") {
+            e->ElementInPackage = nullptr;
+            Role* r = static_cast<Role*>(e);
+            r->Association = static_cast<Class *>(ctx); // reverse Role, to do !!!
          }
       }
       else if (context == "FunctionDef") {
@@ -59,6 +70,13 @@ namespace metamodel {
          Type *t = static_cast<Type *>(e);
          FunctionDef *f = static_cast<FunctionDef *>(ctx);
          t->LFTParent = f;
+      }
+      else if (context == "AttrOrParam") {
+         e->ElementInPackage = nullptr;
+         Type *t = static_cast<Type *>(e);
+         AttrOrParam *a = static_cast<AttrOrParam *>(ctx);
+         t->_attr = a;
+         a->Type = t; // loaltype ???, to do !!!
       }
 
    }
@@ -87,6 +105,8 @@ namespace metamodel {
 
    Model* find_model(string name, int line)
    {
+
+      Log.debug("find_model " + name);
 
       for (Model* m : get_all_models()) {
          if (m->Name == name) {
@@ -117,8 +137,12 @@ namespace metamodel {
 
    DataUnit* find_dataunit(string name, int line)
    {
+      Log.debug("find_dataunit " + name);
       for (DataUnit* u : AllDataUnits) {
-         if (get_path(u) == (name + ".BASKET")) {
+         if (get_path(u) == (get_path(get_model_context()) + "." + name + ".BASKET")) {
+            return u;
+         }
+         else if (get_path(u) == (name + ".BASKET")) {
             return u;
          }
       }
@@ -136,13 +160,30 @@ namespace metamodel {
 
    Package* find_package(string name, int line)
    {
+      Log.debug("find_package " + name);
       for (Package* p : AllPackages) {
          if (get_path(p) == name) {
+            return p;
+         }
+         else if (p->Name == name) {
             return p;
          }
       }
       Log.error("unknown package " + name, line);
       return nullptr;
+   }
+
+   SubModel* find_topic(string name, int line)
+   {
+      Log.debug("find_topic " + name);
+      Package *p = find_package(name,line);
+      if (p->getClass() == "SubModel") {
+         return static_cast<SubModel *>(p);
+      }
+      else {
+         Log.error(name + " is not a topic");
+         return nullptr;
+      }         
    }
 
    // Unit helpers
@@ -163,9 +204,8 @@ namespace metamodel {
 
    Unit* find_unit(string name, int line)
    {
-//Log.message(">>> search for unit " + name);
+      Log.debug("find_unit " + name);
       for (Unit* u : AllUnits) {
-//Log.message("<<< " + get_path(u));
          if (get_path(u) == name) {
             return u;
          }
@@ -193,23 +233,23 @@ namespace metamodel {
       if (t == nullptr) {
          return;
       }
+      Log.debug(">>> add_type " + get_path(t));
       if (util::starts_with(t->Name, "ILIC_")) {
          t->Name = t->Name.substr(5);
       }
-      Log.debug("add_type " + t->Name + "(" + get_path(t) + ")");
       for (Type* tt : AllTypes) {
-         if (tt->Name == t->Name) {
-            // to do !!!
-            // Log.error("multiple declarations of " + t->Name,t->_line);
+         if (get_path(tt) == get_path(t)) {
+            Log.error("multiple declarations of " + get_path(t),t->_line);
             return;
          }
       }
+      Log.debug("<<< add_type " + get_path(t));
       AllTypes.push_back(t);
    }
 
    static Type* find_type(string name, int line, bool error)
    {
-
+      
       string search;
       if (util::starts_with(name, "ILIC_")) {
          search = name.substr(5);
@@ -243,6 +283,19 @@ namespace metamodel {
    Type* find_type(string name, int line)
    {
       return find_type(name, line, true);
+   }
+
+   string get_type_string(Type *t)
+   {
+      if (t == nullptr) {
+         return "???";
+      }
+      if (t->Name == "BOOLEAN") {
+         return "BooleanType";
+      }
+      else {
+         return t->getClass();
+      }
    }
 
    void init_domaintype(DomainType* t, int line)
@@ -296,6 +349,7 @@ namespace metamodel {
 
    Class* find_class(string name, int line)
    {
+      Log.debug("find_class " + name);
       Class* c;
       if (name == "ANYCLASS" || name == "INTERLIS.ANYCLASS" || name == "CLASS" || name == "INTERLIS.CLASS") {
          // singelton, to do !!!
@@ -321,6 +375,7 @@ namespace metamodel {
 
    Class* find_class(Package* p, string name, int line)
    {
+      Log.debug("find_class " + name);
       if (p == nullptr) {
          return nullptr;
       }
@@ -338,6 +393,7 @@ namespace metamodel {
 
    Class* find_structure(string name, int line)
    {
+      Log.debug("find_structure " + name);
       Class* c = find_class_object(name,"structure", line);
       if (c != nullptr && c->Kind != Class::Structure) {
          Log.error(name + " is no structure");
@@ -348,6 +404,7 @@ namespace metamodel {
 
    Class* find_structure(Package* p, string name, int line)
    {
+      Log.debug("find_structure " + name);
       if (p == nullptr) {
          return nullptr;
       }
@@ -365,6 +422,7 @@ namespace metamodel {
 
    Class* find_association(string name, int line)
    {
+      Log.debug("find_association " + name);
       Class* c = find_class_object(name,"association", line);
       if (c != nullptr && c->Kind != Class::Association) {
          Log.error(name + " is no association");
@@ -378,6 +436,7 @@ namespace metamodel {
       if (p == nullptr) {
          return nullptr;
       }
+      Log.debug("find_association " + name);
       for (auto e : p->Element) {
          if (e->Name == name && e->getClass() == "Class") {
             Class* c = static_cast<Class*>(e);
@@ -392,6 +451,7 @@ namespace metamodel {
 
    View* find_view(string name, int line)
    {
+      Log.debug("find_view " + name);
       Class *v = find_class_object(name,"view",line);
       if (v != nullptr && v->Kind != Class::ViewVal) {
          Log.error(name + " is no view");
@@ -400,8 +460,9 @@ namespace metamodel {
       return static_cast<View *>(v);
    }
 
-   AttrOrParam* find_attribute(Class* c, string name,int line)
+   AttrOrParam* find_attribute(Class* c,string name,int line)
    {
+      Log.debug("find_attribute " + name);
       if (c == nullptr) {
          return nullptr;
       }
@@ -410,8 +471,14 @@ namespace metamodel {
             return a;
          }
       }
-      Log.error("attribute " + name + " not found", line);
-      return nullptr;
+      if (c->Super != nullptr) {
+         Class* s = static_cast<Class*>(c->Super);
+         return find_attribute(s,name,line);
+      }
+      else {
+         Log.error("attribute " + name + " not found", line);
+         return nullptr;
+      }
    }
 
    // expression helpers
@@ -576,6 +643,16 @@ namespace metamodel {
    Package* get_package_context()
    {
       return dynamic_cast<Package*>(get_context("Package"));
+   }
+
+   SubModel* get_topic_context()
+   {
+      return dynamic_cast<SubModel*>(get_context("SubModel"));
+   }
+
+   Model* get_model_context()
+   {
+      return dynamic_cast<Model*>(get_context("Model"));
    }
 
    // other helpers

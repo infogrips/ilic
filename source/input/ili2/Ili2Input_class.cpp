@@ -450,10 +450,7 @@ antlrcpp::Any Ili2Input::visitAttributeDef(parser::Ili2Parser::AttributeDefConte
          else {
             Class* s = static_cast<Class*>(c->Super);
             AttrOrParam *aa = metamodel::find_attribute(s,name,get_line(ctx));
-            if (aa == nullptr) {
-               Log.error("attribute " + name + " not found in baseclass", ctx->attributname->getLine());
-            }
-            else {
+            if (aa != nullptr) {
                check_type_restriction(aa->Type, a->Type, name, ctx->attributname->getLine());
             }
          }
@@ -586,7 +583,9 @@ antlrcpp::Any Ili2Input::visitAttrType(parser::Ili2Parser::AttrTypeContext * ctx
    }
    else if (ctx->restrictedRef() != nullptr) {
       RestrictedRef *r =  visitRestrictedRef(ctx->restrictedRef());
-      t = r->BaseType;
+      if (r != nullptr) {
+         t = r->BaseType;
+      }
    }
 
    if (t != nullptr) {
@@ -631,7 +630,8 @@ antlrcpp::Any Ili2Input::visitReferenceAttr(parser::Ili2Parser::ReferenceAttrCon
       virtual string getBaseClass() { return "ClassRelatedType"; };
    */
 
-   debug(ctx,"visitReferenceAttr()");
+   debug(ctx,">>> visitReferenceAttr()");
+   Log.incNestLevel();
    
    ReferenceType *t = new ReferenceType();
    init_domaintype(t,ctx->start->getLine());
@@ -641,18 +641,22 @@ antlrcpp::Any Ili2Input::visitReferenceAttr(parser::Ili2Parser::ReferenceAttrCon
    }
    
    RestrictedRef *r = visitRestrictedRef(ctx->restrictedRef());
-   if (r->BaseType->getClass() == "Class") {
-      Class *c = static_cast<Class *>(r->BaseType);
-      t->BaseClass = c;
-      if (c->Kind == Class::Structure) {
-         Log.error("target of reference type must be a class or association, found structure",ctx->start->getLine());
-         t->BaseClass = nullptr;
+   if (r != nullptr && r->BaseType != nullptr) {
+      if (r->BaseType->getClass() == "Class") {
+         Class *c = static_cast<Class *>(r->BaseType);
+         t->BaseClass = c;
+         if (c->Kind == Class::Structure) {
+            Log.error("target of reference type must be a class or association, found structure",ctx->start->getLine());
+            t->BaseClass = nullptr;
+         }
+      }
+      else {
+         Log.error("target of reference type must be a class or association, found " + r->BaseType->getClass(),ctx->start->getLine());
       }
    }
-   else {
-      Log.error("target of reference type must be a class or association, found " + r->BaseType->getClass(),ctx->start->getLine());
-   }
    
+   Log.decNestLevel();
+   debug(ctx,"<<< visitReferenceAttr()");
    return t;
 
 }

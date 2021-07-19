@@ -84,11 +84,16 @@ void Logger::setSilent(bool state)
 
 // message
 
+void Logger::messageNoNL(string message)
+{
+   out << message;
+   if (silent) return;
+   std::cout << message;
+};
+
 void Logger::messageNoIdent(string message)
 {
-   out << message << "\n";
-   if (silent) return;
-   std::cout << message << "\n";
+   messageNoNL(message + "\n");
 };
 
 void Logger::message(string message)
@@ -107,6 +112,18 @@ void Logger::info(string message)
 {
    if (!display_info) return;
    this->messageNoIdent("inf: " + ident() + message);
+};
+
+void Logger::infoNoNL(string message)
+{
+   if (!display_info) return;
+   this->messageNoNL("inf: " + ident() + message);
+};
+
+void Logger::infoAppend(string message)
+{
+   if (!display_info) return;
+   this->messageNoIdent(message);
 };
 
 void Logger::info(int nestlevel,string message)

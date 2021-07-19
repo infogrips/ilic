@@ -60,6 +60,11 @@ antlrcpp::Any Ili2Input::visitFunctionDef(parser::Ili2Parser::FunctionDefContext
 
    // MetaElement attributes
    f->Name = name;
+   add_function(f);
+   
+   if (!get_model_context()->Contracted) {
+      Log.error("functions can only be defined in contracted models");
+   }
    
    // FunctionDef attributes
    if (ctx->EXPLANATION() != nullptr) {
@@ -116,22 +121,28 @@ antlrcpp::Any Ili2Input::visitFunctionCall(parser::Ili2Parser::FunctionCallConte
    */
 
    /* functionCall
-   : functionname=NAME LPAREN functionCallArgument (COMMA functionCallArgument)* RPAREN
+   : functionname=path LPAREN functionCallArgument (COMMA functionCallArgument)* RPAREN
    */
 
-   string functionname = ctx->functionname->getText();
+   string functionname = visitPath(ctx->path());
    debug(ctx,">>> visitFunctionCall(" + functionname + ")");
 
    FunctionCall *c = new FunctionCall();
    init_factor(c,get_line(ctx));
    
    c->Function = find_function(functionname,get_line(ctx));
+   if (c->Function != nullptr && c->Function->ResultType != nullptr) {
+      c->_type = get_type_string(c->Function->ResultType);
+   }
+   else {
+      c->_type = "???";
+   }
    
    for (auto actx : ctx->functionCallArgument()) {
       c->Arguments.push_back(visitFunctionCallArgument(actx));
    }
 
-   debug(ctx,"<<< visitFunctionCall(" + functionname + ")");
+   debug(ctx,"<<< visitFunctionCall(" + functionname + ":" + c->_type + ")");
    return c;
 
 }

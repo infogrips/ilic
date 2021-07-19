@@ -26,6 +26,7 @@ namespace util {
          void setSilent(bool state);
          void setIdentSpaces(int spaces);
          void message(string message);
+         void messageNoNL(string message);
          void messageNoIdent(string message);
          void warningsAsErrors();
 
@@ -33,6 +34,8 @@ namespace util {
          void displayInfo(bool state);
          void info(string message);
          void info(int nestlevel,string message);
+         void infoNoNL(string message);
+         void infoAppend(string message);
 
          // debug
          void displayDebug(bool state);
