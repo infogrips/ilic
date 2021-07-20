@@ -665,11 +665,11 @@ int main(int argc, char* argv[])
          Log.infoNoNL("loading " + value);
          Log.incNestLevel();
          if (!load_ilifiles_by_file(value)) {
-            Log.infoAppend(value + ", not done.");
+            Log.infoAppend(", not done.");
             abort(1);
          }
          Log.decNestLevel();
-         Log.infoAppend(value + ", done.");
+         Log.infoAppend(", done.");
       }      
    }
    Log.decNestLevel();
@@ -832,10 +832,10 @@ int main(int argc, char* argv[])
    Log.closeFile();
    
    if (Log.getErrorCount() == 0) {
-      return success_status;
+      exit(success_status);
    }
    else {
-      return 1;
+      exit(1);
    }
 
 }

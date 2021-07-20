@@ -1,4 +1,4 @@
-ilic 0.9.4 (2021-07-19)
+ilic 0.9.4 (2021-07-20)
 -----------------------
 - tested with models in models.interlis.ch
 - improved loading, searching display

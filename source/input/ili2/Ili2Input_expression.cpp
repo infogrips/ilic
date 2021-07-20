@@ -336,11 +336,14 @@ antlrcpp::Any Ili2Input::visitTerm3(parser::Ili2Parser::Term3Context *ctx)
       if (e2 != nullptr) {
          c->SubExpressions.push_back(e2);
       }
-      if (e1 != nullptr && e2 != nullptr) {
-         c->_type = get_operation_type(c->Operation,e1,e2);
+      if (c->Operation == Mult) {
+         c->_type = "NumType";
+      }
+      else if (c->Operation == Div) {
+         c->_type = "NumType";
       }
       else {
-         c->_type = "???";
+         c->_type = "BooleanType";
       }
       e = c;
    }

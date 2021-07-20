@@ -22,9 +22,7 @@ decimal
    
 path
    : INTERLIS
-   | (INTERLIS DOT)? SIGN
-   | (INTERLIS DOT)? REFSYSTEM
-   | (INTERLIS DOT)? NAME
+   | (INTERLIS DOT)? (SIGN | REFSYSTEM | NAME) (DOT NAME)?
    | NAME (DOT NAME)*
    ;
    
@@ -669,7 +667,7 @@ graphicDef
 drawingRule
    : drawingrulename=NAME properties? // ABSTRACT|EXTENDED|FINAL
      (OF path)?
-     COLON condSignParamAssignment (COMMA condSignParamAssignment)* SEMI
+     COLON condSignParamAssignment (SEMI condSignParamAssignment)* SEMI
    ;
 
 condSignParamAssignment
