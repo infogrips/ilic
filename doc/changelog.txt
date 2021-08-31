@@ -1,7 +1,20 @@
-ilic 0.9.4 (2021-07-20)
+ilic 0.9.7 (2021-08-31)
 -----------------------
 - tested with models in models.interlis.ch
-- improved loading, searching display
+- tested with models in model.geo.admin.ch
+
+ilic 0.9.6 (2021-08-21)
+-----------------------
+- fixed crash in 64bit version
+
+ilic 0.9.5 (2021-08-10)
+-----------------------
+- tested with models in model.geo.admin.ch
+
+ilic 0.9.4 (2021-07-21)
+-----------------------
+- tested with models in models.interlis.ch
+- improved file search
 
 ilic 0.9.3 (2021-07-14)
 -----------------------
