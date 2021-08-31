@@ -87,6 +87,7 @@ namespace metamodel {
    void init_constraint(Constraint *c, int line);
    
    // other helpers
+   void debug(antlr4::ParserRuleContext *ctx, string message);
    Type* any_to_type(antlrcpp::Any any);
    DomainType* any_to_domaintype(antlrcpp::Any any);
    int get_line(antlr4::ParserRuleContext *ctx);

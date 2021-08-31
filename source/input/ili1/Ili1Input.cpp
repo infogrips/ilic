@@ -18,19 +18,25 @@ antlrcpp::Any Ili1Input::visitDecimal(Ili1Parser::DecimalContext *ctx)
 	| NUMBER
 	*/
    
-   Log.debug("visitDecimal()");
+   debug(ctx,">>> visitDecimal()");
+   Log.incNestLevel();
+   
+   string value;
 
    if (ctx->DEC() != nullptr) {
-      return ctx->DEC()->getText();
+      value = ctx->DEC()->getText();
    }
    else if (ctx->POSNUMBER() != nullptr) {
-      return ctx->POSNUMBER()->getText();
+      value = ctx->POSNUMBER()->getText();
    }
    else {
-      return ctx->NUMBER()->getText();
+      value = ctx->NUMBER()->getText();
    }
 
-   return nullptr;
+   Log.decNestLevel();
+   debug(ctx,"<<< visitDecimal(" + value + ")");
+
+   return value;
 
 }
 
@@ -42,8 +48,9 @@ void input::parseIli1(string input)
    stream.open(input);
    antlr4::ANTLRInputStream inputstream(stream);
 
-   Log.debug("creating ili1 lexer ...");
+   Log.debug("creating ili1 lexer (1) ...");
    lexer::Ili1Lexer ili1lexer(&inputstream);
+   Log.debug("creating ili1 lexer (2) ...");
    antlr4::CommonTokenStream tokens(&ili1lexer);
 
    Log.debug("creating ili1 parser ...");
@@ -75,7 +82,8 @@ antlrcpp::Any Ili1Input::visitInterlis1Def(Ili1Parser::Interlis1DefContext *ctx)
    ;
    */
   
-   Log.debug("visitInterlis1Def()");
+   debug(ctx,">>> visitInterlis1Def()");
+   Log.incNestLevel();
 
    if (ctx->domainDefs() != nullptr) {      
       visitDomainDefs(ctx->domainDefs());
@@ -93,6 +101,9 @@ antlrcpp::Any Ili1Input::visitInterlis1Def(Ili1Parser::Interlis1DefContext *ctx)
       visitView(vctx); // to do !!!
    }
    
+   Log.decNestLevel();
+   debug(ctx,"<<< visitInterlis1Def()");
+
    return nullptr;
   
 }
@@ -109,7 +120,8 @@ antlrcpp::Any Ili1Input::visitDerivatives(Ili1Parser::DerivativesContext *ctx)
 
    string name1 = ctx->derivativename1->getText();
    string name2 = ctx->derivativename2->getText();
-   Log.debug("visitDerivatives(" + name1 + ")");
+   debug(ctx,">>> visitDerivatives(" + name1 + ")");
+   Log.incNestLevel();
    
    if (name1 != name2) {
       Log.error(
@@ -126,7 +138,10 @@ antlrcpp::Any Ili1Input::visitDerivatives(Ili1Parser::DerivativesContext *ctx)
       visitTopicDef(tctx);
    }      
    
-   return nullptr; // ???, to do !!!
+   Log.decNestLevel();
+   debug(ctx,"<<< visitDerivatives(" + name1 + ")");
+
+   return nullptr;
 
 }
 
@@ -166,7 +181,9 @@ antlrcpp::Any Ili1Input::visitView(Ili1Parser::ViewContext *ctx)
 
    string name1 = ctx->modelname1->getText();
    string name2 = ctx->modelname2->getText();
-   Log.debug("visitView(" + name1 + ")");
+   debug(ctx,">>> visitView(" + name1 + ")");
+   Log.incNestLevel();
+   
    if (name1 != name2) {
       Log.error(
          name2 + " must match " + name1,
@@ -200,6 +217,9 @@ antlrcpp::Any Ili1Input::visitView(Ili1Parser::ViewContext *ctx)
       visitViewDef(vctx);
    }
    
+   Log.decNestLevel();
+   debug(ctx,"<<< visitView(" + name1 + ")");
+   
    return v;
    
 }
@@ -214,7 +234,8 @@ antlrcpp::Any Ili1Input::visitViewDef(Ili1Parser::ViewDefContext *ctx)
    | LARROW table=NAME DOT attr=NAME
    */
 
-   Log.debug("visitViewDef()");
+   debug(ctx,">>> visitViewDef()");
+   Log.incNestLevel();
 
    if (ctx->VERTEXINFO() != nullptr) {
       string vertexinfo = ctx->vertexinfo->getText();
@@ -237,6 +258,9 @@ antlrcpp::Any Ili1Input::visitViewDef(Ili1Parser::ViewDefContext *ctx)
       string attrref = get_path(get_package_context()) + "." + ctx->table->getText() + "." + ctx->attr->getText();
       // to do !!!
    }
+
+   Log.decNestLevel();
+   debug(ctx,"<<< visitViewDef()");
 
    // to do !!!
    return nullptr;
@@ -278,7 +302,8 @@ antlrcpp::Any Ili1Input::visitFormatEncoding(Ili1Parser::FormatEncodingContext *
    END DOT
    */
    
-   Log.debug("visitFormat()");
+   debug(ctx,">>> visitFormatEncoding()");
+   Log.incNestLevel();
    
    Ili1Format *f = new Ili1Format();
    
@@ -319,6 +344,9 @@ antlrcpp::Any Ili1Input::visitFormatEncoding(Ili1Parser::FormatEncodingContext *
       f->tidExplanation = ctx->EXPLANATION()->getSymbol()->getText();
    }
    
+   Log.decNestLevel();
+   debug(ctx,"<<< visitFormatEncoding()");
+
    return f;
 
 }
@@ -330,9 +358,9 @@ antlrcpp::Any Ili1Input::visitFont(Ili1Parser::FontContext *ctx)
    : FONT EQUAL expl=EXPLANATION SEMI
    */
    
-   Log.debug("visitFont()");
-   
-   return ctx->expl->getText();
+   debug(ctx,">>> visitFont()");
+   string value = ctx->expl->getText();
+   debug(ctx,"<<< visitFont(" + value + ")");
 
 }
 
@@ -344,16 +372,20 @@ antlrcpp::Any Ili1Input::visitCode(Ili1Parser::CodeContext *ctx)
    | HEXNUMBER
    */
 
-   Log.debug("visitCode()");
+   debug(ctx,">>> visitCode()");
+   
+   int code;
 
    if (ctx->POSNUMBER() != nullptr) {
-      return atoi(ctx->POSNUMBER()->getSymbol()->getText().c_str());
+      code = atoi(ctx->POSNUMBER()->getSymbol()->getText().c_str());
    }
    else {
-      return 99; // to do !!!
+      code = 99; // to do !!!
       //return (char)hextoi(ctx->HEXNUMBER()->getSymbol()->getText().c_str());
    }
 
-   return nullptr;
+   debug(ctx,"<<< visitCode(" + to_string(code) + ")");
+   
+   return code;
 
 }

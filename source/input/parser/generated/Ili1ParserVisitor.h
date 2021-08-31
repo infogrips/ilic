@@ -1,5 +1,5 @@
 
-// Generated from ..\..\source\input\parser\generated\Ili1Parser.g4 by ANTLR 4.7.1
+// Generated from ..\..\..\..\source\c\ilic\input\parser\generated\Ili1Parser.g4 by ANTLR 4.7.1
 
 #pragma once
 
@@ -39,8 +39,6 @@ public:
     virtual antlrcpp::Any visitIdentification(Ili1Parser::IdentificationContext *context) = 0;
 
     virtual antlrcpp::Any visitType(Ili1Parser::TypeContext *context) = 0;
-
-    virtual antlrcpp::Any visitAttributeType(Ili1Parser::AttributeTypeContext *context) = 0;
 
     virtual antlrcpp::Any visitBaseType(Ili1Parser::BaseTypeContext *context) = 0;
 

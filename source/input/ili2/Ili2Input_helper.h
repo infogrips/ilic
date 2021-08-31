@@ -19,7 +19,6 @@ namespace input {
    const string ORDERED   = "ORDERED";
    const string EXTERNAL  = "EXTERNAL";
 
-   void debug(antlr4::ParserRuleContext *ctx, string message);
    string visitString(antlr4::Token *t);
    map<string,bool> get_properties(parser::Ili2Parser::PropertiesContext *ctx,vector<string> allowed_properties);
 

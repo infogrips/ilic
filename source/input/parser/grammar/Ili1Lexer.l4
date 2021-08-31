@@ -36,34 +36,6 @@ ILI_BLOCKCOMMENT
 // simple tokens
 //
 
-INTERLIS
-   : 'INTERLIS'
-   ;
-   
-ILI23
-   : '2.3'
-   ;
-
-ILI24
-   : '2.4'
-   ;
-
-CONTRACTED
-   : 'CONTRACTED'
-   ;
-
-REFSYSTEM
-   : 'REFSYSTEM'
-   ;
-
-SYMBOLOGY
-   : 'SYMBOLOGY'
-   ;
-
-TYPE
-   : 'TYPE'
-   ;
-
 MODEL
    : 'MODEL'
    ;
@@ -72,112 +44,20 @@ END
    : 'END'
    ;
 
-VERSION
-   : 'VERSION'
-   ;
-
-NOINCREMENTALTRANSFER
-   : 'NOINCREMENTALTRANSFER'
-   ;
-
-TRANSLATION
-   : 'TRANSLATION'
-   ;
-
-OF
-   : 'OF'
-   ;
-
-ATT
-   : 'AT'
-   ;
-   
-CHARSET
-   : 'CHARSET'
-   ;
-
-XMLNS
-   : 'XMLNS'
-   ;
-
-IMPORTS
-   : 'IMPORTS'
-   ;
-
-UNQUALIFIED
-   : 'UNQUALIFIED'
-   ;
-
 TOPIC
    : 'TOPIC'
-   ;
-
-DEPENDS
-   : 'DEPENDS'
-   ;
-
-ON
-   : 'ON'
-   ;
-
-AS
-   : 'AS'
    ;
 
 VIEW
    : 'VIEW'
    ;
 
-EXTENDS
-   : 'EXTENDS'
-   ;
-
 DATE
    : 'DATE'
    ;
 
-BASKET
-   : 'BASKET'
-   ;
-
-OID
-   : 'OID'
-   ;
-
-CLASS
-   : 'CLASS'
-   ;
-
-ABSTRACT
-   : 'ABSTRACT'
-   ;
-
-EXTENDED
-   : 'EXTENDED'
-   ;
-
-FINAL
-   : 'FINAL'
-   ;
-
-TRANSIENT
-   : 'TRANSIENT'
-   ;
-
-CONTINUOUS
-   : 'CONTINUOUS'
-   ;
-
-SUBDIVISION
-   : 'SUBDIVISION'
-   ;
-
 NO
    : 'NO'
-   ;
-
-ATTRIBUTE
-   : 'ATTRIBUTE'
    ;
 
 TEXT
@@ -200,60 +80,12 @@ RBRACE
    : ']'
    ;
 
-LCURLY
-   : '{'
-   ;
-
-RCURLY
-   : '}'
-   ;
-
 STAR
    : '*'
    ;
 
-SLASH
-   : '/'
-   ;
-
-BACKSLASH
-   : '\\'
-   ;
-
-PERCENT
-   : '%'
-   ;
-
-AT
-   : '@'
-   ;
-
-HASH
-   : '#'
-   ;
-
-TILDE
-   : '~'
-   ;
-
-LESS
-   : '<'
-   ;
-
-LESSEQUAL
-   : '<='
-   ;
-
-GREATERGREATER
-   : '>>'
-   ;
-   
 GREATER
    : '>'
-   ;
-
-GREATEREQUAL
-   : '>='
    ;
 
 SEMI
@@ -262,22 +94,6 @@ SEMI
 
 EQUAL
    : '='
-   ;
-
-EQUALEQUAL
-   : '=='
-   ;
-
-LESSGREATER
-   : '<>'
-   ;
-
-NOTEQUAL
-   : '!='
-   ;
-
-COLONEQUAL
-   : ':='
    ;
 
 DOT
@@ -304,70 +120,6 @@ RARROW
    : '->'
    ;
    
-PLUS
-   : '+'
-   ;
-
-MINUS
-   : '-'
-   ;
-
-AGGREGATE
-   : '-<>'
-   ;
-
-ASSOCIATE
-   : '--'
-   ;
-
-COMPOSITE
-   : '-<#>'
-   ;
-
-STRUCTURE
-   : 'STRUCTURE'
-   ;
-
-PARAMETER
-   : 'PARAMETER'
-   ;
-
-MANDATORY
-   : 'MANDATORY'
-   ;
-
-BAG
-   : 'BAG'
-   ;
-
-LIST
-   : 'LIST'
-   ;
-
-REFERENCE
-   : 'REFERENCE'
-   ;
-
-TO
-   : 'TO'
-   ;
-
-ANYCLASS
-   : 'ANYCLASS'
-   ;
-
-RESTRICTION
-   : 'RESTRICTION'
-   ;
-
-ASSOCIATION
-   : 'ASSOCIATION'
-   ;
-
-DERIVED
-   : 'DERIVED'
-   ;
-
 HALIGNMENT
    : 'HALIGNMENT'
    ;
@@ -376,116 +128,28 @@ VALIGNMENT
    : 'VALIGNMENT'
    ;
 
-EXTERNAL
-   : 'EXTERNAL'
-   ;
-
-FROM
-   : 'FROM'
-   ;
-
 UNDEFINED
    : 'UNDEFINED'
    ;
    
-MTEXT
-   : 'MTEXT'
-   ;
-
-URI
-   : 'URI'
-   ;
-   
-ALL
-   : 'ALL'
-   ;
-   
-CIRCULAR
-   : 'CIRCULAR'
-   ;
-   
-OTHERS
-   : 'OTHERS'
-   ;
-
 BOOLEAN
    : 'BOOLEAN'
-   ;
-   
-NUMERIC
-   : 'NUMERIC'
-   ;
-   
-CLOCKWISE
-   : 'CLOCKWISE'
-   ;
-
-COUNTERCLOCKWISE
-   : 'COUNTERCLOCKWISE'
-   ;
-
-CARDINALITY
-   : 'CARDINALITY'
-   ;
-
-OR
-   : 'OR'
-   ;
-   
-HIDING
-   : 'HIDING'
-   ;
-
-ORDERED
-   : 'ORDERED'
    ;
    
 ILIDOMAIN
    : 'DOMAIN'
    ;
 
-PI
-   : 'PI'
-   ;
-   
-LNBASE
-   : 'LNBASE'
-   ;
-
 FORMAT
    : 'FORMAT'
    ;
 
-INHERIT
-   : 'INHERIT'
-   ;
-   
 COORD
    : 'COORD'
    ;
    
-ROTATION
-   : 'ROTATION'
-   ;
-
 ANY
    : 'ANY'
-   ;
-
-BLACKBOX
-   : 'BLACKBOX'
-   ;
-
-XML
-   : 'XML'
-   ;
-   
-BINARY
-   : 'BINARY'
-   ;
-   
-DIRECTED
-   : 'DIRECTED'
    ;
 
 POLYLINE
@@ -524,188 +188,16 @@ OVERLAPS
    : 'OVERLAPS'
    ;
    
-LINE
-   : 'LINE'
-   ;
-   
-ATTRIBUTES
-   : 'ATTRIBUTES'
-   ;
-   
 FORM
    : 'FORM'
    ;
    
-UNIT
-   : 'UNIT'
-   ;
-   
-FUNCTION
-   : 'FUNCTION'
-   ;
-   
-SIGN
-   : 'SIGN'
-   ;
-   
-OBJECTS
-   : 'OBJECTS'
-   ;
-
-METAOBJECT
-   : 'METAOBJECT'
-   ;
-
-CONSTRAINT
-   : 'CONSTRAINT'
-   ;
-   
-CONSTRAINTS
-   : 'CONSTRAINTS'
-   ;
-   
-EXISTENCE
-   : 'EXISTENCE'
-   ;
-   
-REQUIRED
-   : 'REQUIRED'
-   ;
-   
-IN
-   : 'IN'
-   ;
-
-UNIQUE
-   : 'UNIQUE'
-   ;
-   
-WHERE
-   : 'WHERE'
-   ;
-
-LOCAL
-   : 'LOCAL'
-   ;
-   
-SET
-   : 'SET'
-   ;
-
-AND
-   : 'AND'
-   ;
-   
-NOT
-   : 'NOT'
-   ;
-
-BASED
-   : 'BASED'
-   ;
-
 BASE
    : 'BASE'
    ;
 
-INHERITANCE
-   : 'INHERITANCE'
-   ;
-
-DEFINED
-   : 'DEFINED'
-   ;
-
-INSPECTION
-   : 'INSPECTION'
-   ;
-
-THIS
-   : 'THIS'
-   ;
-
-THISAREA
-   : 'THISAREA'
-   ;
-
-THATAREA
-   : 'THATAREA'
-   ;
-
-PARENT
-   : 'PARENT'
-   ;
-
-FIRST
-   : 'FIRST'
-   ;
-
-LAST
-   : 'LAST'
-   ;
-
-AGGREGATES
-   : 'AGGREGATES'
-   ;
-
-OBJECT
-   : 'OBJECT'
-   ;
-
-ENUMVAL
-   : 'ENUMVAL'
-   ;
-
-ENUMTREEVAL
-   : 'ENUMTREEVAL'
-   ;
-
-PROJECTION
-   : 'PROJECTION'
-   ;
-
-JOIN
-   : 'JOIN'
-   ;
-
-ILINULL
-   : 'NULL'
-   ;
-
-UNION
-   : 'UNION'
-   ;
-
-AGGREGATION
-   : 'AGGREGATION'
-   ;
-
-BY
-   : 'BY'
-   ;
-
-GRAPHIC
-   : 'GRAPHIC'
-   ;
-
-ACCORDING
-   : 'ACCORDING'
-   ;
-
-WHEN
-   : 'WHEN'
-   ;
-
-ANYSTRUCTURE
-   : 'ANYSTRUCTURE'
-   ;
-   
 TRANSFER
    : 'TRANSFER'
-   ;
-   
-EQUALS
-   : 'EQUALS'
    ;
    
 OPTIONAL
@@ -874,4 +366,8 @@ HEXNUMBER
 
 NAME
    : LETTER (LETTER | '_' | DIGIT)*
+   ;
+
+ERRORCHAR
+   : .
    ;

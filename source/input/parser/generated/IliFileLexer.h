@@ -1,5 +1,5 @@
 
-// Generated from ..\..\source\input\parser\generated\IliFileLexer.l4 by ANTLR 4.7.1
+// Generated from ..\..\..\..\source\c\ilic\input\parser\generated\IliFileLexer.l4 by ANTLR 4.7.1
 
 #pragma once
 
@@ -15,8 +15,8 @@ public:
   enum {
     INTERLIS = 1, DOT = 2, COMMA = 3, SEMI = 4, TRANSFER = 5, MODEL = 6, 
     TRANSLATION = 7, OF = 8, IMPORTS = 9, UNQUALIFIED = 10, NAME = 11, DIGIT = 12, 
-    LETTER = 13, WS = 14, SL_COMMENT = 15, ILI_DOC = 16, ILI_OPTION = 17, 
-    ILI_BLOCKCOMMENT = 18
+    LETTER = 13, WS = 14, SL_COMMENT = 15, ILI_DOC = 16, ILI_BLOCKCOMMENT = 17, 
+    ERRORCHAR = 18
   };
 
   IliFileLexer(antlr4::CharStream *input);

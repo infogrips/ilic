@@ -1,5 +1,5 @@
 
-// Generated from ..\..\source\input\parser\generated\Ili2Parser.g4 by ANTLR 4.7.1
+// Generated from ..\..\..\..\source\c\ilic\input\parser\generated\Ili2Parser.g4 by ANTLR 4.7.1
 
 #pragma once
 
@@ -34,6 +34,8 @@ public:
 
     virtual antlrcpp::Any visitTopicDef(Ili2Parser::TopicDefContext *context) = 0;
 
+    virtual antlrcpp::Any visitTopicPath(Ili2Parser::TopicPathContext *context) = 0;
+
     virtual antlrcpp::Any visitClassDef(Ili2Parser::ClassDefContext *context) = 0;
 
     virtual antlrcpp::Any visitStructureDef(Ili2Parser::StructureDefContext *context) = 0;
@@ -62,9 +64,9 @@ public:
 
     virtual antlrcpp::Any visitCardinality(Ili2Parser::CardinalityContext *context) = 0;
 
-    virtual antlrcpp::Any visitDomainDecl(Ili2Parser::DomainDeclContext *context) = 0;
-
     virtual antlrcpp::Any visitDomainDef(Ili2Parser::DomainDefContext *context) = 0;
+
+    virtual antlrcpp::Any visitDomainType(Ili2Parser::DomainTypeContext *context) = 0;
 
     virtual antlrcpp::Any visitType(Ili2Parser::TypeContext *context) = 0;
 
@@ -79,6 +81,10 @@ public:
     virtual antlrcpp::Any visitEnumerationType(Ili2Parser::EnumerationTypeContext *context) = 0;
 
     virtual antlrcpp::Any visitEnumTreeValueType(Ili2Parser::EnumTreeValueTypeContext *context) = 0;
+
+    virtual antlrcpp::Any visitAlignmentType(Ili2Parser::AlignmentTypeContext *context) = 0;
+
+    virtual antlrcpp::Any visitBooleanType(Ili2Parser::BooleanTypeContext *context) = 0;
 
     virtual antlrcpp::Any visitEnumeration(Ili2Parser::EnumerationContext *context) = 0;
 
@@ -118,7 +124,7 @@ public:
 
     virtual antlrcpp::Any visitClassType(Ili2Parser::ClassTypeContext *context) = 0;
 
-    virtual antlrcpp::Any visitAttributeType(Ili2Parser::AttributeTypeContext *context) = 0;
+    virtual antlrcpp::Any visitAttributePathType(Ili2Parser::AttributePathTypeContext *context) = 0;
 
     virtual antlrcpp::Any visitClassConst(Ili2Parser::ClassConstContext *context) = 0;
 
@@ -176,13 +182,17 @@ public:
 
     virtual antlrcpp::Any visitExpression(Ili2Parser::ExpressionContext *context) = 0;
 
-    virtual antlrcpp::Any visitOrTerm(Ili2Parser::OrTermContext *context) = 0;
+    virtual antlrcpp::Any visitTerm1(Ili2Parser::Term1Context *context) = 0;
 
-    virtual antlrcpp::Any visitAndTerm(Ili2Parser::AndTermContext *context) = 0;
+    virtual antlrcpp::Any visitOperator1(Ili2Parser::Operator1Context *context) = 0;
 
-    virtual antlrcpp::Any visitPredicateTerm(Ili2Parser::PredicateTermContext *context) = 0;
+    virtual antlrcpp::Any visitTerm2(Ili2Parser::Term2Context *context) = 0;
 
-    virtual antlrcpp::Any visitPredicate(Ili2Parser::PredicateContext *context) = 0;
+    virtual antlrcpp::Any visitOperator2(Ili2Parser::Operator2Context *context) = 0;
+
+    virtual antlrcpp::Any visitTerm3(Ili2Parser::Term3Context *context) = 0;
+
+    virtual antlrcpp::Any visitTerm(Ili2Parser::TermContext *context) = 0;
 
     virtual antlrcpp::Any visitRelation(Ili2Parser::RelationContext *context) = 0;
 
@@ -228,7 +238,7 @@ public:
 
     virtual antlrcpp::Any visitSelection(Ili2Parser::SelectionContext *context) = 0;
 
-    virtual antlrcpp::Any visitViewAttributes(Ili2Parser::ViewAttributesContext *context) = 0;
+    virtual antlrcpp::Any visitViewAttribute(Ili2Parser::ViewAttributeContext *context) = 0;
 
     virtual antlrcpp::Any visitGraphicDef(Ili2Parser::GraphicDefContext *context) = 0;
 

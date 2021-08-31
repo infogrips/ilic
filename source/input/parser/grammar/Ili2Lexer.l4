@@ -10,15 +10,16 @@ lexer grammar Ili2Lexer;
 
 WS
    : (' ' | '\t' | '\f' | ('\r'? '\n'))+
-   -> skip;
+   -> skip
+   ;
+   
+NL
+   : '\r'? '\n'
+   ;
 
 SL_COMMENT
-   : '!!'
-   (~'@')
-   (~('\n'|'\r'|'\uFFFF'))*
-   ('\n' | ('\r' ( '\n' )?)|'\uFFFF')
-   -> skip
-  ;
+   : '!!' (~'@') ~('\n')* '\n' -> skip
+   ;
   
 ILI_DOC
     : '/**' .*? '*/' -> skip
@@ -138,6 +139,18 @@ BASKET
 
 OID
    : 'OID'
+   ;
+
+BOOLEAN
+   : 'BOOLEAN'
+   ;
+
+HALIGNMENT
+   : 'HALIGNMENT'
+   ;
+
+VALIGNMENT
+   : 'VALIGNMENT'
    ;
 
 CLASS

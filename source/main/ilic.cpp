@@ -40,7 +40,7 @@ string get_program_name()
 
 string get_version()
 {
-   return "0.9.4";
+   return "0.9.7";
 }
 
 string get_version_string()
@@ -355,12 +355,31 @@ static bool compile(IliFile *f)
       }
    }
    
+   // verify if all imported models are in the same file or already compiled
    for (auto import : f->getImports()) {
       bool found = false;
-      for (auto model : compiled_models) {
+      // search in same file
+      for (auto model : f->getModels()) {
          if (model == import) {
             found = true;
             break;
+         }
+      }
+
+      for (auto model : f->getModels()) {
+         if (model == import) {
+            found = true;
+            break;
+         }
+      }
+
+      if (!found) {
+         // search in already compiled files
+         for (auto model : compiled_models) {
+            if (model == import) {
+               found = true;
+               break;
+            }
          }
       }
       if (!found) {
@@ -622,7 +641,7 @@ int main(int argc, char* argv[])
          Log.warningsAsErrors();
       }
    }
-   
+
    if (log != "") {
       Log.openFile(log);
    }
@@ -662,26 +681,30 @@ int main(int argc, char* argv[])
    for (auto arg : arguments.getKeys()) {
       string value = arguments.get(arg);
       if (arg.find("ilifile") == 0) {
-         Log.infoNoNL("loading " + value);
+         Log.info("loading " + value + " ...");
          Log.incNestLevel();
          if (!load_ilifiles_by_file(value)) {
-            Log.infoAppend(", not done.");
+            Log.info("not done.");
             abort(1);
          }
          Log.decNestLevel();
-         Log.infoAppend(", done.");
+         Log.info("done.");
       }      
    }
    Log.decNestLevel();
    Log.info("done.");
+
+   // get interlis version from last file
+   string iliversion = all_ilifiles.back()->getIliVersion();
+   metamodel::init(iliversion);
 
    Log.info("");
    Log.info("loading imported models ...");
    Log.incNestLevel();
    map<string,bool> loaded_models;
    while (true) {
-      int fcount = AllIliFiles.size();
-      for (IliFile *f : AllIliFiles) {
+      int fcount = all_ilifiles.size();
+      for (IliFile *f : all_ilifiles) {
          for (string modelname : f->getImports()) {
             if (loaded_models[modelname]) {
                continue;
@@ -689,19 +712,19 @@ int main(int argc, char* argv[])
             else if (modelname == "INTERLIS") {
                continue;
             }
-            Log.infoNoNL("searching for model " + modelname);
+            Log.info("searching for model " + modelname + " ...");
             Log.incNestLevel();
-            IliFile *f = load_ilifiles_by_model(modelname);
+            IliFile *f = load_ilifiles_by_model(modelname,iliversion);
             if (f == nullptr) {
-               Log.infoAppend(", not found.");
+               Log.info("not found.");
                abort(1);
             }
             loaded_models[modelname] = true;
             Log.decNestLevel();
-            Log.infoAppend(", found in " + f->getFilePath() + ".");
+            Log.info("found in " + f->getFilePath() + ".");
          }
       }
-      if (fcount == AllIliFiles.size()) {
+      if (fcount == all_ilifiles.size()) {
          break;
       }
       else if (fcount == 100) {
@@ -714,7 +737,7 @@ int main(int argc, char* argv[])
       
    Log.info("");
    Log.info("all input files are:");
-   for (IliFile *f : AllIliFiles) {
+   for (IliFile *f : all_ilifiles) {
       string models = "";
       for (string model : f->getModels()) {
          if (models == "") {
@@ -736,23 +759,33 @@ int main(int argc, char* argv[])
    }
    Log.info("done.");
 
-   // get interlis version from last file
-   string iliversion = AllIliFiles.back()->getIliVersion();
-   metamodel::init(iliversion);
-
    // compile all .ili files
    bool multiple_iliversions = false;
-   compile(load_ilifiles_by_model("INTERLIS"));
+   if (iliversion != "1.0") {
+      compile(load_ilifiles_by_model("INTERLIS",iliversion));
+   }
+   int count=0;
    while (true) {
       bool all_compiled = true;
-      for (IliFile *f : AllIliFiles) {
-         if (f->getIliVersion() != iliversion) {
+      for (IliFile *f : all_ilifiles) {
+         if (f->getIliVersion() != iliversion && f->getFilePath() != "INTERLIS") {
             multiple_iliversions = true;
          }
          all_compiled = compile(f) && all_compiled;
       }
       if (all_compiled) {
          break;
+      }
+      count++;
+      if (count > 20) {
+         Log.info("");
+         Log.info("the following files do not compile:");
+         for (IliFile *f : all_ilifiles) {
+            if (!compile(f)) {
+               Log.info("   " + f->getFilePath());
+            }
+         }
+         Log.internal_error("endless compile loop");
       }
    }
    
@@ -832,10 +865,10 @@ int main(int argc, char* argv[])
    Log.closeFile();
    
    if (Log.getErrorCount() == 0) {
-      exit(success_status);
+      return success_status;
    }
    else {
-      exit(1);
+      return 1;
    }
 
 }

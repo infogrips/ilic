@@ -21,9 +21,8 @@ decimal
    ;
    
 path
-   : INTERLIS
-   | (INTERLIS DOT)? (SIGN | REFSYSTEM | NAME) (DOT NAME)?
-   | NAME (DOT NAME)*
+   : INTERLIS DOT (SIGN | URI | REFSYSTEM | BOOLEAN | HALIGNMENT | VALIGNMENT)
+   | (INTERLIS DOT)? NAME (DOT NAME)*
    ;
    
 interlis2Def
@@ -50,7 +49,7 @@ modelDef
      | unitDecl
      | functionDef
      | lineFormTypeDef
-     | domainDecl
+     | domainDef
      | {ili24}? contextDef
      | runTimeParameterDef
      | classDef
@@ -65,9 +64,9 @@ importDef
    ;
 
 importing
-   : UNQUALIFIED? (importname=path)
+   : UNQUALIFIED? (INTERLIS | NAME)
    ;
-
+   
 topicDef
    : VIEW? TOPIC topicname1=NAME
      properties? // ABSTRACT|FINAL
@@ -75,12 +74,12 @@ topicDef
      EQUAL
      (BASKET OID AS basketOid=path SEMI)?
      (OID AS topicOid=path SEMI)?
-     (DEPENDS ON depTopic=path (COMMA depTopic=path)* SEMI)*
+     (DEPENDS ON topicPath (COMMA topicPath)* SEMI)*
      ({ili24}? DEFERRED GENERICS genericref=path (COMMA genericref=path)* SEMI)?
      (metaDataBasketDef
      |unitDecl
      |functionDef
-     |domainDecl
+     |domainDef
      |classDef
      |structureDef
      |associationDef
@@ -89,6 +88,10 @@ topicDef
      |graphicDef
      )*
      END topicname2=NAME SEMI
+   ;
+   
+topicPath
+   : path
    ;
    
 classDef
@@ -178,11 +181,11 @@ cardinality
    : LCURLY (STAR | min=POSNUMBER (DOTDOT (max=POSNUMBER | STAR))?) RCURLY
    ;
 
-domainDecl
-   : ILIDOMAIN domainDef*
+domainDef
+   : ILIDOMAIN domainType*
    ;
                 
-domainDef
+domainType
    : domainname=NAME properties? // ABSTRACT|GENERIC|FINAL
      (EXTENDS basedomain=path)? EQUAL
      (MANDATORY type? | type) 
@@ -199,6 +202,8 @@ baseType
    : textType
    | enumerationType
    | enumTreeValueType
+   | alignmentType
+   | booleanType
    | numericType
    | formattedType
    | {ili24}? dateTimeType
@@ -206,7 +211,7 @@ baseType
    | oIDType
    | blackboxType
    | classType
-   | attributeType
+   | attributePathType
    ;
 
 constant
@@ -236,6 +241,14 @@ enumerationType
 
 enumTreeValueType
    : ALL OF typeref=path
+   ;
+
+alignmentType
+   : HALIGNMENT | VALIGNMENT
+   ;
+
+booleanType
+   : BOOLEAN
    ;
 
 enumeration
@@ -328,8 +341,8 @@ classType
    | STRUCTURE restriction?
    ;
 
-attributeType
-   : ATTRIBUTE (OF (attributePath | ATT NAME))?
+attributePathType
+   : ATTRIBUTE (OF (attributePath | AT NAME))?
      (RESTRICTION LPAREN attrTypeDef (COLON attrTypeDef)* RPAREN)? 
    ;
 
@@ -672,7 +685,7 @@ drawingRule
 
 condSignParamAssignment
    : (WHERE logical=expression)?
-     LPAREN signParamAssignment (COMMA signParamAssignment)* RPAREN
+     LPAREN signParamAssignment (SEMI signParamAssignment)* RPAREN
    ;
 
 signParamAssignment

@@ -61,26 +61,20 @@ LETTER
 //
 
 WS
-   : (' ' | '\t' | '\f' | ('\r'? '\n'))+
-   -> skip;
+   : (' ' | '\t' | '\f' | ('\r'? '\n'))+ -> skip;
 
 SL_COMMENT
-   : '!!'
-   (~'@')
-   (~('\n'|'\r'|'\uFFFF'))*
-   ('\n' | ('\r' ( '\n' )?)|'\uFFFF')
-   -> skip
+   : '!!' .*? '\n' -> skip
    ;
   
 ILI_DOC
    : '/**' .*? '*/' -> skip
    ;
 
-ILI_OPTION
-   : '!!@' .*? ('\n' | ('\r' ( '\n' )?)|'\uFFFF') -> skip
-   ;
-    
 ILI_BLOCKCOMMENT
    : '/*' .*? '*/' -> skip
    ;
-    
+
+ANYCHAR
+   : .
+   ;

@@ -11,16 +11,29 @@ antlrcpp::Any Ili2Input::visitPath(parser::Ili2Parser::PathContext * ctx)
 {
 
    /* path
-   : INTERLIS
-   | (INTERLIS DOT)? SIGN
-   | (INTERLIS DOT)? NAME
-   | NAME (DOT NAME)*
+   : INTERLIS DOT (SIGN | URI | REFSYSTEM | BOOLEAN | HALIGNMENT | VALIGNMENT)
+   | (INTERLIS DOT)? NAME (DOT NAME)*
    */
-         
+            
    string path = "";
    
    if (ctx->SIGN() != nullptr) {
       path = "INTERLIS.SIGN";
+   }
+   else if (ctx->URI() != nullptr) {
+      path = "INTERLIS.URI";
+   }
+   else if (ctx->REFSYSTEM() != nullptr) {
+      path = "INTERLIS.REFSYSTEM";
+   }
+   else if (ctx->BOOLEAN() != nullptr) {
+      path = "INTERLIS.BOOLEAN";
+   }
+   else if (ctx->HALIGNMENT() != nullptr) {
+      path = "INTERLIS.HALIGNMENT";
+   }
+   else if (ctx->VALIGNMENT() != nullptr) {
+      path = "INTERLIS.VALIGNMENT";
    }
    else {
 
@@ -34,7 +47,7 @@ antlrcpp::Any Ili2Input::visitPath(parser::Ili2Parser::PathContext * ctx)
             path = name;
          }
          else {
-            path += "." + name;
+            path = path + "." + name;
          }
       }
       

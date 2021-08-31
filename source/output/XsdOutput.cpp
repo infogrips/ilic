@@ -15,6 +15,11 @@ XsdOutput::XsdOutput(string xsd_file,string iliversion, string ilic_version) {
    this->iliversion = iliversion;
    this->ilic_version = ilic_version;
 }
+
+void XsdOutput::createEmptyFile() {
+   xsd.openFile(xsd_file);
+   xsd.closeFile();
+}
    
 void XsdOutput::preVisit(void) {
    Log.warning("xsd generation not fully implemented yet");
@@ -57,6 +62,278 @@ void XsdOutput::postVisit() {
    xsd.closeFile();
 }
 
+void XsdOutput::preVisitModel(metamodel::Model* m) {
+   if (m->Name == "INTERLIS") {
+      ignoreVisit();
+   }
+}
+
+void XsdOutput::visitModel(metamodel::Model* m) {
+   if (m->Name == "INTERLIS") {
+      ignoreVisit();
+   }
+}
+
+void XsdOutput::postVisitModel(metamodel::Model* m) {
+   if (m->Name == "INTERLIS") {
+      ignoreVisit();
+   }
+}
+
+void XsdOutput::postVisitSubModel(metamodel::SubModel* s) {
+   Log.warning("check XSDGenerator lines 834-896");
+
+   xsd.writeln("<xsd:complexType name=\"" + get_path(s) + "\">");
+   xsd.writelnIncNestLevel("<xsd:sequence>");
+   xsd.writelnIncNestLevel("<xsd:choice minOccurs=\"0\" maxOccurs=\"unbounded\">");
+
+   xsd.incNestLevel();
+
+   //std::map<string,string> allClassNames;
+
+   list<string> allClassNames;
+   list<string> allPathNames;
+
+   list<MetaElement*> allElements;
+
+   Package* sIter = s;
+
+   list<Package*> packages;
+   while (sIter != nullptr) {
+      packages.push_front(sIter);
+
+      sIter = sIter->_super;
+   }
+
+   for (auto* p : packages) {
+      for (auto* a : p->Element) {
+         if (a->getClass() == "Class") {
+            Class* c = static_cast<Class*>(a);
+
+            if (c->Kind == Class::ClassVal ||
+               (c->Kind == Class::Association && c->RoleAttribute.size() > 0)) {
+
+               if (c->Super != nullptr) {
+                  if (find(allElements.begin(), allElements.end(), c->Super) == allElements.end()) {
+                     allElements.push_back(c->Super);
+                  }
+
+               }
+            }
+         }
+
+         allElements.push_back(a);
+      }
+   }
+
+   for (auto* a : allElements) {
+      if (a->getClass() == "Class") {
+         Class* c = static_cast<Class*>(a);
+
+         if (c->Kind == Class::ClassVal ||
+            (c->Kind == Class::Association && c->RoleAttribute.size() > 0)) {
+
+            auto iteratorClassName = find(allClassNames.begin(), allClassNames.end(), c->Name);
+
+            if (iteratorClassName != allClassNames.end()) {
+               int index = distance(allClassNames.begin(), iteratorClassName);
+               auto iteratorPathName = allPathNames.begin();
+               advance(iteratorPathName, index);
+
+               allClassNames.erase(iteratorClassName);
+               allPathNames.erase(iteratorPathName);
+            }
+
+            allClassNames.push_back(c->Name);
+            allPathNames.push_back(get_path(c));
+         }
+      }
+   }
+
+   for (auto path : allPathNames) {
+      xsd.writeln("<xsd:element name=\"" + path + "\" type=\"" + path + "\"/>");
+   }
+
+   xsd.decNestLevel();
+
+   xsd.writeln("</xsd:choice>");
+   xsd.writelnDecNestLevel("</xsd:sequence>");
+
+   xsd.writeln("<xsd:attribute name=\"BID\" type=\"IliID\" use=\"required\"/>");
+
+   xsd.writelnDecNestLevel("</xsd:complexType>");
+}
+
+void XsdOutput::preVisitClass(metamodel::Class* c) {
+   if (c->_attr != nullptr) {
+      return;
+   }
+
+   if (c->Kind == c->Association) {
+      if (c->ClassAttribute.size() == 0 && c->RoleAttribute.size() == 0) {
+         return;
+      }
+   }
+
+   xsd.writeln("<xsd:complexType name=\"" + get_path(c) + "\">");
+   xsd.writelnIncNestLevel("<xsd:sequence>");
+
+   xsd.incNestLevel();
+}
+
+void XsdOutput::visitClass(metamodel::Class* c) {
+   if (c->_attr != nullptr) {
+      return;
+   }
+
+   if (c->Kind == c->Association) {
+      if (c->ClassAttribute.size() == 0 && c->RoleAttribute.size() == 0) {
+         return;
+      }
+   }
+
+   list<ExtendableME*> classesToScan;
+   list<ExtendableME*> attributes;
+
+   ExtendableME* attributeClass = c;
+
+   while (attributeClass != nullptr) {
+
+      if (attributeClass->getClass() == "Class") {
+         classesToScan.push_front(attributeClass);
+
+      }
+
+      attributeClass = attributeClass->Super;
+   }
+
+   for (auto cts : classesToScan) {
+      Class* ac = static_cast<Class*>(cts);
+
+      if (ac->Kind == Class::Association) {
+         for (auto ra : ac->RoleAttribute) {
+            attributes.push_back(ra);
+         }
+      }
+
+      for (auto ca : ac->ClassAttribute) {
+
+         string findString = ca->Name;
+         auto it = std::find_if(attributes.begin(), attributes.end(), [&findString](metamodel::ExtendableME* obj) {return obj->Name == findString; });
+
+         if (it != attributes.end()) {
+            it = attributes.erase(it);
+            attributes.insert(it,ca);
+         }
+         else {
+            attributes.push_back(ca);
+         }
+      }
+
+      if (ac->Kind != Class::Association) {
+         for (auto ra : ac->RoleAttribute) {
+            attributes.push_back(ra);
+         }
+      }
+   }
+
+   for (auto v : attributes) {
+      if (v->getClass() == "AttrOrParam") {
+         writeAttrOrParam(static_cast<AttrOrParam*>(v));
+      }
+      else if (v->getClass() == "Role") {
+         string minOccurs = "";
+
+         Role* role = static_cast<Role*>(v);
+
+         if (role->Multiplicity.Min < 1) {
+            minOccurs = " minOccurs=\"0\"";
+         }
+
+         if (c->Kind == Class::Association) {
+            xsd.writeln("<xsd:element name=\"" + role->Name + "\" type=\"RoleType\"/>");
+         }
+         else {
+            xsd.writeln("<xsd:element name=\"" + role->Name + "\"" + minOccurs + ">");
+            xsd.writelnIncNestLevel("<xsd:complexType>");
+
+            xsd.incNestLevel();
+
+            if (role->Association->ClassAttribute.size() > 0) {
+               xsd.writeln("<xsd:sequence>");
+               xsd.writelnIncNestLevel("<xsd:element name=\"" + get_path(role->Association) + "\" type=\"" + get_path(role->Association) + "\"/>");
+               xsd.writelnDecNestLevel("</xsd:sequence>");
+            }
+
+            xsd.writeln("<xsd:attribute name=\"REF\" type=\"IliID\" use=\"required\"/>");
+            xsd.writeln("<xsd:attribute name=\"BID\" type=\"IliID\"/>");
+            xsd.writeln("<xsd:attribute name=\"ORDER_POS\" type=\"xsd:positiveInteger\"/>");
+
+            xsd.decNestLevel();
+            xsd.writeln("</xsd:complexType>");
+            xsd.writelnDecNestLevel("</xsd:element>");
+         }
+
+
+      }
+   }
+}
+
+void XsdOutput::postVisitClass(metamodel::Class* c) {
+   if (c->_attr != nullptr) {
+      return;
+   }
+
+   if (c->Kind == c->Association) {
+      if (c->ClassAttribute.size() == 0 && c->RoleAttribute.size() == 0) {
+         return;
+      }
+   }
+
+   xsd.writelnDecNestLevel("</xsd:sequence>");
+
+   if (c->Kind == c->ClassVal) {
+      if (c->Oid == nullptr) {
+         xsd.writeln("<xsd:attribute name=\"TID\" type=\"IliID\" use=\"required\"/>");
+      }
+   }
+   else if (c->Kind == c->Association) {
+   }
+
+   xsd.writelnDecNestLevel("</xsd:complexType>");
+}
+
+void XsdOutput::visitDomainType(metamodel::DomainType* t) {
+   if (t->_attr != nullptr) {
+
+   }
+   else if (t->Name == "C1") {
+   }
+   else if (t->Name == "C2") {
+   }
+   else if (t->Name == "C3") {
+   }
+   else if (t->Name == "A1") {
+   }
+   else if (t->Name == "A2") {
+   }
+   else if (t->Name == "R") {
+   }
+   else if (t->Name == "TOP") {
+   }
+   else if (t->Name == "") {
+   }
+   else if (t->Name == "TYPE") {
+   }
+   else if (t->Name == "TEXT") {
+   }
+   else if (t->Name == "BLACKBOX") {
+   }
+   else {
+      writeType(t);
+   }
+}
+
 void XsdOutput::writeAnnotations() {
    xsd.writelnIncNestLevel("<xsd:annotation>");
 
@@ -64,7 +341,14 @@ void XsdOutput::writeAnnotations() {
       + ilic_version + "</xsd:appinfo>"
    );
 
-   for (Model *m : get_all_models()) {
+   list<Model*> allModels = get_all_models();
+   allModels.sort([](const Model* a, const Model* b) { return a->Name < b->Name; });
+
+   for (Model *m : allModels) {
+      if (m->Name == "INTERLIS") {
+         continue;
+      }
+
       xsd.writeln("<xsd:appinfo source=\"http://www.interlis.ch/ili2c\">");
       xsd.writelnIncNestLevel("<ili2c:model>" + m->Name + "</ili2c:model>");
       xsd.writeln("<ili2c:modelVersion>" + m->Version + "</ili2c:modelVersion>");
@@ -190,6 +474,10 @@ void XsdOutput::writeDatasection() {
       }
 
       for (auto *me : m->Element) {
+         if (me == nullptr) {
+            continue;
+         }
+
          if (me->getClass() == "SubModel") {
             xsd.writeln("<xsd:element name=\"" + get_path(me) + "\" type=\"" + get_path(me) + "\"/>");
          }
@@ -579,23 +867,104 @@ void XsdOutput::writeHeadersection() {
    //}
 }
 
-void XsdOutput::writeType(metamodel::DomainType *t) {
+void XsdOutput::writeAttrOrParam(metamodel::AttrOrParam* a) {
+   string minOccurs = "";
+
+   DomainType* t = dynamic_cast<DomainType*>(a->Type);
+   Class* ct = dynamic_cast<Class*>(a->Type);
+
+   if (t != nullptr) {
+      if (t->getClass() == "MultiValue") {
+         MultiValue* mv = static_cast<MultiValue*>(t);
+         if (mv->Multiplicity.Min < 1) {
+            minOccurs = " minOccurs=\"0\"";
+         }
+      }
+      else if (t->Mandatory != true) {
+         minOccurs = " minOccurs=\"0\"";
+      }
+   }
+
+   if (ct != nullptr) {
+      if (ct->Multiplicity.Min < 1) {
+         minOccurs = " minOccurs=\"0\"";
+      }
+   }
+
+   if (a->Type->Name == "TEXT") {
+      TextType* tt = static_cast<TextType*>(a->Type);
+
+      if (tt->Kind == TextType::NameVal) {
+         xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"INTERLIS.NAME\"" + minOccurs + "/>");
+         return;
+      }
+      else if (tt->Kind == TextType::Uri) {
+         xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"INTERLIS.URI\"" + minOccurs + "/>");
+         return;
+      }
+   }
+
+
+   if (t != nullptr && a->Type->Name != "TOP" && a->Type->Name != "" && a->Type->Name != "TYPE" && a->Type->Name != "TEXT" && a->Type->Name != "XMLDate"
+      && a->Type->Name != "XMLTime" && a->Type->Name != "XMLDateTime") {
+      if (a->Type->Name == "BOOLEAN") {
+         xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"xsd:boolean\"" + minOccurs + "/>");
+      }
+      else if (a->Type->Name == "HALIGNMENT") {
+         xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"INTERLIS.HALIGNMENT\"" + minOccurs + "/>");
+      }
+      else if (a->Type->Name == "VALIGNMENT") {
+         xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"INTERLIS.VALIGNMENT\"" + minOccurs + "/>");
+      }
+      else if (a->Type->Name == "XMLDate") {
+         xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"xsd:date\"" + minOccurs + "/>");
+      }
+      else if (a->Type->Name == "XMLDateTime") {
+         xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"xsd:dateTime\"" + minOccurs + "/>");
+      }
+      else if (a->Type->Name == "XMLTime") {
+         xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"xsd:time\"" + minOccurs + " / > ");
+      }
+      else {
+         if (a->Type->Super == nullptr) {
+            xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"" + get_path(a->Type) + "\"" + minOccurs + "/>");
+         }
+         else {
+            xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"" + get_path(a->Type->Super) + "\"" + minOccurs + "/>");
+         }
+      }
+
+      return;
+   }
+
+   xsd.writeln("<xsd:element name=\"" + a->Name + "\"" + minOccurs + ">");
+
+   xsd.incNestLevel();
+   writeType(a->Type);
+
+   xsd.decNestLevel();
+   xsd.writeln("</xsd:element>");
+}
+
+void XsdOutput::writeType(metamodel::Type *t) {
    bool isOIDType = false;
 
+   string clas = t->getClass();
+
    if (t->getClass() == "LineType") {
-      write_linetype(static_cast<LineType*>(t));
+      writeLineType(static_cast<LineType*>(t));
    } 
    else if (t->getClass() == "CoordType") {
-      write_coordtype(static_cast<CoordType *>(t));
+      writeCoordType(static_cast<CoordType *>(t));
    }
    else if (t->getClass() == "ReferenceType") {
-      write_referencetype(static_cast<ReferenceType*>(t));
+      writeReferenceType(static_cast<ReferenceType*>(t));
    }
    else if (t->getClass() == "AnyOIDType") {
       isOIDType = true;
    }
    else if (t->getClass() == "EnumType") {
-      write_enumtype(static_cast<EnumType *>(t));
+      writeEnumType(static_cast<EnumType *>(t));
    }
    else if (t->getClass() == "NumType") {
       NumType *numType = static_cast<NumType*>(t);
@@ -604,7 +973,7 @@ void XsdOutput::writeType(metamodel::DomainType *t) {
          isOIDType = true;
       }
       else {
-         write_numtype(numType);
+         writeNumType(numType);
       }
    }
    else if (t->getClass() == "TextType") {
@@ -614,20 +983,29 @@ void XsdOutput::writeType(metamodel::DomainType *t) {
          isOIDType = true;
       }
       else {
-         write_texttype(textType);
+         writeTextType(textType);
       }
    }
    else if (t->getClass() == "FormattedType") {
-      write_formattedtype(static_cast<FormattedType *>(t));
+      writeFormattedType(static_cast<FormattedType *>(t));
    }
    else if (t->getClass() == "BlackboxType") {
-      write_blackboxtype(static_cast<BlackboxType *>(t));
+      writeBlackboxType(static_cast<BlackboxType *>(t));
    }
    else if (t->getClass() == "MultiValue") {
-      write_multivalue(static_cast<MultiValue*>(t));
+      writeMultiValue(static_cast<MultiValue*>(t));
+   }
+   else if (t->getClass() == "Class" && t->Name != "ANYCLASS" && t->Name != "ANYSTRUCTURE") {
+      writeClassType(static_cast<Class*>(t));
    }
    else {
-      xsd.writeln("<xsd:complexType name=\"" + get_path(t) + "\">");
+      string typeAttribute = "";
+
+      if (t->Name != "ANYCLASS" && t->Name != "ANYSTRUCTURE") {
+         typeAttribute = " name=\"" + get_path(t) + "\"";
+      }
+
+      xsd.writeln("<xsd:complexType" + typeAttribute + ">");
       xsd.writelnIncNestLevel("<xsd:simpleContent>");
       xsd.writelnIncNestLevel("<xsd:extension base=\"xsd:string\"/>");
       xsd.writelnDecNestLevel("</xsd:simpleContent>");
@@ -635,17 +1013,22 @@ void XsdOutput::writeType(metamodel::DomainType *t) {
    }
 
    if (isOIDType) {
-      xsd.writeln("<xsd:complexType name=\"" + get_path(t) + "\">");
+      string name = "";
+      if (t->_attr == nullptr) {
+         name = " name=\"" + get_path(t) + "\"";
+      }
+
+      xsd.writeln("<xsd:complexType" + name + ">");
       xsd.writelnIncNestLevel("<xsd:attribute name=\"OID\" type=\"IliID\" use=\"required\"/>");
       xsd.writelnDecNestLevel("</xsd:complexType>");
    }
 }
 
-void XsdOutput::write_texttype(metamodel::TextType *t) {
+void XsdOutput::writeTextType(metamodel::TextType *t) {
    DomainType* domainType = static_cast<DomainType*>(t);
    string typeAttribute = "";
    
-   if (domainType->Name != "" && domainType->Name != "TOP" && domainType->Name != "TYPE") {
+   if (domainType->Name != "" && domainType->Name != "TOP" && domainType->Name != "TYPE" && domainType->Name != "TEXT") {
       typeAttribute = " name=\"" + get_path(t) + "\"";
    }
 
@@ -667,7 +1050,7 @@ void XsdOutput::write_texttype(metamodel::TextType *t) {
    xsd.writelnDecNestLevel("</xsd:simpleType>");
 }
 
-void XsdOutput::write_coordtype(metamodel::CoordType *t) {
+void XsdOutput::writeCoordType(metamodel::CoordType *t) {
    string typeAttribute = "";
 
    if (t->Name != "" && t->Name != "TOP" && t->Name != "TYPE") {
@@ -681,7 +1064,7 @@ void XsdOutput::write_coordtype(metamodel::CoordType *t) {
    xsd.writelnDecNestLevel("</xsd:complexType>");
 }
 
-void XsdOutput::write_enumtype(metamodel::EnumType *t) {
+void XsdOutput::writeEnumType(metamodel::EnumType *t) {
    string typeAttribute = "";
 
    if (t->Name != "" && t->Name != "TOP" && t->Name != "TYPE") {
@@ -693,9 +1076,11 @@ void XsdOutput::write_enumtype(metamodel::EnumType *t) {
 
    xsd.incNestLevel();
 
+   EnumType* consolidated = getConsolidatedEnumeration(t);
+
    list<string> enums;
    
-   for (auto node : t->TopNode) {
+   for (auto node : consolidated->TopNode) {
       buildEnum(&enums, "", node);
    }
 
@@ -711,7 +1096,7 @@ void XsdOutput::write_enumtype(metamodel::EnumType *t) {
    xsd.writelnDecNestLevel("</xsd:simpleType>");
 }
 
-void XsdOutput::write_numtype(metamodel::NumType *t) {
+void XsdOutput::writeNumType(metamodel::NumType *t) {
    string typeAttribute = "";
 
    if (t->Name != "" && t->Name != "TOP" && t->Name != "TYPE") {
@@ -720,11 +1105,11 @@ void XsdOutput::write_numtype(metamodel::NumType *t) {
 
    xsd.writeln("<xsd:simpleType" + typeAttribute + ">");
 
-   if (t->Abstract) {
-      xsd.writelnIncNestLevel("<xsd:restriction base=\"xsd:double\">");
-      xsd.writeln("</xsd:restriction>");
-   }
-   else {
+   //if (t->Abstract) {
+   //   xsd.writelnIncNestLevel("<xsd:restriction base=\"xsd:double\">");
+   //   xsd.writeln("</xsd:restriction>");
+   //}
+   //else {
       if (t->Min.find(".") < t->Min.length()) {
          xsd.writelnIncNestLevel("<xsd:restriction base=\"xsd:double\">");
       }
@@ -735,13 +1120,13 @@ void XsdOutput::write_numtype(metamodel::NumType *t) {
       xsd.writelnIncNestLevel("<xsd:minInclusive value=\"" + t->Min + "\"/>");
       xsd.writeln("<xsd:maxInclusive value=\"" + t->Max + "\"/>");
       xsd.writelnDecNestLevel("</xsd:restriction>");
-   }
+   //}
 
    
    xsd.writelnDecNestLevel("</xsd:simpleType>");
 }
 
-void XsdOutput::write_linetype(metamodel::LineType *t) {
+void XsdOutput::writeLineType(metamodel::LineType *t) {
    string typeAttribute = "";
 
    if (t->Name != "" && t->Name != "TOP" && t->Name != "TYPE") {
@@ -802,6 +1187,10 @@ void XsdOutput::write_linetype(metamodel::LineType *t) {
          xsd.writelnDecNestLevel("</xsd:element>");
       }
 
+      if (!hasLineAttr) {
+         xsd.incNestLevel();
+      }
+
       xsd.writeln("<xsd:choice minOccurs=\"2\" maxOccurs=\"unbounded\">");
       xsd.writelnIncNestLevel("<xsd:element name=\"COORD\" type=\"CoordValue\"/>");
 
@@ -810,10 +1199,10 @@ void XsdOutput::write_linetype(metamodel::LineType *t) {
 
          }
          else if (lf->Name == "ARCS") {
-            xsd.writeln("< xsd:element name = \"ARC\" type=\"ArcPoint\"/>");
+            xsd.writeln("<xsd:element name=\"ARC\" type=\"ArcPoint\"/>");
          }
          else {
-            xsd.writeln("< xsd:element name = \"ARC\" name=\"" + get_path(lf) + "\" type=\"" + get_path(lf->Structure) + "\"/>");
+            xsd.writeln("<xsd:element name=\"ARC\" name=\"" + get_path(lf) + "\" type=\"" + get_path(lf->Structure) + "\"/>");
          }
       }
 
@@ -836,26 +1225,36 @@ void XsdOutput::write_linetype(metamodel::LineType *t) {
    }
 }
 
-void XsdOutput::write_formattedtype(metamodel::FormattedType *t) {
+void XsdOutput::writeFormattedType(metamodel::FormattedType *t) {
    string typeAttribute = "";
 
-   if (t->Name != "" && t->Name != "TOP" && t->Name != "TYPE") {
+   if (t->_attr != nullptr) {
+   }
+   else if (t->Name != "" && t->Name != "TOP" && t->Name != "TYPE") {
       typeAttribute = " name=\"" + get_path(t) + "\"";
    }
 
    xsd.writeln("<xsd:simpleType" + typeAttribute + ">");
 
-   if (t->Format == "INTERLIS.XMLDate") {
+   string name = t->Name;
+   if (t->BaseFormattedType != nullptr) {
+       name = t->BaseFormattedType->Name;
+   }
+   else if (t->Struct != nullptr) {
+       name = t->Struct->Name;
+   }
+
+   if (name == "XMLDate") {
       xsd.writelnIncNestLevel("<xsd:restriction base=\"xsd:date\">");
       xsd.writelnIncNestLevel("<xsd:minInclusive value=\"" + t->Min + "\"/>");
       xsd.writeln("<xsd:maxInclusive value=\"" + t->Max + "\"/>");
    }
-   else if (t->Format == "INTERLIS.XMLDateTime") {
+   else if (name == "XMLDateTime") {
       xsd.writelnIncNestLevel("<xsd:restriction base=\"xsd:dateTime\">");
       xsd.writelnIncNestLevel("<xsd:minInclusive value=\"" + t->Min + "\"/>");
       xsd.writeln("<xsd:maxInclusive value=\"" + t->Max + "\"/>");
    }
-   else if (t->Format == "INTERLIS.XMLTime") {
+   else if (name == "XMLTime") {
       xsd.writelnIncNestLevel("<xsd:restriction base=\"xsd:time\">");
       xsd.writelnIncNestLevel("<xsd:minInclusive value=\"" + t->Min + "\"/>");
       xsd.writeln("<xsd:maxInclusive value=\"" + t->Max + "\"/>");
@@ -869,7 +1268,7 @@ void XsdOutput::write_formattedtype(metamodel::FormattedType *t) {
    xsd.writelnDecNestLevel("</xsd:simpleType>");
 }
 
-void XsdOutput::write_blackboxtype(metamodel::BlackboxType *t) {
+void XsdOutput::writeBlackboxType(metamodel::BlackboxType *t) {
    string typeAttribute = "";
 
    if (t->Name != "" && t->Name != "TOP" && t->Name != "TYPE") {
@@ -906,7 +1305,7 @@ void XsdOutput::write_blackboxtype(metamodel::BlackboxType *t) {
    xsd.writelnDecNestLevel("</xsd:complexType>");
 }
 
-void XsdOutput::write_referencetype(metamodel::ReferenceType *t) {
+void XsdOutput::writeReferenceType(metamodel::ReferenceType *t) {
    string typeAttribute = "";
 
    if (t->Name != "" && t->Name != "TOP" && t->Name != "TYPE") {
@@ -919,7 +1318,7 @@ void XsdOutput::write_referencetype(metamodel::ReferenceType *t) {
    xsd.writelnDecNestLevel("</xsd:complexType>");
 }
 
-void XsdOutput::write_multivalue(metamodel::MultiValue* t) {
+void XsdOutput::writeMultiValue(metamodel::MultiValue* t) {
    string typeAttribute = "";
 
    if (t->Name != "" && t->Name != "TOP" && t->Name != "TYPE") {
@@ -948,9 +1347,22 @@ void XsdOutput::write_multivalue(metamodel::MultiValue* t) {
    xsd.incNestLevel();
 
    if (t->TypeRestriction.size() > 0) {
-      for (auto *entry : t->TypeRestriction) {
-         xsd.writeln("<xsd:element name=\"" + get_path(entry) + "\" type=\"" + get_path(entry) + "\"" + minOccurs + maxOccurs + "/>");
+
+      xsd.writelnIncNestLevel("<xsd:choice" + minOccurs + maxOccurs + ">");
+
+      xsd.incNestLevel();
+
+      if (t->BaseType != nullptr) {
+         xsd.writeln("<xsd:element name=\"" + get_path(t->BaseType) + "\" type=\"" + get_path(t->BaseType) + "\"/>");
       }
+
+      for (auto *entry : t->TypeRestriction) {
+         xsd.writeln("<xsd:element name=\"" + get_path(entry) + "\" type=\"" + get_path(entry) + "\"/>");
+      }
+
+      xsd.decNestLevel();
+
+      xsd.writelnDecNestLevel("</xsd:choice>");
    }
    else {
       xsd.writeln("<xsd:element name=\"" + get_path(t->BaseType) + "\" type=\"" + get_path(t->BaseType) + "\"" + minOccurs + maxOccurs + "/>");
@@ -961,161 +1373,64 @@ void XsdOutput::write_multivalue(metamodel::MultiValue* t) {
    xsd.writelnDecNestLevel("</xsd:complexType>");
 }
 
-void XsdOutput::visitDomainType(metamodel::DomainType *t) {
-   if (t->_attr != nullptr) {
+void XsdOutput::writeClassType(metamodel::Class* t) {
+   string typeAttribute = "";
 
-   }
-   else if (t->Name == "C1") {
-   }
-   else if (t->Name == "C2") {
-   }
-   else if (t->Name == "C3") {
-   }
-   else if (t->Name == "A1") {
-   }
-   else if (t->Name == "A2") {
-   }
-   else if (t->Name == "R") {
-   }
-   else if (t->Name == "TOP") {
-   }
-   else if (t->Name == "") {
-   }
-   else if (t->Name == "TYPE") {
-   }
-   else {
-      writeType(t);
-   }
-}
-
-void XsdOutput::preVisitModel(metamodel::Model* m) {
-   /*if (m->Name == "INTERLIS") {
-      ignoreVisit();
-   }*/
-}
-
-void XsdOutput::preVisitClass(metamodel::Class *c) {
-   if (c->Kind == c->Association) {
-      //ignoreVisit();
-      return;
+   if (t->_attr == nullptr && t->Name != "" && t->Name != "TOP" && t->Name != "TYPE") {
+      typeAttribute = " name=\"" + get_path(t) + "\"";
    }
 
-   xsd.writeln("<xsd:complexType name=\"" + get_path(c) + "\">");
+   xsd.writeln("<xsd:complexType" + typeAttribute + ">");
    xsd.writelnIncNestLevel("<xsd:sequence>");
-
-   xsd.incNestLevel();
-}
-
-void XsdOutput::postVisitClass(metamodel::Class *c) {
-   if (c->Kind == c->Association) {
-      //ignoreVisit();
-      return;
-   }
-
+   xsd.writelnIncNestLevel("<xsd:element name=\"" + get_path(t->Super) + "\" type=\"" + get_path(t->Super) + "\"/>");
    xsd.writelnDecNestLevel("</xsd:sequence>");
-
-   if (c->Kind == c->ClassVal) {
-      if (c->Oid == nullptr) {
-         xsd.writeln("<xsd:attribute name=\"TID\" type=\"IliID\" use=\"required\"/>");
-      }
-   }
-   else if (c->Kind == c->Association) {
-   }
-
    xsd.writelnDecNestLevel("</xsd:complexType>");
 }
 
-void XsdOutput::postVisitSubModel(metamodel::SubModel *s) {
-   Log.warning("check XSDGenerator lines 834-896");
+metamodel::EnumType* XsdOutput::getConsolidatedEnumeration(metamodel::EnumType *t) {
+   if (t->LTParent == nullptr) {
+      return t;
+   }
 
-   xsd.writeln("<xsd:complexType name=\"" + get_path(s) + "\">");
-   xsd.writelnIncNestLevel("<xsd:sequence>");
-   xsd.writelnIncNestLevel("<xsd:choice minOccurs=\"0\" maxOccurs=\"unbounded\">");
+   if (t->LTParent->Extending == nullptr) {
+      return t;
+   }
 
-   xsd.incNestLevel();
+   EnumType* extending = static_cast<EnumType*>(t->LTParent->Extending->Type);
 
-   for (auto *a : s->Element) {
-      if (a->getClass() == "Class") {
-         Class *c = static_cast<Class *>(a);
+   if (extending == nullptr) {
+      return t;
+   }
 
-         if (c->Kind == c->ClassVal) {
-            xsd.writeln("<xsd:element name=\"" + get_path(a) + "\" type=\"" + get_path(a) + "\"/>");
+   EnumType *ret = getConsolidatedEnumeration(extending);
+
+   for (auto *node : t->TopNode) {
+      mergeTree(ret->TopNode, node);
+   }
+
+   return ret;
+}
+
+void XsdOutput::mergeTree(list<metamodel::EnumNode*> tree, metamodel::EnumNode *enumNode) {
+   for (auto* node : tree) {
+      if (node->Name == enumNode->Name) {
+
+         if (enumNode->Node.size() > 0) {
+            if (node->Node.size() > 0) {
+               for (auto* subNode : enumNode->Node) {
+                  mergeTree(node->Node,subNode);
+               }
+            }
+            else {
+               node->Node = enumNode->Node;
+            }
          }
-
          
+         return;
       }
    }
 
-   xsd.decNestLevel();
-
-   xsd.writeln("</xsd:choice>");
-   xsd.writelnDecNestLevel("</xsd:sequence>");
-
-   xsd.writeln("<xsd:attribute name=\"BID\" type=\"IliID\" use=\"required\"/>");
-
-   xsd.writelnDecNestLevel("</xsd:complexType>");
-}
-
-void XsdOutput::visitAttrOrParam(metamodel::AttrOrParam *a) {
-   DomainType *t = nullptr;
-   
-   try {
-      t = dynamic_cast<DomainType *>(a->Type);
-   }
-   catch (exception e) {
-      Log.error("unable to cast " + a->Type->getClass() + " to DomainType");
-      return;
-   }
-
-   string minOccurs = "";
-   if (t->Mandatory != true) {
-      minOccurs = " minOccurs=\"0\"";
-   }
-
-   if (a->Type->Name != "TOP" && a->Type->Name != "" && a->Type->Name != "TYPE") {
-      if (a->Type->Name == "BOOLEAN") {
-         xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"xsd:boolean\"" + minOccurs + "/>");
-      }
-      else if (a->Type->Name == "XMLDate") {
-         xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"xsd:date\"" + minOccurs + "/>");
-      }
-      else if (a->Type->Name == "XMLDateTime") {
-         xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"xsd:dateTime\"" + minOccurs + "/>");
-      }
-      else if (a->Type->Name == "XMLTime") {
-         xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"xsd:time\"" + minOccurs + " / > ");
-      }
-      else {
-         if (a->Type->_other_type != nullptr) {
-            xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"" + get_path(a->Type->_other_type) + "\"" + minOccurs + "/>");
-         }
-         else {
-            xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"" + get_path(a->Type) + "\"" + minOccurs + "/>");
-         }
-      }
-
-      return;
-   }
-
-   xsd.writeln("<xsd:element name=\"" + a->Name + "\"" + minOccurs + ">");
-
-   xsd.incNestLevel();
-   writeType(t);
-
-   xsd.decNestLevel();
-   xsd.writeln("</xsd:element>");
-}
-
-void XsdOutput::visitRole(metamodel::Role *r) {
-   if (r->Multiplicity.Min == 1 && r->Multiplicity.Max == -1) {
-      /*xsd.writeln("<xsd:element name=\"" + get_path(r) + "\">");
-      xsd.writelnIncNestLevel("<xsd:complexType>");
-      xsd.writelnIncNestLevel("<xsd:attribute name=\"REF\" type=\"IliID\" use=\"required\"/>");
-      xsd.writeln("<xsd:attribute name=\"BID\" type=\"IliID\"/>");
-      xsd.writeln("<xsd:attribute name=\"ORDER_POS\" type=\"xsd:positiveInteger\"/>");
-      xsd.writelnDecNestLevel("</xsd:complexType>");
-      xsd.writelnDecNestLevel("</xsd:element>");*/
-   }
+   tree.push_back(enumNode);
 }
 
 void XsdOutput::buildEnum(list<string> *list,string prefix, metamodel::EnumNode *enumNode) {

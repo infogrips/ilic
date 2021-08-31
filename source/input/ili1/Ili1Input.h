@@ -28,7 +28,7 @@ namespace input {
       antlrcpp::Any Ili1Input::visitIdentification(parser::Ili1Parser::IdentificationContext *ctx) override;
       antlrcpp::Any Ili1Input::visitDomainDefs(parser::Ili1Parser::DomainDefsContext *ctx) override;
       antlrcpp::Any Ili1Input::visitDomainDef(parser::Ili1Parser::DomainDefContext *ctx) override;
-      antlrcpp::Any Ili1Input::visitAttributeType(parser::Ili1Parser::AttributeTypeContext *ctx) override;
+      antlrcpp::Any Ili1Input::visitType(parser::Ili1Parser::TypeContext *ctx) override;
       antlrcpp::Any Ili1Input::visitBaseType(parser::Ili1Parser::BaseTypeContext *ctx) override;
       antlrcpp::Any Ili1Input::visitCoord2(parser::Ili1Parser::Coord2Context *ctx) override;
       antlrcpp::Any Ili1Input::visitCoord3(parser::Ili1Parser::Coord3Context *ctx) override;

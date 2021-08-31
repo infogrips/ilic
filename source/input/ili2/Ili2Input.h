@@ -17,10 +17,12 @@ namespace input {
       antlrcpp::Any visitInterlis2Def(parser::Ili2Parser::Interlis2DefContext *ctx) override;
       antlrcpp::Any visitModelDef(parser::Ili2Parser::ModelDefContext *ctx) override;
       antlrcpp::Any visitImporting(parser::Ili2Parser::ImportingContext *ctx) override;
-      antlrcpp::Any visitDomainDef(parser::Ili2Parser::DomainDefContext *ctx) override;
+      antlrcpp::Any visitDomainType(parser::Ili2Parser::DomainTypeContext *ctx) override;
       antlrcpp::Any visitTextType(parser::Ili2Parser::TextTypeContext *ctx) override;
       antlrcpp::Any visitEnumerationType(parser::Ili2Parser::EnumerationTypeContext *ctx) override;
       antlrcpp::Any visitEnumTreeValueType(parser::Ili2Parser::EnumTreeValueTypeContext *ctx) override;
+      antlrcpp::Any visitBooleanType(parser::Ili2Parser::BooleanTypeContext *ctx) override;
+      antlrcpp::Any visitAlignmentType(parser::Ili2Parser::AlignmentTypeContext *ctx) override;
       antlrcpp::Any visitNumericType(parser::Ili2Parser::NumericTypeContext *ctx) override;
       antlrcpp::Any visitFormattedType(parser::Ili2Parser::FormattedTypeContext *ctx) override;
       antlrcpp::Any visitCoordinateType(parser::Ili2Parser::CoordinateTypeContext *ctx) override;
@@ -99,7 +101,7 @@ namespace input {
       antlrcpp::Any visitAttributePath(parser::Ili2Parser::AttributePathContext *ctx) override;
       antlrcpp::Any visitPathEl(parser::Ili2Parser::PathElContext *ctx) override;
       antlrcpp::Any visitAssociationPath(parser::Ili2Parser::AssociationPathContext *ctx) override;
-      antlrcpp::Any visitAttributeType(parser::Ili2Parser::AttributeTypeContext *ctx) override;
+      antlrcpp::Any visitAttributePathType(parser::Ili2Parser::AttributePathTypeContext *ctx) override;
       antlrcpp::Any visitEnumAssignment(parser::Ili2Parser::EnumAssignmentContext *ctx) override;
       antlrcpp::Any visitEnumRange(parser::Ili2Parser::EnumRangeContext *ctx) override;
       antlrcpp::Any visitMetaDataBasketRef(parser::Ili2Parser::MetaDataBasketRefContext *ctx) override;

@@ -5,11 +5,6 @@
 using namespace std;
 using namespace util;
 
-void input::debug(antlr4::ParserRuleContext *ctx, string message)
-{
-   Log.debug(message + ", line=" + to_string(ctx->start->getLine()));
-}
-
 string input::visitString(antlr4::Token *t)
 {
    string value = t->getText();

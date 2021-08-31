@@ -67,16 +67,24 @@ namespace metamodel {
       }
       else if (context == "FunctionDef") {
          e->ElementInPackage = nullptr;
-         Type *t = static_cast<Type *>(e);
-         FunctionDef *f = static_cast<FunctionDef *>(ctx);
-         t->LFTParent = f;
+         FunctionDef* f = static_cast<FunctionDef*>(ctx);
+         if (e->getClass() == "Argument") {
+            Argument *a = static_cast<Argument*>(e);
+            a->Function = f;
+         }
+         else { // ResultType
+            Type* t = static_cast<Type*>(e);
+            t->LFTParent = f;
+         }
       }
       else if (context == "AttrOrParam") {
          e->ElementInPackage = nullptr;
-         Type *t = static_cast<Type *>(e);
-         AttrOrParam *a = static_cast<AttrOrParam *>(ctx);
-         t->_attr = a;
-         a->Type = t; // loaltype ???, to do !!!
+         if (e->isSubClassOf("Type")) {
+            Type* t = static_cast<Type*>(e);
+            AttrOrParam *a = static_cast<AttrOrParam *>(ctx);
+            t->_attr = a;
+            a->Type = t; // localtype ???, to do !!!
+         }
       }
 
    }
@@ -160,16 +168,21 @@ namespace metamodel {
 
    Package* find_package(string name, int line)
    {
-      Log.debug("find_package " + name);
+      string package_name = name;
+      if (ends_with(package_name,".BASKET")) {
+         // DataUnit
+         package_name = package_name.substr(0,package_name.length()-7);
+      }
+      Log.debug("find_package " + package_name);
       for (Package* p : AllPackages) {
-         if (get_path(p) == name) {
+         if (get_path(p) == package_name) {
             return p;
          }
-         else if (p->Name == name) {
+         else if (p->Name == package_name) {
             return p;
          }
       }
-      Log.error("unknown package " + name, line);
+      Log.error("unknown package " + package_name, line);
       return nullptr;
    }
 
@@ -233,10 +246,10 @@ namespace metamodel {
       if (t == nullptr) {
          return;
       }
-      Log.debug(">>> add_type " + get_path(t));
       if (util::starts_with(t->Name, "ILIC_")) {
          t->Name = t->Name.substr(5);
       }
+      Log.debug(">>> add_type " + get_path(t));
       for (Type* tt : AllTypes) {
          if (get_path(tt) == get_path(t)) {
             Log.error("multiple declarations of " + get_path(t),t->_line);
@@ -258,18 +271,66 @@ namespace metamodel {
          search = name;
       }
 
-      Log.debug("find_type <" + search + ">");
+      if (search == "BOOLEAN") {
+         search = "INTERLIS.BOOLEAN";
+      }
+      else if (search == "HALIGNMENT") {
+         search = "INTERLIS.HALIGNMENT";
+      }
+      else if (search == "VALIGNMENT") {
+         search = "INTERLIS.VALIGNMENT";
+      }
 
+      MetaElement *ctx = get_package_context();
+      string package_path = get_path(get_package_context());
+      Log.debug(">>> find_type <" + search + "> in context " + package_path);
+
+      Type *found = nullptr;
       for (Type* t : AllTypes) {
-         if (get_path(t) == search) {
-            return t;
+         string path = get_path(t);
+         if (path == search) {
+            found = t;
+            break;
          }
-         else if (get_path(t) == get_parent_path(t) + "." + search) {
-            return t;
+         else {
+            if (path == package_path + "." + search) {
+               found = t;
+               break;
+            }
+            if (ctx->getClass() == "Model") {
+               for (auto unqualified : get_all_unqualified_imports(ctx->Name)) {
+                  if (path == unqualified + "." + search) {
+                     found = t;
+                     break;
+                  }
+               }
+            }
+            else if (ctx->getClass() == "SubModel") {
+               SubModel *s = static_cast<SubModel *>(ctx);
+               while (s->_super != nullptr) {
+                  if (path == get_path(s->_super) + "." + search) {
+                     found = t;
+                     break;
+                  }
+                  s = static_cast<SubModel *>(s->_super);
+               }
+               if (path == get_parent_path(ctx) + "." + search) {
+                  found = t;
+                  break;
+               }
+               for (auto unqualified : get_all_unqualified_imports(get_parent_path(ctx))) {
+                  if (path == unqualified + "." + search) {
+                     found = t;
+                     break;
+                  }
+               }
+            }
          }
-         else if (get_path(t) == get_path(get_context()) + "." + search) {
-            return t;
-         }
+      }
+      
+      if (found != nullptr) {
+         Log.debug("<<< find_type " + get_path(found));
+         return found;
       }
 
       if (error) {
@@ -656,6 +717,11 @@ namespace metamodel {
    }
 
    // other helpers
+
+   void debug(antlr4::ParserRuleContext *ctx, string message)
+   {
+      Log.debug(message + ", line=" + to_string(ctx->start->getLine()));
+   }
 
    Type* any_to_type(antlrcpp::Any any)
    {

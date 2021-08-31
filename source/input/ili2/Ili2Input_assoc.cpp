@@ -66,7 +66,7 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
       // from from ASSOCIATION ClassConstraint
       list<Constraint *> Constraint;
    */
-
+   
    string name1 = "???";
    if (ctx->associationname1 != nullptr) {
       name1 = ctx->associationname1->getText();
@@ -81,11 +81,12 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
    Log.incNestLevel();
    
    if (name1 != name2) {
-      Log.error(name2 + " does not match " + name1,ctx->associationname2->getLine());
+      Log.error(name2 + " does not match " + name1,ctx->END()->getSymbol()->getLine());
    }
 
    // init Class
    Class *c = new Class();
+   c->Kind = Class::Association;
    init_type(c,get_line(ctx));
 
    // MetaElement Attributes
@@ -135,9 +136,6 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
       // to do !!!
    }
 
-   // Class Attributes
-   c->Kind = Class::Association;
-
    // role from ASSOCIATION LocalType
    // metamodel::AttrOrParam *LTParent;
 
@@ -168,12 +166,79 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
    for (auto *actx : ctx->attributeDef()) {
       AttrOrParam *a = visitAttributeDef(actx);
       a->AttrParent = c;
-      c->ClassAttribute.push_back(a);
+      //c->ClassAttribute.push_back(a);
    }
 
    for (auto cctx : ctx->constraintDef()) {
       Constraint *cc = visitConstraintDef(cctx);
       c->Constraints.push_back(cc);
+   }
+
+   if (c->Role.size() > 2) {
+      for (auto r : c->Role) {
+         c->RoleAttribute.push_back(r);
+      }
+   }
+   else if (c->Role.size() == 2) {
+      Role* role1 = c->Role.front();
+      Role* role2 = c->Role.back();
+
+      if (role1->Strongness != Role::Comp && role2->Strongness != Role::Comp &&
+         //role1->Association->ClassAttribute.size() == 0 &&
+         (
+            (role1->Multiplicity.Max == -1 && role2->Multiplicity.Max == -1) ||
+            (role1->Multiplicity.Max > 1 && role2->Multiplicity.Max > 1)
+         )
+         ) {
+         for (auto r : c->Role) {
+            c->RoleAttribute.push_back(r);
+         }
+      }
+      else {
+         if (role2->Strongness == Role::Aggr) {
+
+         }
+         else if (role1->Multiplicity.Max > -1 && role1->Multiplicity.Max < 2) {
+            for (auto bc : get_all_baseclasses()) {
+               if (bc->CRT->Name == role2->Name) {
+                  bc->BaseClass_->RoleAttribute.push_back(role1);
+               }
+            }
+         }
+         else if (role1->Strongness == Role::Comp) {
+            //Composition --> default {0..1}
+            if (role1->Multiplicity.Min == -1 && role1->Multiplicity.Max == -1) {
+               for (auto bc : get_all_baseclasses()) {
+                  if (bc->CRT->Name == role2->Name) {
+                     bc->BaseClass_->RoleAttribute.push_back(role1);
+                  }
+               }
+            }
+         }
+
+         /*if (role2->Association->ClassAttribute.size() > 0) {
+         }
+         else*/ if (role1->Strongness == Role::Aggr) {
+
+         }
+         else if (role1->Multiplicity.Max != 1 && role2->Multiplicity.Max > -1 && role2->Multiplicity.Max < 2) {
+            for (auto bc : get_all_baseclasses()) {
+               if (bc->CRT->Name == role1->Name) {
+                  bc->BaseClass_->RoleAttribute.push_back(role2);
+               }
+            }
+         }
+         else if (role2->Strongness == Role::Comp) {
+            //Composition --> default {0..1}
+            if (role2->Multiplicity.Min == -1 && role2->Multiplicity.Max == -1) {
+               for (auto bc : get_all_baseclasses()) {
+                  if (bc->CRT->Name == role1->Name) {
+                     bc->BaseClass_->RoleAttribute.push_back(role2);
+                  }
+               }
+            }
+         }
+      }
    }
    
    pop_context();
@@ -285,7 +350,7 @@ antlrcpp::Any Ili2Input::visitRoleDef(parser::Ili2Parser::RoleDefContext *ctx)
       init_mmobject(b,r->_line);
       b->CRT = r;
       if (rrr->BaseType->isSubClassOf("Class")) {
-         b->BaseClass = dynamic_cast<Class *>(rrr->BaseType);
+         b->BaseClass_ = dynamic_cast<Class *>(rrr->BaseType);
       };
       add_baseclass(b);
    }

@@ -39,42 +39,56 @@ antlrcpp::Any Ili2Input::visitDecimal(parser::Ili2Parser::DecimalContext *ctx)
    
 }
    
-antlrcpp::Any Ili2Input::visitDomainDef(parser::Ili2Parser::DomainDefContext *ctx)
+antlrcpp::Any Ili2Input::visitDomainType(parser::Ili2Parser::DomainTypeContext *ctx)
 {
 
-   /* domainDef
-     domainname=NAME properties? // ABSTRACT | FINAL
-     (EXTENDS basedomain=path)? EQUAL
-     (MANDATORY type? | type) SEMI
+   /* typeDef
+   : tname=NAME properties? // ABSTRACT|GENERIC|FINAL
+     (EXTENDS basetype=path)? EQUAL
+     (MANDATORY type? | type) 
+     ({ili24}? CONSTRAINTS NAME COLON expression (COMMA NAME COLON expression)*)?
+     SEMI
    */
    
-   string domainname = ctx->domainname->getText();
-   debug(ctx,">>> visitDomainDef(" + domainname + ")");
-   Log.incNestLevel();
+   /* class DomainType : public Type { // ABSTRACT
+      // MetaElement.Name :=
+      // DomainName if defined explicitly as a domain,
+      // "Type" if defined within an attribute definition
+   public:
+      bool Mandatory = false;
+      // role from ASSOCIATION BasketOID
+      list <DataUnit *> ForDataUnit;
+      // role form ASSOCIATION DomainConstraint
+      list <Constraint *> Constraint;
+      // role form ASSOCIATION ConcreteForGeneric
+      GenericDef *GenericDef = nullptr;
+   */
 
-   // init DomainType
-   DomainType *t = nullptr;
-   if (ctx->type() != nullptr) { // ???
-      Type *tt = visitType(ctx->type());
-      t = static_cast<DomainType *>(tt);
-      debug(ctx,"visitDomainDef(" + domainname + ") DomainType is " + t->getClass());
-   }
-   if (t == nullptr) {
-      return nullptr;
-   }
+   string name = ctx->domainname->getText();
+   debug(ctx,">>> visitDomainType(" + name + ")");
+   Log.incNestLevel();
    
+   DomainType *t = nullptr;
+   if (ctx->type() != nullptr) {
+      Type *tt = visitType(ctx->type());
+      t = static_cast<DomainType *>(tt->clone());
+   }
+   else {
+      // overwritten MANDATORY, to do !!!
+      t = new DomainType();
+   }
+
+   init_type(t, get_line(ctx));
+   t->Name = name;
+
    if (ctx->EXTENDS() != nullptr) {
-      string path = visitPath(ctx->basedomain);
-      //t->Super = find_domaintype(path); to do !!!
+      t->Super = find_type(visitPath(ctx->basedomain),get_line(ctx));
+      // type compatibliity check, to do !!!
    }
       
-   // ExtendableME Attributes
-   t->Name = domainname;
-   
    map<string,bool> properties = get_properties(ctx->properties(),vector<string>({ABSTRACT,FINAL}));
    t->Abstract = properties[ABSTRACT];
    t->Final = properties[FINAL];
-
    if (ctx->MANDATORY() != nullptr) {
       t->Mandatory = true;
    }
@@ -82,7 +96,7 @@ antlrcpp::Any Ili2Input::visitDomainDef(parser::Ili2Parser::DomainDefContext *ct
    add_type(t);
 
    Log.decNestLevel();
-   debug(ctx,"<<< visitDomainDef(" + domainname + ")");
+   debug(ctx,"<<< visitDomainType(" + name + ")");
    return t;
 
 }
@@ -109,7 +123,12 @@ antlrcpp::Any Ili2Input::visitType(parser::Ili2Parser::TypeContext *ctx)
    }
 
    Log.decNestLevel();
-   debug(ctx,"<<< visitType() " + t->getClass());
+   if (t == nullptr) {
+      debug(ctx,"<<< visitType() nullptr");
+   }
+   else {
+      debug(ctx,"<<< visitType() " + t->getClass());
+   }
    return t;
 
 }
@@ -122,7 +141,10 @@ antlrcpp::Any Ili2Input::visitBaseType(parser::Ili2Parser::BaseTypeContext *ctx)
    /* baseType
    : textType
    | enumerationType
+   | booleanType
+   | alignmentType
    | enumTreeValueType
+   | booleanType
    | alignmentType
    | numericType
    | formattedType
@@ -151,6 +173,12 @@ antlrcpp::Any Ili2Input::visitBaseType(parser::Ili2Parser::BaseTypeContext *ctx)
          EnumTreeValueType *tt = visitEnumTreeValueType(ctx->enumTreeValueType());
          t = tt;
       }
+      else if (ctx->booleanType() != nullptr) {
+         t = visitBooleanType(ctx->booleanType());
+      }
+      else if (ctx->alignmentType() != nullptr) {
+         t = visitAlignmentType(ctx->alignmentType());
+      }
       else if (ctx->numericType() != nullptr) {
          NumType *tt = visitNumericType(ctx->numericType());
          t = tt;
@@ -175,9 +203,9 @@ antlrcpp::Any Ili2Input::visitBaseType(parser::Ili2Parser::BaseTypeContext *ctx)
          Class *tt = visitClassType(ctx->classType());      
          t = tt;
       }
-      else if (ctx->attributeType() != nullptr) {
+      else if (ctx->attributePathType() != nullptr) {
          // to do !!!
-         //AttributeType *tt = visitAttributeType(ctx->attributeType());
+         //AttributeType *tt = visitAttributePathType(ctx->attributeType());
          //t = tt;
       }
    }
@@ -186,7 +214,12 @@ antlrcpp::Any Ili2Input::visitBaseType(parser::Ili2Parser::BaseTypeContext *ctx)
    }
   
    Log.decNestLevel();
-   debug(ctx,"<<< visitBaseType() " + t->getClass());
+   if (t == nullptr) {
+      debug(ctx,"<<< visitBaseType() nullptr");
+   }
+   else {
+      debug(ctx,"<<< visitBaseType() " + t->getClass());
+   }
    return t;
 
 }
@@ -293,6 +326,46 @@ antlrcpp::Any Ili2Input::visitEnumerationType(parser::Ili2Parser::EnumerationTyp
 
 }
 
+antlrcpp::Any Ili2Input::visitBooleanType(parser::Ili2Parser::BooleanTypeContext *ctx)
+{
+
+   /* booleanType
+   : BOOLEAN
+   */
+
+   debug(ctx,">>> visitBooleanType()");
+   Log.incNestLevel();
+   Type *t = find_type("INTERLIS.BOOLEAN",get_line(ctx));
+   Log.decNestLevel();
+   debug(ctx,"<<< visitBooleanType() " + t->Name);
+
+   return static_cast<Type *>(t->clone());
+
+}
+
+antlrcpp::Any Ili2Input::visitAlignmentType(parser::Ili2Parser::AlignmentTypeContext *ctx)
+{
+
+   /* alignmentType
+   : HALIGNMENT | VALIGNMENT
+   */
+
+   debug(ctx,">>> visitAlignementType()");
+   
+   Type *t = nullptr;
+   if (ctx->HALIGNMENT() != nullptr) {
+      t = find_type("INTERLIS.HALIGNMENT",get_line(ctx));
+   }
+   else {
+      t = find_type("INTERLIS.VALIGNMENT",get_line(ctx));
+   }
+   
+   debug(ctx,"<<< visitAlignmentType() " + t->Name);
+
+   return static_cast<Type *>(t->clone());
+
+}
+
 antlrcpp::Any Ili2Input::visitEnumElement(parser::Ili2Parser::EnumElementContext *ctx)
 {
    
@@ -350,15 +423,15 @@ antlrcpp::Any Ili2Input::visitEnumTreeValueType(parser::Ili2Parser::EnumTreeValu
 
 }
 
-antlrcpp::Any Ili2Input::visitAttributeType(parser::Ili2Parser::AttributeTypeContext *ctx)
+antlrcpp::Any Ili2Input::visitAttributePathType(parser::Ili2Parser::AttributePathTypeContext *ctx)
 {
-
-   /* attributeType
-   : ATTRIBUTE (OF (attributePath | ATT NAME))?
+   /* attributePathType
+   : ATTRIBUTE (OF (attributePath | AT NAME))?
      (RESTRICTION LPAREN attrTypeDef (COLON attrTypeDef)* RPAREN)? 
    */
+   // see also areAreas()
 
-   debug(ctx,"visitAttributeType()");
+   debug(ctx,"visitAttributePathType()");
    return nullptr;
 
 }
@@ -507,8 +580,9 @@ antlrcpp::Any Ili2Input::visitFormattedType(parser::Ili2Parser::FormattedTypeCon
    else if (ctx->FORMAT() != nullptr) {
       Type *f = find_type(ctx->formatref->getText(),get_line(ctx->formatref));
       if (f->getClass() == "FormattedType") {
-         delete(t);
-         t = static_cast<FormattedType *>(f->clone());
+         //delete(t);
+         //t = static_cast<FormattedType *>(f->clone());
+         t->BaseFormattedType = static_cast<FormattedType*>(f);
          t->Min = visitString(ctx->min);
          t->Max = visitString(ctx->max);
       }

@@ -23,7 +23,7 @@ antlrcpp::Any Ili1Input::visitTableDef(Ili1Parser::TableDefContext *ctx)
    string name1 = ctx->tablename1->getText();
    string name2 = ctx->tablename2->getText();
 
-   Log.debug("visitTableDef(" + name1 + ")");
+   debug(ctx,">>> visitTableDef(" + name1 + ")");
    Log.incNestLevel();
 
    if (name1 != name2) {
@@ -51,10 +51,11 @@ antlrcpp::Any Ili1Input::visitTableDef(Ili1Parser::TableDefContext *ctx)
    for (auto actx : ctx->attribute()) {
       visitAttribute(actx);
    }
-   
    visitIdentifications(ctx->identifications());
 
+   pop_context();
    Log.decNestLevel();
+   debug(ctx,"<<< visitTableDef(" + name1 + ")");
    
    return c;
 
@@ -73,27 +74,49 @@ antlrcpp::Any Ili1Input::visitAttribute(Ili1Parser::AttributeContext *ctx)
    */
 
    string name = ctx->attributename->getText();
-   Log.debug("visitAttribute(" + name + ")");
+   debug(ctx,">>> visitAttribute(" + name + ")");
+   Log.incNestLevel();
 
-   if (ctx->OPTIONAL() != nullptr) {
-      // to do !!!
-   }
+   AttrOrParam *a = new AttrOrParam();
+   init_extendableme(a,ctx->attributename->getLine());
+   a->Name = name;
    
+   push_context(a);
+   DomainType *dt;
    if (ctx->type() != nullptr) {
-      DomainType *t = visitType(ctx->type());
-      // to do !!!
+      Type *t = visitType(ctx->type());
+      dt = static_cast<DomainType*>(t);
+      if (t != nullptr) {
+         a->Type = dt;
+      }
    }
    else {
       // reference attribute
       string tablename = ctx->tablename->toString();
+      ReferenceType *rt = new ReferenceType();
+      init_domaintype(rt,ctx->start->getLine());
+      dt = static_cast<DomainType*>(rt);
+      a->Type = dt;
       // to do !!!
    }
+   pop_context();
 
+   if (ctx->OPTIONAL() == nullptr && dt != nullptr) {
+      dt->Mandatory = true;
+   }
+   
    if (ctx->EXPLANATION() != nullptr) {
       // to do !!!
    }
 
-   return nullptr;
+   // ASSOCIATION ClassAttr
+   a->AttrParent = get_class_context();
+   get_class_context()->ClassAttribute.push_back(a);
+
+   Log.decNestLevel();
+   debug(ctx,"<<< visitAttribute(" + name + ")");
+
+   return a;
 
 }
 
@@ -105,17 +128,18 @@ antlrcpp::Any Ili1Input::visitIdentifications(Ili1Parser::IdentificationsContext
    | IDENT identification+
    */
 
-   Log.debug("visitIdentifications()");
+   debug(ctx,">>> visitIdentifications()");
+   Log.incNestLevel();
 
-   if (ctx->NO() != nullptr) {
-      return nullptr;
+   if (ctx->NO() == nullptr) {
+      for (auto ictx : ctx->identification()) {
+         vector<string> attr_names = visitIdentification(ictx);
+         // create constraint, to do !!!
+      }
    }
    
-   for (auto ictx : ctx->identification()) {
-      string attr_names = visitIdentification(ictx);
-      // create constraint, to do !!!
-   }
-   
+   Log.decNestLevel();
+   debug(ctx,"<<< visitIdentifications()");
    return nullptr;
 
 }
@@ -127,13 +151,17 @@ antlrcpp::Any Ili1Input::visitIdentification(Ili1Parser::IdentificationContext *
    : NAME (COMMA NAME)* SEMI
    */
 
-   Log.debug("visitIdentifications()");
+   debug(ctx,">>> visitIdentification()");
+   Log.incNestLevel();
 
    vector<string> attr_names;
    for (auto n : ctx->NAME()) {
       attr_names.push_back(n->getText());
    }
   
+   Log.decNestLevel();
+   debug(ctx,"<<< visitIdentification()");
+
    return attr_names;
 
 }

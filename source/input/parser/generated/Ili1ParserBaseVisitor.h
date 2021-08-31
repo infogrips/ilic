@@ -1,5 +1,5 @@
 
-// Generated from ..\..\source\input\parser\generated\Ili1Parser.g4 by ANTLR 4.7.1
+// Generated from ..\..\..\..\source\c\ilic\input\parser\generated\Ili1Parser.g4 by ANTLR 4.7.1
 
 #pragma once
 
@@ -54,10 +54,6 @@ public:
   }
 
   virtual antlrcpp::Any visitType(Ili1Parser::TypeContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual antlrcpp::Any visitAttributeType(Ili1Parser::AttributeTypeContext *ctx) override {
     return visitChildren(ctx);
   }
 

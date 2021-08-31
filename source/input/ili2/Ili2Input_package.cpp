@@ -114,6 +114,27 @@ antlrcpp::Any Ili2Input::visitModelDef(Ili2Parser::ModelDefContext *ctx)
 
    visitChildren(ctx);
 
+/*
+   for (auto u : ctx->unitDecl()) {
+      visitUnitDecl(u);
+   }
+   for (auto s : ctx->structureDef()) {
+      visitStructureDef(s);
+   }
+   for (auto c : ctx->classDef()) {
+      visitClassDef(c);
+   }
+   for (auto f : ctx->functionDef()) {
+      visitFunctionDef(f);
+   }
+   for (auto d : ctx->domainDef()) {
+      visitDomainDef(d);
+   }
+   for (auto t : ctx->topicDef()) {
+      visitTopicDef(t);
+   }
+*/
+
    pop_context();
    Log.decNestLevel();
    debug(ctx,"<<< visitModelDef(" + ctx->modelname1->getText() + ")");
@@ -129,13 +150,19 @@ antlrcpp::Any Ili2Input::visitImporting(parser::Ili2Parser::ImportingContext *ct
    : IMPORTS importing (COMMA importing)* SEMI
 
    importing
-   : UNQUALIFIED? (importname=path)
+   : UNQUALIFIED? (INTERLIS | NAME)
    */
 
    debug(ctx,"visitImportDef()");
    Import *i = new Import();
    i->ImportingP = get_package_context();
-   i->ImportedP = find_model(ctx->importname->getText(),get_line(ctx));
+
+   if (ctx->INTERLIS() != nullptr) {
+      i->ImportedP = find_model(ctx->INTERLIS()->getText(), get_line(ctx));
+   }
+   else {
+      i->ImportedP = find_model(ctx->NAME()->getText(), get_line(ctx));
+   }
    if (ctx->UNQUALIFIED() != nullptr) {
       i->_unqualified = true;
    }
@@ -155,7 +182,7 @@ antlrcpp::Any Ili2Input::visitTopicDef(Ili2Parser::TopicDefContext *ctx)
      EQUAL
      (BASKET OID AS basketOid=path SEMI)?
      (OID AS topicOid=path SEMI)?
-     (DEPENDS ON depTopic=path (COMMA depTopic=path)* SEMI)*
+     (DEPENDS ON topicPath (COMMA topicPath)* SEMI)*
      (metaDataBasketDef
      |unitDecl
      |functionDef
@@ -263,13 +290,13 @@ antlrcpp::Any Ili2Input::visitTopicDef(Ili2Parser::TopicDefContext *ctx)
    }
 
    if (ctx->DEPENDS().size() > 0) {
-      // (DEPENDS ON depTopic=path (COMMA depTopic=path)* SEMI)*
+      // (DEPENDS ON topicPath (COMMA topicPath)* SEMI)*
       /* class Dependency : public MMObject { // m:n ASSOCIATION
          DataUnit *Using = nullptr;
          DataUnit *Dependent = nullptr;
       */
-      for (auto p : ctx->path()) {
-         string path = visitPath(p);
+      for (auto p : ctx->topicPath()) {
+         string path = visitPath(p->path());
          DataUnit *du = find_dataunit(path,get_line(ctx));
          if (du != nullptr) {
             Dependency *dd = new Dependency();
@@ -308,7 +335,8 @@ antlrcpp::Any Ili2Input::visitTopicDef(Ili2Parser::TopicDefContext *ctx)
             if (e->isSubClassOf("ExtendableME") && e->getClass() != "DataUnit") {
                ExtendableME* ee = static_cast<ExtendableME*>(e);
                if (ee->Abstract && ee->Sub.size() == 0) {
-                  Log.error("concrete topic " + s->Name + " can not contain abstract element " + e->Name + " without concrete extension (2)", s->_line);
+// to do !!!
+//                  Log.error("concrete topic " + s->Name + " can not contain abstract element " + e->Name + " without concrete extension (2)", s->_line);
                }
             }
          }

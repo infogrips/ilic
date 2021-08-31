@@ -1,5 +1,5 @@
 
-// Generated from ..\..\source\input\parser\generated\Ili2Parser.g4 by ANTLR 4.7.1
+// Generated from ..\..\..\..\source\c\ilic\input\parser\generated\Ili2Parser.g4 by ANTLR 4.7.1
 
 #pragma once
 
@@ -42,6 +42,10 @@ public:
   }
 
   virtual antlrcpp::Any visitTopicDef(Ili2Parser::TopicDefContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitTopicPath(Ili2Parser::TopicPathContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -101,11 +105,11 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitDomainDecl(Ili2Parser::DomainDeclContext *ctx) override {
+  virtual antlrcpp::Any visitDomainDef(Ili2Parser::DomainDefContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitDomainDef(Ili2Parser::DomainDefContext *ctx) override {
+  virtual antlrcpp::Any visitDomainType(Ili2Parser::DomainTypeContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -134,6 +138,14 @@ public:
   }
 
   virtual antlrcpp::Any visitEnumTreeValueType(Ili2Parser::EnumTreeValueTypeContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitAlignmentType(Ili2Parser::AlignmentTypeContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitBooleanType(Ili2Parser::BooleanTypeContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -213,7 +225,7 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitAttributeType(Ili2Parser::AttributeTypeContext *ctx) override {
+  virtual antlrcpp::Any visitAttributePathType(Ili2Parser::AttributePathTypeContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -329,19 +341,27 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitOrTerm(Ili2Parser::OrTermContext *ctx) override {
+  virtual antlrcpp::Any visitTerm1(Ili2Parser::Term1Context *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitAndTerm(Ili2Parser::AndTermContext *ctx) override {
+  virtual antlrcpp::Any visitOperator1(Ili2Parser::Operator1Context *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitPredicateTerm(Ili2Parser::PredicateTermContext *ctx) override {
+  virtual antlrcpp::Any visitTerm2(Ili2Parser::Term2Context *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitPredicate(Ili2Parser::PredicateContext *ctx) override {
+  virtual antlrcpp::Any visitOperator2(Ili2Parser::Operator2Context *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitTerm3(Ili2Parser::Term3Context *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitTerm(Ili2Parser::TermContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -433,7 +453,7 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitViewAttributes(Ili2Parser::ViewAttributesContext *ctx) override {
+  virtual antlrcpp::Any visitViewAttribute(Ili2Parser::ViewAttributeContext *ctx) override {
     return visitChildren(ctx);
   }
 

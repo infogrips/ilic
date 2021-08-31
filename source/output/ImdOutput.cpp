@@ -360,7 +360,7 @@ void ImdOutput::visitTypeRestriction(TypeRestriction *t)
 
    // TypeRestriction
    xtf.writeReference("TRTR", get_path(t->TRTR));
-   xtf.writeReference("TypeRestriction", get_path(t->TypeRestriction));
+   xtf.writeReference("TypeRestriction", get_path(t->TypeRestriction_));
 
    xtf.closeObject();
 
@@ -422,7 +422,7 @@ void ImdOutput::visitBaseClass(BaseClass *t)
 
    // BaseClass
    xtf.writeReference("CRT", get_path(t->CRT));
-   xtf.writeReference("BaseClass", get_path(t->BaseClass));
+   xtf.writeReference("BaseClass", get_path(t->BaseClass_));
 
    xtf.closeObject();
 
@@ -436,7 +436,7 @@ void ImdOutput::visitClassRestriction(ClassRestriction *t)
 
    // ClassRestriction
    xtf.writeReference("CRTR", get_path(t->CRTR));
-   xtf.writeReference("ClassRestriction", get_path(t->ClassRestriction));
+   xtf.writeReference("ClassRestriction", get_path(t->ClassRestriction_));
 
    xtf.closeObject();
 
@@ -602,7 +602,7 @@ void ImdOutput::visitAssocAcc(AssocAcc *t)
 
    // AssocAcc
    xtf.writeReference("Class", get_path(t->Class));
-   xtf.writeReference("AssocAcc", get_path(t->AssocAcc));
+   xtf.writeReference("AssocAcc", get_path(t->AssocAcc_));
 
    xtf.closeObject();
 
@@ -616,7 +616,7 @@ void ImdOutput::visitTransferElement(TransferElement *t)
 
    // TransferElement
    xtf.writeReference("TransferClass", get_path(t->TransferClass));
-   xtf.writeReference("TransferElement", get_path(t->TransferElement));
+   xtf.writeReference("TransferElement", get_path(t->TransferElement_));
 
    xtf.closeObject();
 

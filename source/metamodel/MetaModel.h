@@ -95,6 +95,7 @@ namespace metamodel {
       bool Abstract = false;
       bool Generic = false; // 2.4
       bool Final = false;
+      bool Extended = false;
       // ROLE from ASSOCIATION Inheritance
       ExtendableME *Super = nullptr;
       // ROLE from ASSOCIATION Inheritance
@@ -225,6 +226,8 @@ namespace metamodel {
       bool ili1OptionalTable = false;
       // role from ASSOCIATION ClassAttr
       list<metamodel::AttrOrParam *> ClassAttribute;
+      // role from many to one ASSOCIATION
+      list<Role*> RoleAttribute;
       // role from ASSOCIATION AssocRole
       list<Role *> Role;
       // role from ExplicitAssocAcc
@@ -268,6 +271,7 @@ namespace metamodel {
       Class *AttrParent = nullptr;
       // ROLE from ASSOCIATION AttrOrParamType
       Type *Type = nullptr;
+      AttrOrParam* Extending = nullptr;
       virtual string getClass() { return "AttrOrParam"; }
       virtual string getBaseClass() { return "ExtendableME"; };
    };
@@ -296,7 +300,7 @@ namespace metamodel {
    class TypeRestriction : public MMObject { // ASSOCIATION
    public:
       TypeRelatedType *TRTR = nullptr;
-      Type *TypeRestriction = nullptr;
+      Type *TypeRestriction_ = nullptr; // because of MSVC error, member can not have same name as class
       virtual string getClass() { return "TypeRestriction"; }
       virtual string getBaseClass() { return "MMObject"; };
    };
@@ -327,7 +331,7 @@ namespace metamodel {
    class BaseClass : public MMObject { // ASSOCIATION
    public:
       ClassRelatedType *CRT = nullptr;
-      Class *BaseClass = nullptr;
+      Class *BaseClass_ = nullptr; // because of MSVC error, member can not have same name as class
       virtual string getClass() { return "BaseClass"; }
       virtual string getBaseClass() { return "MMObject"; };
    };
@@ -335,7 +339,7 @@ namespace metamodel {
    class ClassRestriction : public MMObject { // ASSOCIATION
    public:
       ClassRelatedType *CRTR = nullptr;
-      Class *ClassRestriction = nullptr;
+      Class *ClassRestriction_ = nullptr; // because of MSVC error, member can not have same name as class
       virtual string getClass() { return "ClassRestriction"; }
       virtual string getBaseClass() { return "MMObject"; };
    };
@@ -380,7 +384,8 @@ namespace metamodel {
    class AssocAcc : public MMObject { // ASSOCIATION
    public:
       Class *Class = nullptr;
-      Role *AssocAcc = nullptr; // Role OR ExplicitAssocAccess, to do !!!
+      Role *AssocAcc_ = nullptr; // Role OR ExplicitAssocAccess, to do !!!
+                                 // because of MSVC error, member can not have same name as class
       virtual string getClass() { return "AssocAcc"; }
       virtual string getBaseClass() { return "MMObject"; };
    };
@@ -390,7 +395,8 @@ namespace metamodel {
    class TransferElement : public MMObject { // ASSOCIATION
    public:
       Class *TransferClass = nullptr;
-      AttrOrParam *TransferElement = nullptr; // AttrOrParam OR ExplicitAssocAccess OR Role, to do !!!
+      AttrOrParam *TransferElement_ = nullptr; // AttrOrParam OR ExplicitAssocAccess OR Role, to do !!!
+                                               // because of MSVC error, member can not have same name as class
       virtual string getClass() { return "TransferElement"; }
       virtual string getBaseClass() { return "MMObject"; };
    };
@@ -568,6 +574,7 @@ namespace metamodel {
       string Format;
       // role from ASSOCIATION
       Class *Struct = nullptr;
+      FormattedType* BaseFormattedType = nullptr;
       virtual string getClass() { return "FormattedType"; }
       virtual string getBaseClass() { return "NumType"; };
    };
@@ -1021,6 +1028,7 @@ namespace metamodel {
    list <Model *> get_all_models();
    void add_import(Import *import);
    list <Import *> get_all_imports();
+   list<string> get_all_unqualified_imports(string modelname);
    void add_dependency(Dependency *d);
    list <Dependency *> get_all_dependencies();
    void add_axisspec(AxisSpec *s);

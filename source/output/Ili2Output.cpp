@@ -683,7 +683,7 @@ void Ili2Output::visitRole(Role *r)
       if (b->CRT != r) {
          continue;
       }
-      target = get_path(b->BaseClass);
+      target = get_path(b->BaseClass_);
       break; // more than one target, to do !!
    }
 

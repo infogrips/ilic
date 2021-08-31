@@ -84,6 +84,7 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
 
    // init Class
    Class *c = new Class();
+   c->Kind = Class::ClassVal;
    init_type(c,get_line(ctx->classname1));
 
    // MetaElement Attributes
@@ -94,7 +95,9 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
       map<string,bool> properties = get_properties(ctx->properties(),vector<string>({ABSTRACT,FINAL,EXTENDED}));
       c->Abstract = properties[ABSTRACT];
       c->Final = properties[FINAL];
+      c->Extended = properties[EXTENDED];
       if (properties[EXTENDED]) {
+         c->Abstract = false;
          Package *p = get_package_context();
          int line = get_line(ctx);
          DataUnit* u = find_dataunit(get_path(p),line);
@@ -131,15 +134,13 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
       }
    }
 
+   // EXTENDS
    if (ctx->classbase != nullptr) {
       c->Super = find_class_object(ctx->classbase->getText(),"class or structure",get_line(ctx->classbase));
       if (c->Super != nullptr) {
          c->Super->Sub.push_back(c);
       }
    }
-
-   // Class Attributes
-   c->Kind = Class::ClassVal;
 
    // role from ASSOCIATION LocalType
    // metamodel::AttrOrParam *LTParent;
@@ -210,6 +211,7 @@ antlrcpp::Any Ili2Input::visitStructureDef(Ili2Parser::StructureDefContext *ctx)
 
    // init Class
    Class *c = new Class();
+   c->Kind = Class::Structure;
    init_type(c,ctx->structurename1->getLine());
 
    // MetaElement Attributes
@@ -220,12 +222,11 @@ antlrcpp::Any Ili2Input::visitStructureDef(Ili2Parser::StructureDefContext *ctx)
       map<string,bool> properties = get_properties(ctx->properties(),vector<string>({ABSTRACT,FINAL,EXTENDED}));
       c->Abstract = properties[ABSTRACT];
       c->Final = properties[FINAL];
+      c->Extended = properties[EXTENDED];
       if (properties[EXTENDED]) {
+         c->Abstract = false;
          string basestructure = c->ElementInPackage->Name + "." + c->Name;
          c->Super = find_structure(basestructure,get_line(ctx->properties()));
-         if (c->Super == nullptr) {
-            Log.error("base structure " + basestructure + " not found");
-         }
          Package* p = get_package_context();
          int line = get_line(ctx);
          DataUnit* u = find_dataunit(get_path(p),line);
@@ -251,15 +252,13 @@ antlrcpp::Any Ili2Input::visitStructureDef(Ili2Parser::StructureDefContext *ctx)
       }
    }
 
+   // EXTENDS
    if (ctx->structurebase != nullptr) {
       c->Super = find_structure(ctx->structurebase->getText(),get_line(ctx->structurebase));
       if (c->Super != nullptr) {
          c->Super->Sub.push_back(c);
       }
    }
-
-   // Class Attributes
-   c->Kind = Class::Structure;
 
    // role from ASSOCIATION LocalType
    // metamodel::AttrOrParam *LTParent;
@@ -402,7 +401,7 @@ antlrcpp::Any Ili2Input::visitAttributeDef(parser::Ili2Parser::AttributeDefConte
 
    /* attributeDef
    : (CONTINUOUS? SUBDIVISION)? attributname=NAME
-     properties? // ABSTRACT|EXTENDED|FINAL
+     properties? // ABSTRACT|EXTENDED|FINAL|TRANSIENT
      COLON attrTypeDef
      (COLONEQUAL factor (COMMA factor)*)? SEMI
    */
@@ -433,25 +432,27 @@ antlrcpp::Any Ili2Input::visitAttributeDef(parser::Ili2Parser::AttributeDefConte
    // MetaElement attributes
    a->Name = name;
    
-   push_context(a);
-   a->Type = visitAttrTypeDef(ctx->attrTypeDef());
-   pop_context();
+      push_context(a);
+      a->Type = visitAttrTypeDef(ctx->attrTypeDef());
+      pop_context();
 
    // ExtendableME attributes
    if (ctx->properties() != nullptr) {
-      map <string,bool> properties = get_properties(ctx->properties(),vector<string>({ABSTRACT,FINAL,EXTENDED}));
+      map <string,bool> properties = get_properties(ctx->properties(),vector<string>({ABSTRACT,FINAL,EXTENDED,TRANSIENT}));
       a->Abstract = properties[ABSTRACT];
       a->Final = properties[FINAL];
+      a->Extended = properties[EXTENDED];
       if (properties[EXTENDED]) {
          Class *c = get_class_context();
          if (c->Super == nullptr) {
-            //Log.error(string("EXTENDED can only by used in extended classes / structures / associations"),ctx->attributname->getLine());
+            Log.error(string("EXTENDED can only by used in extended classes / structures / associations"),ctx->attributname->getLine());
          }
          else {
             Class* s = static_cast<Class*>(c->Super);
             AttrOrParam *aa = metamodel::find_attribute(s,name,get_line(ctx));
             if (aa != nullptr) {
-               check_type_restriction(aa->Type, a->Type, name, ctx->attributname->getLine());
+               //check_type_restriction(aa->Type, a->Type, name, ctx->attributname->getLine());
+               a->Extending = aa;
             }
          }
       }
@@ -639,19 +640,25 @@ antlrcpp::Any Ili2Input::visitReferenceAttr(parser::Ili2Parser::ReferenceAttrCon
    if (ctx->EXTERNAL() != nullptr) {
       t->External = true;
    }
+
+   Class *c = static_cast<Class *>(get_class_context());
+   if (ili23 && c->Kind != Class::Structure) {
+      Log.error("reference to is only allowed in structures",get_line(ctx));
+   }
    
    RestrictedRef *r = visitRestrictedRef(ctx->restrictedRef());
+   
    if (r != nullptr && r->BaseType != nullptr) {
       if (r->BaseType->getClass() == "Class") {
          Class *c = static_cast<Class *>(r->BaseType);
          t->BaseClass = c;
          if (c->Kind == Class::Structure) {
-            Log.error("target of reference type must be a class or association, found structure",ctx->start->getLine());
+            Log.error("target of reference type must be a class or association, found structure",get_line(ctx));
             t->BaseClass = nullptr;
          }
       }
       else {
-         Log.error("target of reference type must be a class or association, found " + r->BaseType->getClass(),ctx->start->getLine());
+         Log.error("target of reference type must be a class or association, found " + r->BaseType->getClass(),get_line(ctx));
       }
    }
    

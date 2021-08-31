@@ -213,7 +213,7 @@ void Ili1Output::visitRole(Role* r)
     string targets = "";
     for (auto b : get_all_baseclasses()) {
         if (b->CRT == r) {
-            targets = b->BaseClass->Name;
+            targets = b->BaseClass_->Name;
             break;
         }
     }

@@ -50,7 +50,7 @@ antlrcpp::Any Ili2Input::visitFunctionDef(parser::Ili2Parser::FunctionDefContext
    /* functionArgument
    : argumentname=NAME COLON argumentType
    */
-
+   
    string name = ctx->functioname->getText();
    debug(ctx,">>> visitFunctionDef(" + name + ")");
    Log.incNestLevel();
@@ -75,22 +75,19 @@ antlrcpp::Any Ili2Input::visitFunctionDef(parser::Ili2Parser::FunctionDefContext
 
    for (auto pctx : ctx->functionDefParam()) {
       Argument *a = new Argument();
-      init_metaelement(a,pctx->start->getLine());
+      init_metaelement(a,ctx->start->getLine());
       a->Name = pctx->NAME()->getText();
+      debug(ctx,">>> visitArgument " + a->Name);
       Log.incNestLevel();
       a->Kind = Argument::TypeVal; // to do !!!
       a->Type = visitArgumentType(pctx->argumentType());
       if (a->Type != nullptr) {
          a->Type->LFTParent = f;
       }
-      else {
-         Log.internal_error("type of function argument " + get_path(a) + " not found in function " + get_path(f),1);
-      }
       a->Function = f;
       f->Argument.push_back(a);
       Log.decNestLevel();
-      debug(ctx,"<<< visitArgument");
-      // debug(ctx,"<<< visitArgument " + a->Name + ":" + a->Type->Name + "/" + a->Type->getClass());
+      debug(ctx,"<<< visitArgument " + a->Name);
    }
 
    // f->LocalType ???

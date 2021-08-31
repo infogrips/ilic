@@ -1,5 +1,5 @@
 
-// Generated from ..\..\source\input\parser\generated\Ili1Parser.g4 by ANTLR 4.7.1
+// Generated from ..\..\..\..\source\c\ilic\input\parser\generated\Ili1Parser.g4 by ANTLR 4.7.1
 
 #pragma once
 
@@ -14,58 +14,33 @@ class  Ili1Parser : public antlr4::Parser {
 public:
   enum {
     WS = 1, SL_COMMENT = 2, ILI_DOC = 3, ILI_OPTION = 4, ILI_BLOCKCOMMENT = 5, 
-    INTERLIS = 6, ILI23 = 7, ILI24 = 8, CONTRACTED = 9, REFSYSTEM = 10, 
-    SYMBOLOGY = 11, TYPE = 12, MODEL = 13, END = 14, VERSION = 15, NOINCREMENTALTRANSFER = 16, 
-    TRANSLATION = 17, OF = 18, ATT = 19, CHARSET = 20, XMLNS = 21, IMPORTS = 22, 
-    UNQUALIFIED = 23, TOPIC = 24, DEPENDS = 25, ON = 26, AS = 27, VIEW = 28, 
-    EXTENDS = 29, DATE = 30, BASKET = 31, OID = 32, CLASS = 33, ABSTRACT = 34, 
-    EXTENDED = 35, FINAL = 36, TRANSIENT = 37, CONTINUOUS = 38, SUBDIVISION = 39, 
-    NO = 40, ATTRIBUTE = 41, TEXT = 42, LPAREN = 43, RPAREN = 44, LBRACE = 45, 
-    RBRACE = 46, LCURLY = 47, RCURLY = 48, STAR = 49, SLASH = 50, BACKSLASH = 51, 
-    PERCENT = 52, AT = 53, HASH = 54, TILDE = 55, LESS = 56, LESSEQUAL = 57, 
-    GREATERGREATER = 58, GREATER = 59, GREATEREQUAL = 60, SEMI = 61, EQUAL = 62, 
-    EQUALEQUAL = 63, LESSGREATER = 64, NOTEQUAL = 65, COLONEQUAL = 66, DOT = 67, 
-    DOTDOT = 68, COLON = 69, COMMA = 70, LARROW = 71, RARROW = 72, PLUS = 73, 
-    MINUS = 74, AGGREGATE = 75, ASSOCIATE = 76, COMPOSITE = 77, STRUCTURE = 78, 
-    PARAMETER = 79, MANDATORY = 80, BAG = 81, LIST = 82, REFERENCE = 83, 
-    TO = 84, ANYCLASS = 85, RESTRICTION = 86, ASSOCIATION = 87, DERIVED = 88, 
-    HALIGNMENT = 89, VALIGNMENT = 90, EXTERNAL = 91, FROM = 92, UNDEFINED = 93, 
-    MTEXT = 94, URI = 95, ALL = 96, CIRCULAR = 97, OTHERS = 98, BOOLEAN = 99, 
-    NUMERIC = 100, CLOCKWISE = 101, COUNTERCLOCKWISE = 102, CARDINALITY = 103, 
-    OR = 104, HIDING = 105, ORDERED = 106, ILIDOMAIN = 107, PI = 108, LNBASE = 109, 
-    FORMAT = 110, INHERIT = 111, COORD = 112, ROTATION = 113, ANY = 114, 
-    BLACKBOX = 115, XML = 116, BINARY = 117, DIRECTED = 118, POLYLINE = 119, 
-    SURFACE = 120, AREA = 121, WITH = 122, STRAIGHTS = 123, ARCS = 124, 
-    VERTEX = 125, WITHOUT = 126, OVERLAPS = 127, LINE = 128, ATTRIBUTES = 129, 
-    FORM = 130, UNIT = 131, FUNCTION = 132, SIGN = 133, OBJECTS = 134, METAOBJECT = 135, 
-    CONSTRAINT = 136, CONSTRAINTS = 137, EXISTENCE = 138, REQUIRED = 139, 
-    IN = 140, UNIQUE = 141, WHERE = 142, LOCAL = 143, SET = 144, AND = 145, 
-    NOT = 146, BASED = 147, BASE = 148, INHERITANCE = 149, DEFINED = 150, 
-    INSPECTION = 151, THIS = 152, THISAREA = 153, THATAREA = 154, PARENT = 155, 
-    FIRST = 156, LAST = 157, AGGREGATES = 158, OBJECT = 159, ENUMVAL = 160, 
-    ENUMTREEVAL = 161, PROJECTION = 162, JOIN = 163, ILINULL = 164, UNION = 165, 
-    AGGREGATION = 166, BY = 167, GRAPHIC = 168, ACCORDING = 169, WHEN = 170, 
-    ANYSTRUCTURE = 171, TRANSFER = 172, EQUALS = 173, OPTIONAL = 174, TABLE = 175, 
-    IDENT = 176, COORD2 = 177, COORD3 = 178, DIM1 = 179, DIM2 = 180, RADIANS = 181, 
-    DEGREES = 182, GRADS = 183, LINEATTR = 184, DERIVATIVES = 185, VERTEXINFO = 186, 
-    PERIPHERY = 187, CONTOUR = 188, FREE = 189, FIX = 190, LINESIZE = 191, 
-    TIDSIZE = 192, CODE = 193, FONT = 194, BLANK = 195, DEFAULT = 196, CONTINUE = 197, 
-    TID = 198, I16 = 199, I32 = 200, EXPLANATION = 201, ESC = 202, STRING = 203, 
-    POSNUMBER = 204, NUMBER = 205, DEC = 206, SCALING = 207, DECIMAL = 208, 
-    HEXNUMBER = 209, NAME = 210
+    MODEL = 6, END = 7, TOPIC = 8, VIEW = 9, DATE = 10, NO = 11, TEXT = 12, 
+    LPAREN = 13, RPAREN = 14, LBRACE = 15, RBRACE = 16, STAR = 17, GREATER = 18, 
+    SEMI = 19, EQUAL = 20, DOT = 21, DOTDOT = 22, COLON = 23, COMMA = 24, 
+    LARROW = 25, RARROW = 26, HALIGNMENT = 27, VALIGNMENT = 28, UNDEFINED = 29, 
+    BOOLEAN = 30, ILIDOMAIN = 31, FORMAT = 32, COORD = 33, ANY = 34, POLYLINE = 35, 
+    SURFACE = 36, AREA = 37, WITH = 38, STRAIGHTS = 39, ARCS = 40, VERTEX = 41, 
+    WITHOUT = 42, OVERLAPS = 43, FORM = 44, BASE = 45, TRANSFER = 46, OPTIONAL = 47, 
+    TABLE = 48, IDENT = 49, COORD2 = 50, COORD3 = 51, DIM1 = 52, DIM2 = 53, 
+    RADIANS = 54, DEGREES = 55, GRADS = 56, LINEATTR = 57, DERIVATIVES = 58, 
+    VERTEXINFO = 59, PERIPHERY = 60, CONTOUR = 61, FREE = 62, FIX = 63, 
+    LINESIZE = 64, TIDSIZE = 65, CODE = 66, FONT = 67, BLANK = 68, DEFAULT = 69, 
+    CONTINUE = 70, TID = 71, I16 = 72, I32 = 73, EXPLANATION = 74, ESC = 75, 
+    STRING = 76, POSNUMBER = 77, NUMBER = 78, DEC = 79, SCALING = 80, DECIMAL = 81, 
+    HEXNUMBER = 82, NAME = 83, ERRORCHAR = 84
   };
 
   enum {
     RuleInterlis1Def = 0, RuleModelDef = 1, RuleDomainDefs = 2, RuleDomainDef = 3, 
     RuleTopicDef = 4, RuleTableDef = 5, RuleAttribute = 6, RuleIdentifications = 7, 
-    RuleIdentification = 8, RuleType = 9, RuleAttributeType = 10, RuleBaseType = 11, 
-    RuleCoord2 = 12, RuleCoord3 = 13, RuleNumericRange = 14, RuleDim1Type = 15, 
-    RuleDim2Type = 16, RuleAngleType = 17, RuleTextType = 18, RuleDateType = 19, 
-    RuleEnumerationType = 20, RuleEnumElement = 21, RuleHorizAlignment = 22, 
-    RuleVertAlignment = 23, RuleLineType = 24, RuleAreaType = 25, RuleForm = 26, 
-    RuleLineForm = 27, RuleIntersectionDef = 28, RuleControlPoints = 29, 
-    RuleLineAttributes = 30, RuleDerivatives = 31, RuleView = 32, RuleViewDef = 33, 
-    RuleFormatEncoding = 34, RuleFont = 35, RuleCode = 36, RuleDecimal = 37
+    RuleIdentification = 8, RuleType = 9, RuleBaseType = 10, RuleCoord2 = 11, 
+    RuleCoord3 = 12, RuleNumericRange = 13, RuleDim1Type = 14, RuleDim2Type = 15, 
+    RuleAngleType = 16, RuleTextType = 17, RuleDateType = 18, RuleEnumerationType = 19, 
+    RuleEnumElement = 20, RuleHorizAlignment = 21, RuleVertAlignment = 22, 
+    RuleLineType = 23, RuleAreaType = 24, RuleForm = 25, RuleLineForm = 26, 
+    RuleIntersectionDef = 27, RuleControlPoints = 28, RuleLineAttributes = 29, 
+    RuleDerivatives = 30, RuleView = 31, RuleViewDef = 32, RuleFormatEncoding = 33, 
+    RuleFont = 34, RuleCode = 35, RuleDecimal = 36
   };
 
   Ili1Parser(antlr4::TokenStream *input);
@@ -88,7 +63,6 @@ public:
   class IdentificationsContext;
   class IdentificationContext;
   class TypeContext;
-  class AttributeTypeContext;
   class BaseTypeContext;
   class Coord2Context;
   class Coord3Context;
@@ -180,7 +154,7 @@ public:
     DomainDefContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *EQUAL();
-    AttributeTypeContext *attributeType();
+    TypeContext *type();
     antlr4::tree::TerminalNode *SEMI();
     antlr4::tree::TerminalNode *NAME();
 
@@ -294,7 +268,9 @@ public:
     antlr4::Token *name = nullptr;;
     TypeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    AttributeTypeContext *attributeType();
+    BaseTypeContext *baseType();
+    LineTypeContext *lineType();
+    AreaTypeContext *areaType();
     antlr4::tree::TerminalNode *NAME();
 
     virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -302,20 +278,6 @@ public:
   };
 
   TypeContext* type();
-
-  class  AttributeTypeContext : public antlr4::ParserRuleContext {
-  public:
-    AttributeTypeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    BaseTypeContext *baseType();
-    LineTypeContext *lineType();
-    AreaTypeContext *areaType();
-
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  AttributeTypeContext* attributeType();
 
   class  BaseTypeContext : public antlr4::ParserRuleContext {
   public:
@@ -733,6 +695,7 @@ public:
     antlr4::tree::TerminalNode *FORMAT();
     std::vector<antlr4::tree::TerminalNode *> SEMI();
     antlr4::tree::TerminalNode* SEMI(size_t i);
+    antlr4::tree::TerminalNode *CODE();
     antlr4::tree::TerminalNode *BLANK();
     std::vector<antlr4::tree::TerminalNode *> EQUAL();
     antlr4::tree::TerminalNode* EQUAL(size_t i);

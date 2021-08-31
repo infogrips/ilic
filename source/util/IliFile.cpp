@@ -17,6 +17,14 @@ using namespace parser;
 
 namespace util {
 
+   // global variables
+
+   list <IliFile*> all_ilifiles;
+   static list <IliFile*> all_ilifiles_full;
+   static map <string, IliFile*> all_ilimodels;
+   static bool auto_search = true;
+   static list<string> ilidirs;
+
    // constructor
 
    IliFile::IliFile(string ilifile)
@@ -56,6 +64,7 @@ namespace util {
       Log.debug(">>> visitModelName()");
       string name = context->modelname->getText();
       this->models.push_back(name);
+      all_ilimodels[name] = this;
       antlrcpp::Any result = visitChildren(context);
       Log.debug("<<< visitModelName(" + name + ")");
       return result;
@@ -113,10 +122,6 @@ namespace util {
       return auto_search;
    }
    
-   list <IliFile *> AllIliFiles;
-   static bool auto_search=true;
-   static list<string> ilidirs;
-   
    void set_autosearch(bool auto_search)
    {
       util::auto_search = auto_search;
@@ -148,28 +153,16 @@ namespace util {
       }
    }
    
-   static void add_ilifile(IliFile *ilifile,bool front) 
-   {
-      if (ilifile == nullptr) {
-         return;
-      }
-      for (IliFile *f : AllIliFiles) {
-         if (f->getFilePath() == ilifile->getFilePath()) {
-            return;
-         }
-      }
-      if (front) {
-         AllIliFiles.push_front(ilifile);
-      }
-      else {
-         AllIliFiles.push_back(ilifile);
-      }
-   }
-
    static IliFile* load_ilifile(string filepath)
    {
+      
+      for (auto f : all_ilifiles_full) {
+         if (f->getFilePath() == filepath) {
+            return f;
+         }
+      }
 
-      Log.debug(">>> loadIliFile(" + filepath + ")");
+      Log.debug(">>> load_ilifile(" + filepath + ")");
       Log.incNestLevel();
 
       // open file
@@ -181,14 +174,19 @@ namespace util {
          exit(1);
       }
 
+      // replace special chars in input stream
+      string filtered;
+      replace_copy(istreambuf_iterator<char>(stream), istreambuf_iterator<char>(),back_inserter(filtered),'ä',' ');
+
       // create lexer
-      Log.debug("creating lexer");
-      antlr4::ANTLRInputStream input(stream);
+      Log.debug("creating ilifile lexer (1) ...");
+      antlr4::ANTLRInputStream input(filtered);
+      Log.debug("creating ilifile lexer (2) ...");
       lexer::IliFileLexer lexer(&input);
       lexer.removeErrorListeners();
 
       // create parser
-      Log.debug("creating parser");
+      Log.debug("creating ilifile parser ...");
       antlr4::CommonTokenStream tokens(&lexer);
       parser::IliFileParser parser(&tokens);
       parser::IliFileParser::IliFileContext *context = parser.iliFile();
@@ -201,41 +199,53 @@ namespace util {
       Log.debug("running parser");
       util::IliFile *ilifile = new IliFile(filepath);
       ilifile->visitIliFile(context);
+      
+      all_ilifiles_full.push_back(ilifile);
 
       Log.decNestLevel();
-      Log.debug("<<< loadIliFile(" + filepath + ")");
+      Log.debug("<<< load_ilifile(" + filepath + ")");
 
       return ilifile;
 
+   }
+
+   static void add_ilifile(IliFile *f)
+   {
+      for (auto ff : all_ilifiles) {
+         if (util::compare_case_insensitive(ff->getFilePath(),f->getFilePath())) {
+            return;
+         }
+      }
+      all_ilifiles.push_back(f);
    }
 
    IliFile* load_ilifiles_by_file(string filepath)
    {
       IliFile *f = load_ilifile(filepath);
       if (f != nullptr) {
-         add_ilifile(f,false);
+         add_ilifile(f);
          return f;
       }
       else {
          return nullptr;
       }
    }
-
-   IliFile* load_ilifiles_by_model(string modelname)
+   
+   IliFile* load_ilifiles_by_model(string modelname,string iliversion)
    {
       
       // model already loaded?
-      for (IliFile *ilifile : AllIliFiles) {
-         for (string mname : ilifile->getModels()) {
-            if (mname == modelname) {
-               return ilifile;
-            }
+      if (all_ilimodels.find(modelname) != all_ilimodels.end()) {
+         IliFile* f = all_ilimodels[modelname];
+         if (f->getIliVersion() == iliversion) {
+            add_ilifile(f);
+            return f;
          }
       }
       
       if (modelname == "INTERLIS") {
          IliFile *interlis = new IliFile("INTERLIS");
-         add_ilifile(interlis,true);
+         all_ilifiles.push_front(interlis);
          return interlis;
       }
 
@@ -244,76 +254,55 @@ namespace util {
          return nullptr;
       }
 
-      ifstream stream;
-
       // 1. try: search <modelname>.ili in ilidirs
-      string filepath = "";
       for (string ilidir : ilidirs) {
+         string filepath = "";
          if (ilidir != "") {
-            filepath = ilidir + "\\";
+            filepath = ilidir + "\\" + modelname + ".ili";
          }
-         filepath += modelname + ".ili";
+         else {
+            filepath = modelname + ".ili";
+         }
+         ifstream stream;
          stream.open(filepath);
-         if (stream.is_open()) {
-            break;
+         if (!stream.is_open()) {
+            continue;
+         }
+         stream.close();
+         IliFile *ff = load_ilifile(filepath);
+         if (ff->getIliVersion() == iliversion) {
+            add_ilifile(ff);
+            return ff;
          }
       }
 
-      if (!stream.is_open()) {
-
-         // 2. try: search in any .ili in ilidirs
-         for (string ilidir : ilidirs) {
-            if (ilidir == "") {
-               ilidir = "./"; // clang does not like empty directory names
+      // 2. try: search in any .ili in ilidirs
+      for (string ilidir : ilidirs) {
+         if (ilidir == "") {
+            ilidir = "./"; // clang does not like empty directory names
+         }
+         Log.debug("loading .ili files in directory " + ilidir + " ...");
+         for (filesystem::directory_entry entry : filesystem::directory_iterator(ilidir)) {
+            string filepath = entry.path().string();
+            if (!ends_with(filepath, ".ili")) {
+               continue;
             }
-            Log.debug("searching .ili files in directory " + ilidir);
-            for (filesystem::directory_entry entry : filesystem::directory_iterator(ilidir)) {
-               string path = entry.path().string();
-               if (!ends_with(path, ".ili")) {
-                  continue;
-               }
-               Log.debug("loading " + path);
-               for (IliFile *f : AllIliFiles) {
-                  if (path == f->getFilePath()) {
-                     continue; // .ili already loaded
-                  }
-                  IliFile *ff = load_ilifile(path);
-                  for (string model : ff->getModels()) {
-                     // search for model in .ili file
-                     if (model == modelname) {
-								ff->setAutoSearch(true);
-                        add_ilifile(ff, true);
-                        return ff;
-                     }
+            IliFile *ff = load_ilifile(filepath);
+            for (string model : ff->getModels()) {
+               // search for model in .ili file
+               if (model == modelname) {
+                  ff->setAutoSearch(true);
+                  if (ff->getIliVersion() == iliversion) {
+                     add_ilifile(ff);
+                     return ff;
                   }
                }
             }
          }
       }
-      if (!stream.is_open()) {
-         Log.error("model " + modelname + " not found in ilidirs.");
-         return nullptr;
-      }
 
-      // create lexer
-      antlr4::ANTLRInputStream input(stream);
-      lexer::IliFileLexer lexer(&input);
-      lexer.removeErrorListeners();
+      return nullptr;
 
-      // create parser
-      antlr4::CommonTokenStream tokens(&lexer);
-      parser::IliFileParser parser(&tokens);
-      parser::IliFileParser::IliFileContext *context = parser.iliFile();
-
-      // execute parser
-      util::IliFile *ilifile = new IliFile(filepath);
-      ilifile->visitIliFile(context);
-      ilifile->setAutoSearch(true);
-
-      add_ilifile(ilifile,true);
-
-      return ilifile;
-      
    }
 
 }

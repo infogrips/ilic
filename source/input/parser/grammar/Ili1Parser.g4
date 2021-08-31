@@ -31,7 +31,7 @@ domainDefs
    ;
 
 domainDef
-   : domainname=NAME EQUAL attributeType SEMI
+   : domainname=NAME EQUAL type SEMI
    ;
 
 topicDef
@@ -69,14 +69,10 @@ identification
    ;
 
 type
-   : attributeType
-   | name=NAME
-   ;
-
-attributeType
-   : baseType
-   | lineType
+   : baseType 
+   | lineType 
    | areaType
+   | name=NAME
    ;
 
 baseType
@@ -227,6 +223,7 @@ formatEncoding
      TIDSIZE EQUAL tidSize = POSNUMBER
    )
    SEMI
+   CODE
    font?
    BLANK EQUAL ( DEFAULT | blankcode=code) COMMA
    UNDEFINED EQUAL (DEFAULT | undefinedcode=code) COMMA

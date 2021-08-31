@@ -54,6 +54,17 @@ namespace metamodel {
       return AllImports;
    }
 
+   list<string> get_all_unqualified_imports(string modelname)
+   {
+      list<string> unqualified_imports;
+      for (auto i : AllImports) {
+         if (i->ImportingP->Name == modelname && i->_unqualified) {
+            unqualified_imports.push_back(i->ImportedP->Name);
+         }
+      }
+      return unqualified_imports;
+   }
+
    void add_dependency(Dependency* d)
    {
       if (d == nullptr) {
@@ -89,7 +100,7 @@ namespace metamodel {
       if (c == nullptr) {
          return;
       }
-      else if (c->BaseClass == nullptr) {
+      else if (c->BaseClass_ == nullptr) {
          return;
       }
       AllBaseClasses.push_back(c);
@@ -701,7 +712,7 @@ namespace metamodel {
       clone_init_mmobject(clone,org);
 
       clone->TRTR = org->TRTR;
-      clone->TypeRestriction = org->TypeRestriction;
+      clone->TypeRestriction_ = org->TypeRestriction_;
 
    }
 
@@ -730,7 +741,7 @@ namespace metamodel {
       clone_init_mmobject(clone,org);
 
       clone->CRT = org->CRT;
-      clone->BaseClass = org->BaseClass;
+      clone->BaseClass_ = org->BaseClass_;
 
    }
 
@@ -740,7 +751,7 @@ namespace metamodel {
       clone_init_mmobject(clone,org);
 
       clone->CRTR = org->CRTR;
-      clone->ClassRestriction = org->ClassRestriction;
+      clone->ClassRestriction_ = org->ClassRestriction_;
 
    }
 
@@ -784,7 +795,7 @@ namespace metamodel {
       clone_init_mmobject(clone,org);
 
       clone->Class = org->Class;
-      clone->AssocAcc = org->AssocAcc;
+      clone->AssocAcc_ = org->AssocAcc_;
 
    }
 
@@ -794,7 +805,7 @@ namespace metamodel {
       clone_init_mmobject(clone,org);
 
       clone->TransferClass = org->TransferClass;
-      clone->TransferElement = org->TransferElement;
+      clone->TransferElement_ = org->TransferElement_;
 
    }
 
@@ -904,7 +915,7 @@ namespace metamodel {
 
       clone->Kind = org->Kind;
       clone->MaxLength = org->MaxLength;
-
+      clone->OIDType = org->OIDType;
    }
 
    static void clone_init_blackboxtype(BlackboxType *clone,BlackboxType *org)
@@ -926,6 +937,7 @@ namespace metamodel {
       clone->Circular = org->Circular;
       clone->Clockwise = org->Clockwise;
       clone->Unit = org->Unit;
+      clone->OIDType = org->OIDType;
 
    }
 
@@ -968,7 +980,7 @@ namespace metamodel {
 
       clone->Format = org->Format;
       clone->Struct = org->Struct;
-
+      clone->BaseFormattedType = org->BaseFormattedType;
    }
 
    static void clone_init_anyoidtype(AnyOIDType *clone,AnyOIDType *org)
@@ -1037,6 +1049,32 @@ namespace metamodel {
 
    }
 
+   static void clone_init_enumnode(EnumNode* clone, EnumNode* org)
+   {
+
+      clone_init_extendableme(clone, org);
+
+      clone->EnumType = org->EnumType;
+      clone->ParentNode = org->ParentNode;
+
+      for (auto* orgNode : org->Node) {
+         MMObject* cloneNode = nullptr;
+         cloneNode = new EnumNode();
+         EnumNode* c = static_cast<EnumNode*>(cloneNode);
+         clone_init_enumnode(c, orgNode);
+         clone->Node.push_back(c);
+      }
+   }
+
+   static void clone_init_enumtreevaluetype(EnumTreeValueType* clone, EnumTreeValueType* org)
+   {
+
+      clone_init_domaintype(clone, org);
+
+      clone->ET = org->ET;
+
+   }
+
    static void clone_init_enumtype(EnumType *clone,EnumType *org)
    {
 
@@ -1044,24 +1082,22 @@ namespace metamodel {
 
       clone->Order = org->Order;
 
-   }
+      for (auto* orgNode : org->TopNode) {
+         MMObject* cloneNode = nullptr;
+         cloneNode = new EnumNode();
+         EnumNode* c = static_cast<EnumNode*>(cloneNode);
+         clone_init_enumnode(c, orgNode);
+         clone->TopNode.push_back(c);
+      }
 
-   static void clone_init_enumnode(EnumNode *clone,EnumNode *org)
-   {
+      for (auto* orgNode : org->ETVT) {
+         MMObject* cloneNode = nullptr;
+         cloneNode = new EnumTreeValueType();
+         EnumTreeValueType* c = static_cast<EnumTreeValueType*>(cloneNode);
 
-      clone_init_extendableme(clone,org);
-
-      clone->EnumType = org->EnumType;
-      clone->ParentNode = org->ParentNode;
-
-   }
-
-   static void clone_init_enumtreevaluetype(EnumTreeValueType *clone,EnumTreeValueType *org)
-   {
-
-      clone_init_domaintype(clone,org);
-
-      clone->ET = org->ET;
+         clone_init_enumtreevaluetype(c, orgNode);
+         clone->ETVT.push_back(c);
+      }
 
    }
 
@@ -1071,6 +1107,16 @@ namespace metamodel {
       clone_init_metaelement(clone,org);
 
       clone->Structure = org->Structure;
+
+   }
+
+   static void clone_init_linesform(LinesForm* clone, LinesForm* org)
+   {
+
+      clone_init_mmobject(clone, org);
+
+      clone->LineType = org->LineType;
+      clone->LineForm = org->LineForm;
 
    }
 
@@ -1085,15 +1131,13 @@ namespace metamodel {
       clone->CoordType = org->CoordType;
       clone->LAStructure = org->LAStructure;
 
-   }
-
-   static void clone_init_linesform(LinesForm *clone,LinesForm *org)
-   {
-
-      clone_init_mmobject(clone,org);
-
-      clone->LineType = org->LineType;
-      clone->LineForm = org->LineForm;
+      for (auto* orgNode : org->LineForm) {
+         MMObject* cloneNode = nullptr;
+         cloneNode = new LineForm();
+         LineForm* c = static_cast<LineForm*>(cloneNode);
+         clone_init_lineform(c, orgNode);
+         clone->LineForm.push_back(c);
+      }
 
    }
 

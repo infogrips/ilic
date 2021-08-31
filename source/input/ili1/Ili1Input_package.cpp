@@ -39,7 +39,7 @@ antlrcpp::Any Ili1Input::visitModelDef(Ili1Parser::ModelDefContext *ctx)
    string modelname1 = ctx->modelname1->getText();
    string modelname2 = ctx->modelname2->getText();
 
-   Log.debug("visitModelDef(" + modelname1 + ")");
+   debug(ctx,">>> visitModelDef(" + modelname1 + ")");
    Log.incNestLevel();
 
    if (modelname1 != modelname2) {
@@ -66,9 +66,7 @@ antlrcpp::Any Ili1Input::visitModelDef(Ili1Parser::ModelDefContext *ctx)
    add_model(m);
    
    if (ctx->domainDefs() != nullptr) {
-      DomainType *t = visitDomainDefs(ctx->domainDefs());
-      t->ElementInPackage = m;
-      m->Element.push_back(t);
+      visitDomainDefs(ctx->domainDefs());
    }
    
    for (auto tctx : ctx->topicDef()) {
@@ -80,6 +78,7 @@ antlrcpp::Any Ili1Input::visitModelDef(Ili1Parser::ModelDefContext *ctx)
    pop_context();
 
    Log.decNestLevel();
+   debug(ctx,"<<< visitModelDef(" + modelname1 + ")");
    
    return m;
 
@@ -98,7 +97,7 @@ antlrcpp::Any Ili1Input::visitTopicDef(Ili1Parser::TopicDefContext *ctx)
    string name1 = ctx->topicname1->getText();
    string name2 = ctx->topicname2->getText();
 
-   Log.debug("visitTopicDef(" + name1 + ")");
+   debug(ctx,">>> visitTopicDef(" + name1 + ")");
    Log.incNestLevel();
 
    if (name1 != name2) {
@@ -120,19 +119,21 @@ antlrcpp::Any Ili1Input::visitTopicDef(Ili1Parser::TopicDefContext *ctx)
    
    push_context(s);
 
+   for (auto dctx : ctx->domainDefs()) {      
+      visitDomainDefs(dctx);
+   }
+   
    for (auto tctx : ctx->tableDef()) {
       Class *c = visitTableDef(tctx);
       c->ElementInPackage = s;
       s->Element.push_back(c);
    }
 
-   for (auto dctx : ctx->domainDefs()) {      
-      visitDomainDefs(dctx);
-   }
-   
    pop_context();
 
    Log.decNestLevel();
+   debug(ctx,"<<< visitTopicDef(" + name1 + ")");
+
    return s;
 
 };
