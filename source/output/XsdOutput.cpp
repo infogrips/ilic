@@ -4,7 +4,11 @@
 
 #include "../metamodel/MetaModelOutput.h"
 #include "../util/StringMap.h"
+#include "../util/StringUtil.h"
 #include "../util/Logger.h"
+
+#include <unordered_map>
+#include <regex>
 
 using namespace util;
 using namespace metamodel;
@@ -22,8 +26,6 @@ void XsdOutput::createEmptyFile() {
 }
    
 void XsdOutput::preVisit(void) {
-   Log.warning("xsd generation not fully implemented yet");
-   
    xsd.openFile(xsd_file);
 
    xsd.writeln("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>");
@@ -81,8 +83,6 @@ void XsdOutput::postVisitModel(metamodel::Model* m) {
 }
 
 void XsdOutput::postVisitSubModel(metamodel::SubModel* s) {
-   Log.warning("check XSDGenerator lines 834-896");
-
    xsd.writeln("<xsd:complexType name=\"" + get_path(s) + "\">");
    xsd.writelnIncNestLevel("<xsd:sequence>");
    xsd.writelnIncNestLevel("<xsd:choice minOccurs=\"0\" maxOccurs=\"unbounded\">");
@@ -92,7 +92,7 @@ void XsdOutput::postVisitSubModel(metamodel::SubModel* s) {
    //std::map<string,string> allClassNames;
 
    list<string> allClassNames;
-   list<string> allPathNames;
+   vector<string> allPathNames;
 
    list<MetaElement*> allElements;
 
@@ -100,6 +100,10 @@ void XsdOutput::postVisitSubModel(metamodel::SubModel* s) {
 
    list<Package*> packages;
    while (sIter != nullptr) {
+      if (sIter->Name == "INTERLIS") {
+         break;
+      }
+
       packages.push_front(sIter);
 
       sIter = sIter->_super;
@@ -110,9 +114,19 @@ void XsdOutput::postVisitSubModel(metamodel::SubModel* s) {
          if (a->getClass() == "Class") {
             Class* c = static_cast<Class*>(a);
 
-            if (c->Kind == Class::ClassVal ||
-               (c->Kind == Class::Association && c->RoleAttribute.size() > 0)) {
+            if (c->isDomainType) {
+               continue;
+            }
+            else if (c->Abstract) {
+               continue;
+            }
+            else if (c->Kind != Class::ClassVal && c->Kind != Class::Association) {
+               continue;
+            }
 
+            list<ExtendableME*> attributes = getClassAttributes(c);
+
+            if (attributes.size() > 0 || c->Kind == Class::ClassVal) {
                if (c->Super != nullptr) {
                   if (find(allElements.begin(), allElements.end(), c->Super) == allElements.end()) {
                      allElements.push_back(c->Super);
@@ -130,9 +144,19 @@ void XsdOutput::postVisitSubModel(metamodel::SubModel* s) {
       if (a->getClass() == "Class") {
          Class* c = static_cast<Class*>(a);
 
-         if (c->Kind == Class::ClassVal ||
-            (c->Kind == Class::Association && c->RoleAttribute.size() > 0)) {
+         if (c->Abstract) {
+            continue;
+         }
+         else if (c->Kind != Class::ClassVal && c->Kind != Class::Association) {
+            continue;
+         }
+         else if (!isRealClass(c)) {
+            continue;
+         }
 
+         list<ExtendableME*> attributes = getClassAttributes(c);
+
+         if (attributes.size() > 0 || c->Kind == Class::ClassVal) {
             auto iteratorClassName = find(allClassNames.begin(), allClassNames.end(), c->Name);
 
             if (iteratorClassName != allClassNames.end()) {
@@ -144,14 +168,32 @@ void XsdOutput::postVisitSubModel(metamodel::SubModel* s) {
                allPathNames.erase(iteratorPathName);
             }
 
-            allClassNames.push_back(c->Name);
-            allPathNames.push_back(get_path(c));
+            string path = get_path(c);
+
+            if (path.rfind("INTERLIS.",0) == 0) {
+
+            }
+            else {
+               allClassNames.push_back(c->Name);
+               allPathNames.push_back(path);
+            }
          }
       }
    }
 
-   for (auto path : allPathNames) {
-      xsd.writeln("<xsd:element name=\"" + path + "\" type=\"" + path + "\"/>");
+   for (int i = 0; i < allPathNames.size();i++) {
+      string path = allPathNames.at(i);
+
+      bool suppress = true;
+
+      if (!suppress) {
+
+      }
+      else {
+         xsd.writeln("<xsd:element name=\"" + path + "\" type=\"" + path + "\"/>");
+      }
+
+      
    }
 
    xsd.decNestLevel();
@@ -165,17 +207,34 @@ void XsdOutput::postVisitSubModel(metamodel::SubModel* s) {
 }
 
 void XsdOutput::preVisitClass(metamodel::Class* c) {
+   all_classes.push_back(c);
+
    if (c->_attr != nullptr) {
       return;
    }
 
-   if (c->Kind == c->Association) {
-      if (c->ClassAttribute.size() == 0 && c->RoleAttribute.size() == 0) {
-         return;
-      }
+   classAttributes.clear();
+   classAttributes = getClassAttributes(c);
+
+   if (c->Kind == Class::Association && classAttributes.size() == 0) {
+      return;
    }
 
+   /*if (!isRealClass(c)) {
+      return;
+   }*/
+
    xsd.writeln("<xsd:complexType name=\"" + get_path(c) + "\">");
+
+   if (c->isDomainType) {
+      xsd.writelnIncNestLevel("<xsd:simpleContent>");
+      xsd.writelnIncNestLevel("<xsd:extension base=\"xsd:string\"/>");
+      xsd.writelnDecNestLevel("</xsd:simpleContent>");
+      xsd.writelnDecNestLevel("</xsd:complexType>");
+
+      return;
+   }
+
    xsd.writelnIncNestLevel("<xsd:sequence>");
 
    xsd.incNestLevel();
@@ -186,58 +245,19 @@ void XsdOutput::visitClass(metamodel::Class* c) {
       return;
    }
 
-   if (c->Kind == c->Association) {
-      if (c->ClassAttribute.size() == 0 && c->RoleAttribute.size() == 0) {
-         return;
-      }
+   if(c->isDomainType) {
+      return;
    }
 
-   list<ExtendableME*> classesToScan;
-   list<ExtendableME*> attributes;
-
-   ExtendableME* attributeClass = c;
-
-   while (attributeClass != nullptr) {
-
-      if (attributeClass->getClass() == "Class") {
-         classesToScan.push_front(attributeClass);
-
-      }
-
-      attributeClass = attributeClass->Super;
+   if (c->Kind == Class::Association && classAttributes.size() == 0) {
+      return;
    }
 
-   for (auto cts : classesToScan) {
-      Class* ac = static_cast<Class*>(cts);
+   /*if (!isRealClass(c)) {
+      return;
+   }*/
 
-      if (ac->Kind == Class::Association) {
-         for (auto ra : ac->RoleAttribute) {
-            attributes.push_back(ra);
-         }
-      }
-
-      for (auto ca : ac->ClassAttribute) {
-
-         string findString = ca->Name;
-         auto it = std::find_if(attributes.begin(), attributes.end(), [&findString](metamodel::ExtendableME* obj) {return obj->Name == findString; });
-
-         if (it != attributes.end()) {
-            it = attributes.erase(it);
-            attributes.insert(it,ca);
-         }
-         else {
-            attributes.push_back(ca);
-         }
-      }
-
-      if (ac->Kind != Class::Association) {
-         for (auto ra : ac->RoleAttribute) {
-            attributes.push_back(ra);
-         }
-      }
-   }
-
-   for (auto v : attributes) {
+   for (auto v : classAttributes) {
       if (v->getClass() == "AttrOrParam") {
          writeAttrOrParam(static_cast<AttrOrParam*>(v));
       }
@@ -250,7 +270,96 @@ void XsdOutput::visitClass(metamodel::Class* c) {
             minOccurs = " minOccurs=\"0\"";
          }
 
-         if (c->Kind == Class::Association) {
+         bool isLightWeight = true;
+
+         if (role->Association->Role.size() > 2) {
+            isLightWeight = false;
+         }
+         else {
+            Role* role1 = role->Association->Role.front();
+            Role* role2 = role->Association->Role.back();
+
+            int role1Min = role1->Multiplicity.Min;
+            int role1Max = role1->Multiplicity.Max;
+
+            if (role1Min == -1) {
+               role1Min = 0;
+            }
+
+            if (role1Max == -1) {
+               if (role1->Strongness == Role::Comp) {
+                  role1Max = 1;
+               }
+               else {
+                  role1Max = INT_MAX;
+               }
+            }
+
+            int role2Min = role2->Multiplicity.Min;
+            int role2Max = role2->Multiplicity.Max;
+
+            if (role2Min == -1) {
+               role2Min = 0;
+            }
+
+            if (role2Max == -1) {
+               if (role2->Strongness == Role::Comp) {
+                  role2Max = 1;
+               }
+               else {
+                  role2Max = INT_MAX;
+               }
+            }
+
+            if (role1Max > 1 && role2Max > 1) {
+               isLightWeight = false;
+            }
+            else {
+               Role* check = nullptr;
+               if (role1Max == 1) {
+                  check = role2;
+               }
+               else {
+                  check = role1;
+               }
+
+               Class* baseClass = nullptr;
+
+               for (auto bc : get_all_baseclasses()) {
+                  if (bc->CRT == check) {
+                     baseClass = bc->BaseClass_;
+                     break;
+                  }
+               }
+
+               ExtendableME* base = baseClass;
+
+               while (true) {
+                  if (base->Super == nullptr) {
+                     break;
+                  }
+
+                  base = base->Super;
+               }
+
+               ExtendableME* currentBase = c;
+
+               while (true) {
+                  if (currentBase->Super == nullptr) {
+                     break;
+                  }
+
+                  currentBase = currentBase->Super;
+               }
+
+               if (base->ElementInPackage != currentBase->ElementInPackage) {
+                  isLightWeight = false;
+               }
+            }
+         }
+
+
+         if (!isLightWeight) {
             xsd.writeln("<xsd:element name=\"" + role->Name + "\" type=\"RoleType\"/>");
          }
          else {
@@ -284,18 +393,24 @@ void XsdOutput::postVisitClass(metamodel::Class* c) {
       return;
    }
 
-   if (c->Kind == c->Association) {
-      if (c->ClassAttribute.size() == 0 && c->RoleAttribute.size() == 0) {
-         return;
-      }
+   if (c->isDomainType) {
+      return;
    }
+
+   if (c->Kind == Class::Association && classAttributes.size() == 0) {
+      return;
+   }
+
+   /*if (!isRealClass(c)) {
+      return;
+   }*/
 
    xsd.writelnDecNestLevel("</xsd:sequence>");
 
    if (c->Kind == c->ClassVal) {
-      if (c->Oid == nullptr) {
+      /*if (c->Oid != nullptr) {*/
          xsd.writeln("<xsd:attribute name=\"TID\" type=\"IliID\" use=\"required\"/>");
-      }
+      /*}*/
    }
    else if (c->Kind == c->Association) {
    }
@@ -404,7 +519,7 @@ void XsdOutput::writeFixTypes2() {
    if(get_all_models().size() > 0) {
       Model *m = get_all_models().back();
 
-      Log.warning("ili2c.ili23xsd.addAliasTableDefault not implemented yet");
+      //Log.warning("ili2c.ili23xsd.addAliasTableDefault not implemented yet");
       for (MetaAttribute* ma : m->MetaAttribute) {
          if (ma->Name == "ili2c.ili23xsd.addAliasTableDefault") {
             if (ma->Value == "true") {
@@ -468,8 +583,11 @@ void XsdOutput::writeDatasection() {
 
    xsd.incNestLevel();
 
-   for (Model *m : get_all_models()) {
-      if (m->Name == "INTERLIS" || m->Kind != m->NormalM) {
+   list<Model*> allModels = get_all_models();
+   allModels.sort([](const Model* a, const Model* b) { return a->Name < b->Name; });
+
+   for (Model *m : allModels) {
+      if (m->Name == "INTERLIS" || m->Kind == Model::TypeM) {
          continue;
       }
 
@@ -479,7 +597,24 @@ void XsdOutput::writeDatasection() {
          }
 
          if (me->getClass() == "SubModel") {
-            xsd.writeln("<xsd:element name=\"" + get_path(me) + "\" type=\"" + get_path(me) + "\"/>");
+            SubModel* subModel = static_cast<SubModel*>(me);
+
+            string searchDataUnit = get_path(subModel) + ".BASKET";
+            for (auto *du : get_all_dataunits()) {
+               string dataunit_path = get_path(du);
+
+               if (searchDataUnit == dataunit_path) {
+                  if (du->Abstract) {
+                     break;
+                  }
+
+                  xsd.writeln("<xsd:element name=\"" + get_path(me) + "\" type=\"" + get_path(me) + "\"/>");
+
+                  break;
+               }
+            }
+
+            
          }
       }
    }
@@ -558,7 +693,67 @@ void XsdOutput::writeInterlisReferenceTypes() {
       xsd.writeln("<xsd:element name=\"Axis\">");
       xsd.writelnIncNestLevel("<xsd:complexType>");
       xsd.writelnIncNestLevel("<xsd:sequence>");
-      xsd.writelnIncNestLevel("<xsd:element name=\"INTERLIS.AXIS\" type=\"INTERLIS.AXIS\"  maxOccurs=\"3\"/>");
+
+      map<string, string> coordSystems = { 
+         {"INTERLIS.AXIS", "INTERLIS.AXIS"}
+      };
+      int coordSystemsMin = -1;
+      int coordSystemsMax = -1;
+      
+      for (auto* c : all_classes) {
+         string superPath = get_path(c->Super);
+
+         if (superPath == "INTERLIS.COORDSYSTEM") {
+            for (auto* a : c->ClassAttribute) {
+               if (a->Name == "Axis") {
+                  if (a->Type->getClass() == "MultiValue") {
+                     MultiValue* multiValue = static_cast<MultiValue*>(a->Type);
+
+                     coordSystems.insert({get_path(multiValue->BaseType),get_path(multiValue->BaseType) });
+
+                     if (multiValue->Multiplicity.Min > coordSystemsMin && multiValue->Multiplicity.Min < multiValue->Multiplicity.Max) {
+                        coordSystemsMin = multiValue->Multiplicity.Min;
+                     }
+
+                     if (multiValue->Multiplicity.Max > coordSystemsMax) {
+                        coordSystemsMax = multiValue->Multiplicity.Max;
+                     }
+                  }
+               }
+            }
+         }
+      }
+
+      if (coordSystems.size() > 1) {
+         string minOccurs = "";
+         string maxOccurs = "";
+
+         if (coordSystemsMin > -1) {
+            minOccurs = " minOccurs=\"" + to_string(coordSystemsMin) + "\"";
+         }
+
+         if (coordSystemsMax > -1) {
+            maxOccurs = " maxOccurs=\"" + to_string(coordSystemsMax) + "\"";
+         }
+
+         xsd.writelnIncNestLevel("<xsd:choice" + minOccurs + maxOccurs + ">");
+
+         xsd.incNestLevel();
+
+         for (auto const& [key,value] : coordSystems) {
+            xsd.writeln("<xsd:element name=\""+key+"\" type=\""+value+"\"/>");
+         }
+
+         xsd.decNestLevel();
+
+         xsd.writeln("</xsd:choice>");
+      }
+      else {
+         xsd.writelnIncNestLevel("<xsd:element name=\"INTERLIS.AXIS\" type=\"INTERLIS.AXIS\"  maxOccurs=\"3\"/>");
+      }
+      
+      
+      
       xsd.writelnDecNestLevel("</xsd:sequence>");
       xsd.writelnDecNestLevel("</xsd:complexType>");
       xsd.writelnDecNestLevel("</xsd:element>");
@@ -886,8 +1081,73 @@ void XsdOutput::writeAttrOrParam(metamodel::AttrOrParam* a) {
    }
 
    if (ct != nullptr) {
-      if (ct->Multiplicity.Min < 1) {
+      if (ct->Mandatory != true) {
          minOccurs = " minOccurs=\"0\"";
+      }
+      else if (ct->Multiplicity.Min < 1 && ct->Multiplicity.Min > -1) {
+         minOccurs = " minOccurs=\"0\"";
+      }
+
+      Class* ctSuper = dynamic_cast<Class*>(ct->Super);
+
+      if (ctSuper->Kind == Class::Structure) {
+         xsd.writeln("<xsd:element name=\"" + a->Name + "\"" + minOccurs + ">");
+
+         xsd.incNestLevel();
+
+         writeClassType(ct);
+
+         xsd.decNestLevel();
+
+         xsd.writeln("</xsd:element>");
+         return;
+      }
+      else if (ctSuper->ElementInPackage->ElementInPackage == nullptr) {
+         if (a->AttrParent->ElementInPackage->ElementInPackage != ctSuper->ElementInPackage) {
+            xsd.writeln("<xsd:element name=\"" + a->Name + "\"" + minOccurs + ">");
+
+            xsd.writeln("<xsd:complexType>");
+            xsd.writelnIncNestLevel("<xsd:sequence>");
+            xsd.writelnIncNestLevel("<xsd:element name=\"" + get_path(ctSuper) + "\" type=\"" + get_path(ctSuper) + "\"/>");
+            xsd.writelnDecNestLevel("</xsd:sequence>");
+            xsd.writelnDecNestLevel("</xsd:complexType>");
+
+            xsd.writeln("</xsd:element>");
+            return;
+         }
+      }
+      else if (a->AttrParent->ElementInPackage->ElementInPackage != ctSuper->ElementInPackage->ElementInPackage) {
+         xsd.writeln("<xsd:element name=\"" + a->Name + "\"" + minOccurs + ">");
+
+         xsd.writeln("<xsd:complexType>");
+         xsd.writelnIncNestLevel("<xsd:sequence>");
+         xsd.writelnIncNestLevel("<xsd:element name=\"" + get_path(ctSuper) + "\" type=\"" + get_path(ctSuper) + "\"/>");
+
+         
+         xsd.writelnDecNestLevel("</xsd:sequence>");
+         xsd.writelnDecNestLevel("</xsd:complexType>");
+
+         xsd.writeln("</xsd:element>");
+         return;
+      }
+      else if (static_cast<Class*>(ct->Super)->_attr == nullptr) {
+         if (ctSuper->ElementInPackage->ElementInPackage == nullptr) {
+            if (a->AttrParent->ElementInPackage->ElementInPackage != ctSuper->ElementInPackage) {
+               xsd.writeln("<xsd:element name=\"" + a->Name + "\"" + minOccurs + ">");
+
+               xsd.writeln("<xsd:complexType>");
+               xsd.writelnIncNestLevel("<xsd:sequence>");
+               xsd.writelnIncNestLevel("<xsd:element name=\"" + get_path(ctSuper) + "\" type=\"" + get_path(ctSuper) + "\"/>");
+               xsd.writelnDecNestLevel("</xsd:sequence>");
+               xsd.writelnDecNestLevel("</xsd:complexType>");
+
+               xsd.writeln("</xsd:element>");
+               return;
+            }
+         }
+
+         xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"" + get_path(a->Type->Super) + "\"" + minOccurs + "/>");
+         return;
       }
    }
 
@@ -904,29 +1164,28 @@ void XsdOutput::writeAttrOrParam(metamodel::AttrOrParam* a) {
       }
    }
 
-
-   if (t != nullptr && a->Type->Name != "TOP" && a->Type->Name != "" && a->Type->Name != "TYPE" && a->Type->Name != "TEXT" && a->Type->Name != "XMLDate"
-      && a->Type->Name != "XMLTime" && a->Type->Name != "XMLDateTime") {
-      if (a->Type->Name == "BOOLEAN") {
+   if (t != nullptr && t->Name != "TOP" && t->Name != "" && t->Name != "TYPE" && t->Name != "TEXT"
+      && t->Name != "BLACKBOX") {
+      if (t->Name == "BOOLEAN") {
          xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"xsd:boolean\"" + minOccurs + "/>");
       }
-      else if (a->Type->Name == "HALIGNMENT") {
+      else if (t->Name == "HALIGNMENT") {
          xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"INTERLIS.HALIGNMENT\"" + minOccurs + "/>");
       }
-      else if (a->Type->Name == "VALIGNMENT") {
+      else if (t->Name == "VALIGNMENT") {
          xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"INTERLIS.VALIGNMENT\"" + minOccurs + "/>");
       }
-      else if (a->Type->Name == "XMLDate") {
+      else if (t->Name == "XMLDate") {
          xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"xsd:date\"" + minOccurs + "/>");
       }
-      else if (a->Type->Name == "XMLDateTime") {
+      else if (t->Name == "XMLDateTime") {
          xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"xsd:dateTime\"" + minOccurs + "/>");
       }
-      else if (a->Type->Name == "XMLTime") {
+      else if (t->Name == "XMLTime") {
          xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"xsd:time\"" + minOccurs + " / > ");
       }
       else {
-         if (a->Type->Super == nullptr) {
+         if (t->Super == nullptr) {
             xsd.writeln("<xsd:element name=\"" + a->Name + "\" type=\"" + get_path(a->Type) + "\"" + minOccurs + "/>");
          }
          else {
@@ -1105,22 +1364,48 @@ void XsdOutput::writeNumType(metamodel::NumType *t) {
 
    xsd.writeln("<xsd:simpleType" + typeAttribute + ">");
 
-   //if (t->Abstract) {
-   //   xsd.writelnIncNestLevel("<xsd:restriction base=\"xsd:double\">");
-   //   xsd.writeln("</xsd:restriction>");
-   //}
-   //else {
-      if (t->Min.find(".") < t->Min.length()) {
-         xsd.writelnIncNestLevel("<xsd:restriction base=\"xsd:double\">");
-      }
-      else {
-         xsd.writelnIncNestLevel("<xsd:restriction base=\"xsd:integer\">");
-      }
+   if (t->Min.find(".") < t->Min.length()) {
+      xsd.writelnIncNestLevel("<xsd:restriction base=\"xsd:double\">");
 
       xsd.writelnIncNestLevel("<xsd:minInclusive value=\"" + t->Min + "\"/>");
-      xsd.writeln("<xsd:maxInclusive value=\"" + t->Max + "\"/>");
+
+      string tMax = t->Max;
+      if (util::starts_with(tMax, "+")) {
+         tMax.erase(0, 1);
+      }
+
+      xsd.writeln("<xsd:maxInclusive value=\"" + tMax + "\"/>");
+
       xsd.writelnDecNestLevel("</xsd:restriction>");
-   //}
+   }
+   else {
+      xsd.writelnIncNestLevel("<xsd:restriction base=\"xsd:integer\">");
+
+      long long min = stoll(t->Min);
+      if (min >= INT_MAX) {
+         min = INT_MAX;
+      }
+
+      xsd.writelnIncNestLevel("<xsd:minInclusive value=\"" + to_string(min) + "\"/>");
+
+      string tMax = t->Max;
+      if (util::starts_with(tMax, "+")) {
+         tMax.erase(0, 1);
+      }
+
+      long long max = stoll(t->Max);
+      if (max >= INT_MAX) {
+         max = INT_MAX;
+      }
+
+      try {
+         xsd.writeln("<xsd:maxInclusive value=\"" + to_string(max) + "\"/>");
+      }
+      catch (...) {
+
+      }
+      xsd.writelnDecNestLevel("</xsd:restriction>");
+   }
 
    
    xsd.writelnDecNestLevel("</xsd:simpleType>");
@@ -1133,6 +1418,25 @@ void XsdOutput::writeLineType(metamodel::LineType *t) {
       typeAttribute = " name=\"" + get_path(t) + "\"";
    }
 
+   unordered_map<string, string> lineforms = {};
+   LineType* search = t;
+
+   while (search != nullptr) {
+      for (auto* lf : search->LineForm) {
+         if (lf->Name == "STRAIGHTS") {
+
+         }
+         else if (lf->Name == "ARCS") {
+            lineforms.insert({ "ARC","ArcPoint" });
+         }
+         else {
+            lineforms.insert({ get_path(lf), get_path(lf->Structure) });
+         }
+      }
+
+      search = static_cast<LineType*>(search->Super);
+   }
+
    if (t->Kind == t->Polyline || t->Kind == t->DirectedPolyline) {
       xsd.writeln("<xsd:complexType" + typeAttribute + ">");
       xsd.writelnIncNestLevel("<xsd:sequence>");
@@ -1142,16 +1446,14 @@ void XsdOutput::writeLineType(metamodel::LineType *t) {
       xsd.writelnIncNestLevel("<xsd:choice minOccurs=\"2\" maxOccurs=\"unbounded\">");
       xsd.writelnIncNestLevel("<xsd:element name=\"COORD\" type=\"CoordValue\"/>");
       
-      for (auto *lf : t->LineForm) {
-         if (lf->Name == "STRAIGHTS") {
+      for (auto const& [key,value] : lineforms) {
+         string type = "";
 
+         if (value != "") {
+            type = " type=\"" + value + "\"";
          }
-         else if (lf->Name == "ARCS") {
-            xsd.writeln("<xsd:element name=\"ARC\" type=\"ArcPoint\"/>");
-         }
-         else {
-            xsd.writeln("<xsd:element name=\"" + get_path(lf) + "\" type=\"" + get_path(lf->Structure) + "\"/>");
-         }
+         
+         xsd.writeln("<xsd:element name=\"" + key + "\"" + type + "/>");
       }
 
       xsd.writelnDecNestLevel("</xsd:choice>");
@@ -1194,16 +1496,14 @@ void XsdOutput::writeLineType(metamodel::LineType *t) {
       xsd.writeln("<xsd:choice minOccurs=\"2\" maxOccurs=\"unbounded\">");
       xsd.writelnIncNestLevel("<xsd:element name=\"COORD\" type=\"CoordValue\"/>");
 
-      for (auto *lf : t->LineForm) {
-         if (lf->Name == "STRAIGHTS") {
+      for (auto const& [key, value] : lineforms) {
+         string type = "";
 
+         if (value != "") {
+            type = " type=\"" + value + "\"";
          }
-         else if (lf->Name == "ARCS") {
-            xsd.writeln("<xsd:element name=\"ARC\" type=\"ArcPoint\"/>");
-         }
-         else {
-            xsd.writeln("<xsd:element name=\"ARC\" name=\"" + get_path(lf) + "\" type=\"" + get_path(lf->Structure) + "\"/>");
-         }
+
+         xsd.writeln("<xsd:element name=\"" + key + "\"" + type + "/>");
       }
 
       xsd.writelnDecNestLevel("</xsd:choice>");
@@ -1246,18 +1546,18 @@ void XsdOutput::writeFormattedType(metamodel::FormattedType *t) {
 
    if (name == "XMLDate") {
       xsd.writelnIncNestLevel("<xsd:restriction base=\"xsd:date\">");
-      xsd.writelnIncNestLevel("<xsd:minInclusive value=\"" + t->Min + "\"/>");
-      xsd.writeln("<xsd:maxInclusive value=\"" + t->Max + "\"/>");
+      xsd.writelnIncNestLevel("<xsd:minInclusive value=\"" + getFormattedDateTime(t->Min) + "\"/>");
+      xsd.writeln("<xsd:maxInclusive value=\"" + getFormattedDateTime(t->Max) + "\"/>");
    }
    else if (name == "XMLDateTime") {
       xsd.writelnIncNestLevel("<xsd:restriction base=\"xsd:dateTime\">");
-      xsd.writelnIncNestLevel("<xsd:minInclusive value=\"" + t->Min + "\"/>");
-      xsd.writeln("<xsd:maxInclusive value=\"" + t->Max + "\"/>");
+      xsd.writelnIncNestLevel("<xsd:minInclusive value=\"" + getFormattedDateTime(t->Min) + "\"/>");
+      xsd.writeln("<xsd:maxInclusive value=\"" + getFormattedDateTime(t->Max) + "\"/>");
    }
    else if (name == "XMLTime") {
       xsd.writelnIncNestLevel("<xsd:restriction base=\"xsd:time\">");
-      xsd.writelnIncNestLevel("<xsd:minInclusive value=\"" + t->Min + "\"/>");
-      xsd.writeln("<xsd:maxInclusive value=\"" + t->Max + "\"/>");
+      xsd.writelnIncNestLevel("<xsd:minInclusive value=\"" + getFormattedDateTime(t->Min) + "\"/>");
+      xsd.writeln("<xsd:maxInclusive value=\"" + getFormattedDateTime(t->Max) + "\"/>");
    }
    else {
       xsd.writelnIncNestLevel("<xsd:restriction base=\"xsd:normalizedString\">");
@@ -1271,7 +1571,7 @@ void XsdOutput::writeFormattedType(metamodel::FormattedType *t) {
 void XsdOutput::writeBlackboxType(metamodel::BlackboxType *t) {
    string typeAttribute = "";
 
-   if (t->Name != "" && t->Name != "TOP" && t->Name != "TYPE") {
+   if (t->Name != "" && t->Name != "TOP" && t->Name != "BLACKBOX") {
       typeAttribute = " name=\"" + get_path(t) + "\"";
    }
 
@@ -1365,7 +1665,28 @@ void XsdOutput::writeMultiValue(metamodel::MultiValue* t) {
       xsd.writelnDecNestLevel("</xsd:choice>");
    }
    else {
-      xsd.writeln("<xsd:element name=\"" + get_path(t->BaseType) + "\" type=\"" + get_path(t->BaseType) + "\"" + minOccurs + maxOccurs + "/>");
+      if (t->BaseType->Sub.size() > 0) {
+         xsd.writelnIncNestLevel("<xsd:choice" + minOccurs + maxOccurs + ">");
+
+         xsd.incNestLevel();
+
+         if (t->BaseType != nullptr) {
+            xsd.writeln("<xsd:element name=\"" + get_path(t->BaseType) + "\" type=\"" + get_path(t->BaseType) + "\"/>");
+         }
+
+         for (auto* entry : t->BaseType->Sub) {
+            xsd.writeln("<xsd:element name=\"" + get_path(entry) + "\" type=\"" + get_path(entry) + "\"/>");
+         }
+
+         xsd.decNestLevel();
+
+         xsd.writelnDecNestLevel("</xsd:choice>");
+      }
+      else {
+         xsd.writeln("<xsd:element name=\"" + get_path(t->BaseType) + "\" type=\"" + get_path(t->BaseType) + "\"" + minOccurs + maxOccurs + "/>");
+      }
+
+      
    }
    
 
@@ -1382,9 +1703,167 @@ void XsdOutput::writeClassType(metamodel::Class* t) {
 
    xsd.writeln("<xsd:complexType" + typeAttribute + ">");
    xsd.writelnIncNestLevel("<xsd:sequence>");
-   xsd.writelnIncNestLevel("<xsd:element name=\"" + get_path(t->Super) + "\" type=\"" + get_path(t->Super) + "\"/>");
+
+   if (t->Super->Sub.size() > 0) {
+      xsd.writelnIncNestLevel("<xsd:choice>");
+
+      xsd.incNestLevel();
+
+      for (auto* entry : t->Super->Sub) {
+         xsd.writeln("<xsd:element name=\"" + get_path(entry) + "\" type=\"" + get_path(entry) + "\"/>");
+      }
+
+      xsd.writeln("<xsd:element name=\"" + get_path(t->Super) + "\" type=\"" + get_path(t->Super) + "\"/>");
+
+      xsd.decNestLevel();
+
+      xsd.writeln("</xsd:choice>");
+   }
+   else {
+      xsd.writelnIncNestLevel("<xsd:element name=\"" + get_path(t->Super) + "\" type=\"" + get_path(t->Super) + "\"/>");
+   }
+
+   
    xsd.writelnDecNestLevel("</xsd:sequence>");
    xsd.writelnDecNestLevel("</xsd:complexType>");
+}
+
+list<metamodel::ExtendableME*> XsdOutput::getClassAttributes(metamodel::Class* c) {
+   list<ExtendableME*> attributes;
+   list<ExtendableME*> classesToScan;
+
+   ExtendableME* attributeClass = c;
+
+   while (attributeClass != nullptr) {
+
+      if (attributeClass->getClass() == "Class") {
+         classesToScan.push_front(attributeClass);
+
+      }
+
+      attributeClass = attributeClass->Super;
+   }
+
+   for (auto cts : classesToScan) {
+      Class* ac = static_cast<Class*>(cts);
+
+      if (ac->Kind == Class::Association) {
+         for (auto ra : ac->RoleAttribute) {
+            string findString = ra->Name;
+            auto it = std::find_if(attributes.begin(), attributes.end(), [&findString](metamodel::ExtendableME* obj) {return obj->Name == findString; });
+
+            if (it != attributes.end()) {
+               it = attributes.erase(it);
+               attributes.insert(it, ra);
+            }
+            else {
+               attributes.push_back(ra);
+            }
+         }
+      }
+
+      for (auto ca : ac->ClassAttribute) {
+
+         string findString = ca->Name;
+         auto it = std::find_if(attributes.begin(), attributes.end(), [&findString](metamodel::ExtendableME* obj) {return obj->Name == findString; });
+
+         if (it != attributes.end()) {
+            it = attributes.erase(it);
+            attributes.insert(it, ca);
+         }
+         else {
+            attributes.push_back(ca);
+         }
+      }
+
+      if (ac->Kind != Class::Association) {
+         for (auto ra : ac->RoleAttribute) {
+            string findString = ra->Name;
+            auto it = std::find_if(attributes.begin(), attributes.end(), [&findString](metamodel::ExtendableME* obj) {return obj->Name == findString; });
+
+            if (it != attributes.end()) {
+               it = attributes.erase(it);
+               attributes.insert(it, ra);
+            }
+            else {
+               attributes.push_back(ra);
+            }
+         }
+      }
+   }
+
+   return attributes;
+}
+
+bool XsdOutput::isRealClass(metamodel::Class* c) {
+   if (c->Kind != Class::Association) {
+      return true;
+   }
+
+   if (c->Role.size() > 2) {
+      return true;
+   }
+
+   if (c->Role.size() < 2) {
+      if (getClassAttributes(c).size() > 0) {
+         return true;
+      }
+
+      return false;
+   }
+
+   Role* role1 = c->Role.front();
+   Role* role2 = c->Role.back();
+
+   int role1Min = role1->Multiplicity.Min;
+   int role1Max = role1->Multiplicity.Max;
+
+   if (role1Min == -1) {
+      role1Min = 0;
+   }
+
+   if (role1Max == -1) {
+      if (role2->Strongness == Role::Comp) {
+         role1Max = 1;
+      }
+      else {
+         role1Max = INT_MAX;
+      }
+   }
+
+   int role2Min = role2->Multiplicity.Min;
+   int role2Max = role2->Multiplicity.Max;
+
+   if (role2Min == -1) {
+      role2Min = 0;
+   }
+
+   if (role2Max == -1) {
+      if (role2->Strongness == Role::Comp) {
+         role2Max = 1;
+      }
+      else {
+         role2Max = INT_MAX;
+      }
+   }
+
+   if (role1Min == 1 && role1Max == 1) {
+      return false;
+   }
+
+   if (role2Min == 1 && role2Max == 1) {
+      return false;
+   }
+
+   if (getClassAttributes(c).size() > 0) {
+      return true;
+   }
+
+   if (role1Max > 1 && role2Max > 1) {
+      return true;
+   }
+   
+   return false;
 }
 
 metamodel::EnumType* XsdOutput::getConsolidatedEnumeration(metamodel::EnumType *t) {
@@ -1446,4 +1925,143 @@ void XsdOutput::buildEnum(list<string> *list,string prefix, metamodel::EnumNode 
          buildEnum(list,prefix+ enumNode->Name,node);
       }
    }
+}
+
+string XsdOutput::getFormattedDateTime(string input) {
+   string output = "";
+   std::regex rgx("([0-9]+)");
+   std::smatch matches;
+
+   bool hasDate = false;
+   bool hasTime = false;
+
+   if (input.find('-') != std::string::npos) {
+      hasDate = true;
+   }
+
+   if (input.find(':') != std::string::npos) {
+      hasTime = true;
+   }
+
+   vector<string> entries;
+   string str = input;
+   while (regex_search(str, matches, rgx)) {
+      entries.push_back(matches[0]);
+      str = matches.suffix();
+   }
+
+   for (size_t i = 0; i < entries.size(); ++i) {
+      int match = std::stoi(entries[i].c_str());
+      string append = "";
+
+      if (i == 0) {
+         if (hasDate) {
+            append += to_string(match);
+            append += "-";
+         }
+         else if (hasTime) {
+            if (match < 10) {
+               append += "0";
+            }
+
+            append += to_string(match);
+            append += ":";
+         }
+      }
+      else if (i == 1) {
+         if (hasDate) {
+            if (match < 10) {
+               append += "0";
+            }
+
+            append += to_string(match);
+            append += "-";
+         }
+         else if (hasTime) {
+            if (match < 10) {
+               append += "0";
+            }
+
+            append += to_string(match);
+            append += ":";
+         }
+      }
+      else if (i == 2) {
+         if (hasDate) {
+            if (match < 10) {
+               append += "0";
+            }
+
+            append += to_string(match);
+
+            if (hasTime) {
+               append += "T";
+            }
+         }
+         else if (hasTime) {
+            if (match < 10) {
+               append += "0";
+            }
+
+            append += to_string(match);
+         }
+      }
+      else if (i == 3) {
+         if (hasDate) {
+            if (match < 10) {
+               append += "0";
+            }
+
+            append += to_string(match);
+            append += ":";
+         }
+         else if (hasTime) {
+            append += ".";
+            if (match < 10) {
+               append += "00";
+            }
+            else if (match < 100) {
+               append += "0";
+            }
+
+            append += to_string(match);
+         }
+      }
+      else if (i == 4) {
+         if (hasTime) {
+            if (match < 10) {
+               append += "0";
+            }
+
+            append += to_string(match);
+            append += ":";
+         }
+      }
+      else if (i == 5) {
+         if (hasTime) {
+            if (match < 10) {
+               append += "0";
+            }
+
+            append += to_string(match);
+            append += ".";
+         }
+      }
+      else if (i == 6) {
+         if (hasTime) {
+            if (match < 10) {
+               append += "00";
+            }
+            else if (match < 100) {
+               append += "0";
+            }
+
+            append += to_string(match);
+         }
+      }
+
+      output += append;
+   }
+
+   return output;
 }

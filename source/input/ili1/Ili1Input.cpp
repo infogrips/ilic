@@ -4,6 +4,7 @@
 #include "../parser/generated/Ili1Parser.cpp"
 #include "../../metamodel/MetaModelInput.h"
 #include "../../util/Logger.h"
+#include "../../util/StringUtil.h"
 
 using namespace input;
 using namespace parser;
@@ -40,13 +41,13 @@ antlrcpp::Any Ili1Input::visitDecimal(Ili1Parser::DecimalContext *ctx)
 
 }
 
+extern string input_file;
+
 void input::parseIli1(string input)
 {
 
-   // open input
-   ifstream stream;
-   stream.open(input);
-   antlr4::ANTLRInputStream inputstream(stream);
+   antlr4::ANTLRInputStream inputstream(util::load_filtered_string_from_file(input));
+   input_file = input;
 
    Log.debug("creating ili1 lexer (1) ...");
    lexer::Ili1Lexer ili1lexer(&inputstream);
@@ -62,8 +63,6 @@ void input::parseIli1(string input)
    Log.debug("ili1 building meta model ...");
    input::Ili1Input ili1input;
    ili1input.visit(ili1d);
-
-   stream.close();
 
 }
 
@@ -320,14 +319,20 @@ antlrcpp::Any Ili1Input::visitFormatEncoding(Ili1Parser::FormatEncodingContext *
    // to do !!!
    //f->Font = visitFont(ctx->font());
 
+   f->blankCode = 99; // DEFAULT
    if (ctx->blankcode != nullptr) {
-      f->blankCode = visitCode(ctx->blankcode);
+      int code = visitCode(ctx->blankcode);
+      f->blankCode = code;
    }
+   f->undefinedCode = 99; // DEFAULT
    if (ctx->undefinedcode != nullptr) {
-      f->undefinedCode = visitCode(ctx->undefinedcode);
+      int code = visitCode(ctx->undefinedcode);
+      f->undefinedCode = code;
    }
+   f->continueCode = 99; // DEFAULT
    if (ctx->continuecode != nullptr) {
-      f->continueCode = visitCode(ctx->continuecode);
+      int code = visitCode(ctx->continuecode);
+      f->continueCode = code;
    }
 
    if (ctx->I16() != nullptr) {

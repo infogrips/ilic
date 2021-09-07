@@ -38,7 +38,6 @@ namespace metamodel {
    Model *find_model(string name,int line);
 
    // Topic / DataUnit helpers
-   void add_dataunit(DataUnit* u);
    DataUnit* find_dataunit(string name,int line);
    void add_package(Package* p);
    Package* find_package(string name,int line);

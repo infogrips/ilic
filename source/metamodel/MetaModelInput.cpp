@@ -13,7 +13,6 @@ namespace metamodel {
    bool ili24 = true;
    string iliversion;
 
-   static list <DataUnit*> AllDataUnits;
    static list <Package*> AllPackages;
    static list <Type*> AllTypes;
    static list <Unit*> AllUnits;
@@ -129,24 +128,10 @@ namespace metamodel {
 
    // Topic / DataUnit helpers
 
-   void add_dataunit(DataUnit* u)
-   {
-      if (u == nullptr) {
-         return;
-      }
-      for (DataUnit* uu : AllDataUnits) {
-         if (uu->Name == u->ElementInPackage->Name) {
-            Log.error("multiple declaration of topic " + u->ElementInPackage->Name, u->_line);
-            return;
-         }
-      }
-      AllDataUnits.push_back(u);
-   }
-
    DataUnit* find_dataunit(string name, int line)
    {
       Log.debug("find_dataunit " + name);
-      for (DataUnit* u : AllDataUnits) {
+      for (DataUnit* u : get_all_dataunits()) {
          if (get_path(u) == (get_path(get_model_context()) + "." + name + ".BASKET")) {
             return u;
          }

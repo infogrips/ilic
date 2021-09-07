@@ -65,12 +65,19 @@ antlrcpp::Any Ili2Input::visitDomainType(parser::Ili2Parser::DomainTypeContext *
    */
 
    string name = ctx->domainname->getText();
+
    debug(ctx,">>> visitDomainType(" + name + ")");
    Log.incNestLevel();
    
    DomainType *t = nullptr;
    if (ctx->type() != nullptr) {
       Type *tt = visitType(ctx->type());
+
+      if (tt->getClass() == "Class") {
+         Class* ct = static_cast<Class*>(tt);
+         ct->isDomainType = true;
+      }
+
       t = static_cast<DomainType *>(tt->clone());
    }
    else {
@@ -152,7 +159,7 @@ antlrcpp::Any Ili2Input::visitBaseType(parser::Ili2Parser::BaseTypeContext *ctx)
    | oIDType
    | blackboxType
    | classType
-   | attributeType
+   | attributePathType
    */
 
    debug(ctx,">>> visitBaseType()");
@@ -204,9 +211,8 @@ antlrcpp::Any Ili2Input::visitBaseType(parser::Ili2Parser::BaseTypeContext *ctx)
          t = tt;
       }
       else if (ctx->attributePathType() != nullptr) {
-         // to do !!!
-         //AttributeType *tt = visitAttributePathType(ctx->attributeType());
-         //t = tt;
+         AttributeRefType *tt = visitAttributePathType(ctx->attributePathType());
+         t = tt;
       }
    }
    catch (exception e) {
@@ -429,10 +435,20 @@ antlrcpp::Any Ili2Input::visitAttributePathType(parser::Ili2Parser::AttributePat
    : ATTRIBUTE (OF (attributePath | AT NAME))?
      (RESTRICTION LPAREN attrTypeDef (COLON attrTypeDef)* RPAREN)? 
    */
-   // see also areAreas()
 
-   debug(ctx,"visitAttributePathType()");
-   return nullptr;
+   /*
+   class AttributeRefType : public DomainType {
+   public:
+      // role from ASSOCIATION ARefOf
+      Class *Of = nullptr; // Class OR AttrOrParam OR Argument, to do !!!
+   */
+
+   debug(ctx,">>> visitAttributePathType()");
+   AttributeRefType *t = new AttributeRefType();
+   init_domaintype(t,ctx->start->getLine());
+   debug(ctx,"<<< visitAttributePathType()");
+
+   return t;
 
 }
 
@@ -727,12 +743,15 @@ antlrcpp::Any Ili2Input::visitBagOrListType(parser::Ili2Parser::BagOrListTypeCon
    }
    
    if (ctx->cardinality() != nullptr) {
-      m->Multiplicity = visitCardinality(ctx->cardinality());
+      Multiplicity mm = visitCardinality(ctx->cardinality());
+      m->Multiplicity = mm;
    }
    
-   RestrictedRef *r = visitRestrictedRef(ctx->restrictedRef());
-   m->BaseType = r->BaseType;
-   m->TypeRestriction = r->TypeRestriction;
+   if (ctx->restrictedRef() != nullptr) {
+      RestrictedRef *r = visitRestrictedRef(ctx->restrictedRef());
+      m->BaseType = r->BaseType;
+      m->TypeRestriction = r->TypeRestriction;
+   }
    
    string message = "<<< visitBagOrListType()";
    if (m->Ordered) {

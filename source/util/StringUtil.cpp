@@ -1,4 +1,8 @@
 #include "StringUtil.h"
+#include <algorithm>
+#include <fstream>
+
+#include "Logger.h"
 
 bool util::starts_with(std::string const &value, std::string const &start)
 {
@@ -35,4 +39,29 @@ bool util::compare_case_insensitive(string s1, string s2)
       (s1.size() == s2.size()) &&
       equal(s1.begin(), s1.end(), s2.begin(), compare_case_insensitive_char)
    );
+}
+
+static void filter_string(basic_string<char>& s) 
+{
+   for (basic_string<char>::iterator p = s.begin();p != s.end(); ++p) {
+      if (int(*p) < 0 || int(*p) > 127) {
+         *p = '?';
+      }
+   }
+}
+
+string util::load_filtered_string_from_file(string fname) 
+{
+   ifstream in(fname);
+   if (!in.is_open()) {
+      return "";
+   }
+   string buffer;
+   string result = "";
+   while (getline(in, buffer)) {
+      filter_string(buffer);
+      result += buffer + "\n";
+   }
+   in.close();
+   return result;
 }

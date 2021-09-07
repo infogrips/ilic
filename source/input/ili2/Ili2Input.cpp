@@ -6,6 +6,7 @@
 #include "../parser/generated/Ili2Parser.cpp"
 #include "../../metamodel/MetaModelInput.h"
 #include "../../util/Logger.h"
+#include "../../util/StringUtil.h"
 
 using namespace input;
 using namespace parser;
@@ -22,35 +23,23 @@ antlrcpp::Any::Base::~Base()
 }
 */
 
-static antlr4::ANTLRInputStream open_inputstream(string input,ifstream &stream)
-{
-   if (input == "INTERLIS") {
-      return antlr4::ANTLRInputStream(getInterlisModel23());
-   }
-   else {
-      stream.open(input);
-      return antlr4::ANTLRInputStream(stream);
-   }
-}
-
-static void close_inputstream(string input,ifstream &stream)
-{
-   if (input != "INTERLIS") {
-      stream.close();
-   }
-}
-
 void input::parseIli2(string ilifile)
 {
 
    try {
-
-      input_file = ilifile;
-
-      // open input
-      ifstream stream;
-      antlr4::ANTLRInputStream inputstream = open_inputstream(ilifile,stream);
       
+      string input;
+      if (ilifile == "INTERLIS") {
+         input = getInterlisModel23();
+         input_file = "internal";
+      }
+      else {
+         input = util::load_filtered_string_from_file(ilifile);
+         input_file = ilifile;
+      }
+
+      antlr4::ANTLRInputStream inputstream(input);
+
       Log.debug("creating ili2 lexer ...");
       lexer::Ili2Lexer ili2lexer(&inputstream);
       antlr4::CommonTokenStream tokens(&ili2lexer);
@@ -64,8 +53,6 @@ void input::parseIli2(string ilifile)
       Log.debug("ili2 building meta model ...");
       input::Ili2Input ili2input;
       ili2input.visit(ili2d);
-
-      close_inputstream(ilifile,stream);
 
    }
    catch (exception e) {
@@ -89,6 +76,14 @@ antlrcpp::Any Ili2Input::visitInterlis2Def(Ili2Parser::Interlis2DefContext *ctx)
    */
 
    iliversion = ctx->iliversion->getText();
+   if (iliversion == "2.3") {
+      ili23 = true;
+      ili24 = false;
+   }
+   if (iliversion == "2.4") {
+      ili24 = true;
+      ili23 = false;
+   }
    debug(ctx,">>> visitInterlis2Def(" + iliversion + ")");
    Log.incNestLevel();
    visitChildren(ctx);

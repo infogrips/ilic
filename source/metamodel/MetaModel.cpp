@@ -7,6 +7,7 @@ namespace metamodel {
 
    // global variables
 
+   static list <DataUnit*> AllDataUnits;
    static list <Model*> AllModels;
    static list <Import*> AllImports;
    static list <Dependency*> AllDependencies;
@@ -21,6 +22,25 @@ namespace metamodel {
    }
 
    // model helpers
+
+   void add_dataunit(DataUnit* u)
+   {
+      if (u == nullptr) {
+         return;
+      }
+      for (DataUnit* uu : AllDataUnits) {
+         if (uu->Name == u->ElementInPackage->Name) {
+            Log.error("multiple declaration of topic " + u->ElementInPackage->Name, u->_line);
+            return;
+         }
+      }
+      AllDataUnits.push_back(u);
+   }
+
+   list<DataUnit*> get_all_dataunits()
+   {
+      return AllDataUnits;
+   }
 
    void add_model(Model* model)
    {
@@ -681,6 +701,7 @@ namespace metamodel {
       clone->ili1OptionalTable = org->ili1OptionalTable;
       clone->Oid = org->Oid;
       clone->View = org->View;
+      clone->isDomainType = org->isDomainType;
 
    }
 

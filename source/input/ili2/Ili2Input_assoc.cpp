@@ -183,58 +183,56 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
       Role* role1 = c->Role.front();
       Role* role2 = c->Role.back();
 
-      if (role1->Strongness != Role::Comp && role2->Strongness != Role::Comp &&
-         //role1->Association->ClassAttribute.size() == 0 &&
-         (
-            (role1->Multiplicity.Max == -1 && role2->Multiplicity.Max == -1) ||
-            (role1->Multiplicity.Max > 1 && role2->Multiplicity.Max > 1)
-         )
-         ) {
+      int role1Min = role1->Multiplicity.Min;
+      int role1Max = role1->Multiplicity.Max;
+
+      if (role1Min == -1) {
+         role1Min = 0;
+      }
+
+      if (role1Max == -1) {
+         if (role1->Strongness == Role::Comp) {
+            role1Max = 1;
+         }
+         else {
+            role1Max = INT_MAX;
+         }
+      }
+
+      int role2Min = role2->Multiplicity.Min;
+      int role2Max = role2->Multiplicity.Max;
+
+      if (role2Min == -1) {
+         role2Min = 0;
+      }
+
+      if (role2Max == -1) {
+         if (role2->Strongness == Role::Comp) {
+            role2Max = 1;
+         }
+         else {
+            role2Max = INT_MAX;
+         }
+      }
+
+      if (role1Max > 1 && role2Max > 1) {
          for (auto r : c->Role) {
             c->RoleAttribute.push_back(r);
          }
       }
       else {
-         if (role2->Strongness == Role::Aggr) {
-
-         }
-         else if (role1->Multiplicity.Max > -1 && role1->Multiplicity.Max < 2) {
+         if (role1Max < 2 /*&& role2->Strongness != Role::Aggr*/) {
             for (auto bc : get_all_baseclasses()) {
-               if (bc->CRT->Name == role2->Name) {
+               if (bc->CRT == role2) {
                   bc->BaseClass_->RoleAttribute.push_back(role1);
                }
             }
          }
-         else if (role1->Strongness == Role::Comp) {
-            //Composition --> default {0..1}
-            if (role1->Multiplicity.Min == -1 && role1->Multiplicity.Max == -1) {
-               for (auto bc : get_all_baseclasses()) {
-                  if (bc->CRT->Name == role2->Name) {
-                     bc->BaseClass_->RoleAttribute.push_back(role1);
-                  }
-               }
-            }
-         }
-
-         /*if (role2->Association->ClassAttribute.size() > 0) {
-         }
-         else*/ if (role1->Strongness == Role::Aggr) {
-
-         }
-         else if (role1->Multiplicity.Max != 1 && role2->Multiplicity.Max > -1 && role2->Multiplicity.Max < 2) {
+         
+         if (role1Max != 1 && role2Max < 2 /*&& role1->Strongness != Role::Aggr*/ && c->ClassAttribute.size() == 0) {
             for (auto bc : get_all_baseclasses()) {
-               if (bc->CRT->Name == role1->Name) {
+               if (bc->CRT == role1) {
                   bc->BaseClass_->RoleAttribute.push_back(role2);
-               }
-            }
-         }
-         else if (role2->Strongness == Role::Comp) {
-            //Composition --> default {0..1}
-            if (role2->Multiplicity.Min == -1 && role2->Multiplicity.Max == -1) {
-               for (auto bc : get_all_baseclasses()) {
-                  if (bc->CRT->Name == role1->Name) {
-                     bc->BaseClass_->RoleAttribute.push_back(role2);
-                  }
                }
             }
          }
@@ -374,7 +372,7 @@ antlrcpp::Any Ili2Input::visitCardinality(parser::Ili2Parser::CardinalityContext
    : LCURLY (STAR | min=POSNUMBER (DOTDOT (max=POSNUMBER | STAR))?) RCURLY
    */
 
-   debug(ctx,"visitCardinality()");
+   debug(ctx,">>> visitCardinality()");
    
    Multiplicity m;
    m.Min = -1;
@@ -394,6 +392,8 @@ antlrcpp::Any Ili2Input::visitCardinality(parser::Ili2Parser::CardinalityContext
    if (ctx->STAR() != nullptr) {
       m.Max = -1;
    }
+
+   debug(ctx,"<<< visitCardinality(" + to_string(m.Min) + ".." + to_string(m.Max) + ")");
 
    return m;
    

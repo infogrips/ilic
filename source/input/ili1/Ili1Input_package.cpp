@@ -8,6 +8,8 @@ using namespace input;
 using namespace parser;
 using namespace metamodel;
 
+extern string input_file;
+
 antlrcpp::Any Ili1Input::visitModelDef(Ili1Parser::ModelDefContext *ctx)
 {
    
@@ -51,6 +53,7 @@ antlrcpp::Any Ili1Input::visitModelDef(Ili1Parser::ModelDefContext *ctx)
 
    Model *m = new Model();
    init_package(m,ctx->modelname1->getLine());
+   m->_ilifile = input_file;
 
    // Package -> MetaElement, to do !!!
 

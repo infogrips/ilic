@@ -90,7 +90,7 @@ antlrcpp::Any Ili2Input::visitMandatoryConstraint(parser::Ili2Parser::MandatoryC
    init_constraint(c,get_line(ctx));
    c->Kind = SimpleConstraint::MandC;
    c->LogicalExpression = visitExpression(ctx->expression());
-   if (!is_boolean_expression(c->LogicalExpression)) {
+   if (c->LogicalExpression != nullptr && !is_boolean_expression(c->LogicalExpression)) {
       Log.error("expression must return a boolean value", ctx->expression()->start->getLine());
    }
    

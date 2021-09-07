@@ -9,6 +9,9 @@ using namespace util;
 using namespace metamodel;
 using namespace output;
 
+static bool domainheader_written = false;
+
+
 // public
 
 Ili1Output::Ili1Output(string ili_file)
@@ -28,15 +31,11 @@ void Ili1Output::preVisitModel(Model* m)
 
     ili1.incNestLevel();
 
-    // all domains
-    ili1.writeln("");
-    ili1.writeln("DOMAIN");
-    ili1.writeln("");
+    domainheader_written = false;
 }
 
 void Ili1Output::postVisitModel(Model* m)
 {
-
     ili1.decNestLevel();
     ili1.writeln("");
     ili1.writeln("END " + m->Name + ".");
@@ -54,33 +53,26 @@ void Ili1Output::postVisitModel(Model* m)
     ili1.writeln("END.");
 
     ili1.closeFile();
+
+    domainheader_written = false;
 }
 
 void Ili1Output::preVisitSubModel(SubModel* s)
 {
-
     ili1.writeln("");
     ili1.writeln("TOPIC " + s->Name + " =");
     ili1.incNestLevel();
 
-    ili1.writeln("");
-    ili1.writeln("DOMAIN");
-    ili1.writeln("");
-
-    ili1.incNestLevel();
-    ili1.writeln("dummy = TEXT*1;");
-    ili1.decNestLevel();
-
-
+    domainheader_written = false;
 }
 
 void Ili1Output::postVisitSubModel(SubModel* s)
 {
-
     ili1.decNestLevel();
     ili1.writeln("");
     ili1.writeln("END " + s->Name + ".");
 
+    domainheader_written = false;
 }
 
 // a fix to avoid structure written inside a class
@@ -170,7 +162,7 @@ void Ili1Output::visitAttrOrParam(AttrOrParam *a)
 
            string type = get_type(t, false);
 
-           //Log.message(a->AttrParent->Name + "." + a->Name + ":" + type);
+           Log.message(a->AttrParent->Name + "." + a->Name + ":" + type);
 
            if (type.size() > 0) {
                ili1.writeln(a->Name + ": " + type + ";");
@@ -211,19 +203,32 @@ void Ili1Output::visitRole(Role* r)
     }
 
     string targets = "";
+    string targets_additional = "";
     for (auto b : get_all_baseclasses()) {
         if (b->CRT == r) {
+            if (targets.size() <= 0) {
+                targets = b->BaseClass_->Name;
+            }
+            else {
+                if (targets_additional.size() > 0) {
+                    targets_additional = targets_additional + ", ";
+                }
+                targets_additional = targets_additional + b->BaseClass_->Name;
+            }
             targets = b->BaseClass_->Name;
             break;
         }
     }
-  
+
     string mandatory = "";
     if (r->Mandatory = false) {
         mandatory = " OPTIONAL ";
     }
 
     string remark = " !! " + strongness + ": {" + multiplicity + "}";
+    if (targets_additional.size() > 0) {
+        remark = remark + " additional targets: " + targets_additional;
+    }
 
     if (targets.size() <= 0) {
         Log.warning(r->Association->Name + "." + r->Name + " targets unknown");
@@ -240,7 +245,6 @@ void Ili1Output::visitRole(Role* r)
 void Ili1Output::visitDomainType(metamodel::DomainType* t)
 {
     if (t->_attr != nullptr) {
-
     }
     else if (t->Name == "C1") {
     }
@@ -261,6 +265,17 @@ void Ili1Output::visitDomainType(metamodel::DomainType* t)
     else if (t->Name == "TYPE") {
     }
     else {
+
+        // domain header
+        if (!domainheader_written) {
+                domainheader_written = true;
+                ili1.writeln("");
+                ili1.writeln("DOMAIN");
+                ili1.writeln("");
+        }
+
+            // domain
+
         ili1.incNestLevel();
         string type = get_type(t, true);
         ili1.writeln(t->Name + " = " + type + ";");
@@ -312,8 +327,16 @@ string Ili1Output::get_type(DomainType* t, bool domainflag)
 {
     string type = "";
 
+    /*
+    Log.message("get_type:");
     if (t->ElementInPackage != nullptr) {
-        if (t->ElementInPackage->Name == "INTERLIS") {
+        Log.message("t->ElementInPackage->Name=" + t->ElementInPackage->Name);
+    };
+    Log.message("t->Name=" + t->Name);
+    */
+
+    // if (t->ElementInPackage != nullptr) {
+    //    if (t->ElementInPackage->Name == "INTERLIS") {
             if ((t->Name == "HALIGNMENT") ||
                 (t->Name == "VALIGNMENT")) {
                 type = t->Name;
@@ -321,13 +344,18 @@ string Ili1Output::get_type(DomainType* t, bool domainflag)
             else if (t->Name == "INTERLIS_1_DATE") {
                 type = "DATE";
             }
-        }
-    }
+    //    }
+    // }
+    
 
     if (type.size() <= 0) {
         if (t->getClass() == "TextType") {
             TextType* tt = static_cast<TextType*>(t);
-            type = type + "TEXT*" + to_string(tt->MaxLength);
+
+            int tl = tt->MaxLength;
+            if (tl <= 0) tl = 2000;
+
+            type = type + "TEXT*" + to_string(tl);
         }
 
         else if (t->getClass() == "NumType") {

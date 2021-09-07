@@ -97,7 +97,7 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
       c->Final = properties[FINAL];
       c->Extended = properties[EXTENDED];
       if (properties[EXTENDED]) {
-         c->Abstract = false;
+         //c->Abstract = false;
          Package *p = get_package_context();
          int line = get_line(ctx);
          DataUnit* u = find_dataunit(get_path(p),line);
@@ -225,8 +225,6 @@ antlrcpp::Any Ili2Input::visitStructureDef(Ili2Parser::StructureDefContext *ctx)
       c->Extended = properties[EXTENDED];
       if (properties[EXTENDED]) {
          c->Abstract = false;
-         string basestructure = c->ElementInPackage->Name + "." + c->Name;
-         c->Super = find_structure(basestructure,get_line(ctx->properties()));
          Package* p = get_package_context();
          int line = get_line(ctx);
          DataUnit* u = find_dataunit(get_path(p),line);
@@ -234,16 +232,26 @@ antlrcpp::Any Ili2Input::visitStructureDef(Ili2Parser::StructureDefContext *ctx)
             Log.error(string("EXTENDED can only by used in extended topics"), line);
          }
          else {
+            string superpath = get_path(u->Super);
+            superpath = superpath.substr(0,superpath.length()-7); // without .BASKET
+            string baseclass = superpath + "." + c->Name;
+            c->Super = find_class_object(baseclass,"class or structure",line);
             bool found = false;
             while (u->Super != nullptr) {
-               DataUnit* uu = static_cast<DataUnit*>(u->Super);
-               Package* pp = find_package(get_path(uu),line);
-               Class* cc = find_structure(pp, name1,line);
+               DataUnit *uu = static_cast<DataUnit *>(u->Super);
+               string package_path = get_path(uu);
+
+               if (util::ends_with(package_path,".BASKET")) {
+                  package_path = package_path.substr(0,package_path.length()-7);
+               }
+
+               Package* pp = find_package(package_path,line);
+               Class *cc = find_structure(pp,name1,line);
                if (cc != nullptr) {
                   found = true;
                   break;
                }
-               u = static_cast<DataUnit*>(u->Super);
+               u = static_cast<DataUnit *>(u->Super);
             }
             if (!found) {
                Log.error("structure " + name1 + " not found in basetopic(s)", line);
@@ -432,9 +440,9 @@ antlrcpp::Any Ili2Input::visitAttributeDef(parser::Ili2Parser::AttributeDefConte
    // MetaElement attributes
    a->Name = name;
    
-      push_context(a);
-      a->Type = visitAttrTypeDef(ctx->attrTypeDef());
-      pop_context();
+   push_context(a);
+   a->Type = visitAttrTypeDef(ctx->attrTypeDef());
+   pop_context();
 
    // ExtendableME attributes
    if (ctx->properties() != nullptr) {
@@ -504,13 +512,20 @@ antlrcpp::Any Ili2Input::visitAttrTypeDef(parser::Ili2Parser::AttrTypeDefContext
    if (ctx->attrType() != nullptr) {
       t = visitAttrType(ctx->attrType());
       if (t != nullptr && ctx->MANDATORY() != nullptr) {
-         try {
-            DomainType *dt = static_cast<DomainType *>(t);
-            dt->Mandatory = true;
-            t = dt;
+         Class* ct = dynamic_cast<Class*>(t);
+
+         if (ct != nullptr) {
+            ct->Mandatory = true;
          }
-         catch (exception e) {
-            Log.internal_error("unable to cast to DomainType, line=" + to_string(ctx->start->getLine()),e,1);
+         else {
+            try {
+               DomainType* dt = static_cast<DomainType*>(t);
+               dt->Mandatory = true;
+               t = dt;
+            }
+            catch (exception e) {
+               Log.internal_error("unable to cast to DomainType, line=" + to_string(ctx->start->getLine()), e, 1);
+            }
          }
       }
    }
@@ -640,10 +655,12 @@ antlrcpp::Any Ili2Input::visitReferenceAttr(parser::Ili2Parser::ReferenceAttrCon
    if (ctx->EXTERNAL() != nullptr) {
       t->External = true;
    }
-
+   
    Class *c = static_cast<Class *>(get_class_context());
-   if (ili23 && c->Kind != Class::Structure) {
-      Log.error("reference to is only allowed in structures",get_line(ctx));
+   if (c->Kind != Class::Structure) {
+      if (ili23) {
+         Log.error("reference to is only allowed in structures",get_line(ctx));
+      }
    }
    
    RestrictedRef *r = visitRestrictedRef(ctx->restrictedRef());
@@ -655,6 +672,9 @@ antlrcpp::Any Ili2Input::visitReferenceAttr(parser::Ili2Parser::ReferenceAttrCon
          if (c->Kind == Class::Structure) {
             Log.error("target of reference type must be a class or association, found structure",get_line(ctx));
             t->BaseClass = nullptr;
+         }
+         if (!t->External && (get_parent_path(c) != get_parent_path(get_class_context()))) {
+            // Log.error("reference attribute must be declared EXTERNAL",get_line(ctx));
          }
       }
       else {

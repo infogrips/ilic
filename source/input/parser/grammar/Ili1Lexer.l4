@@ -13,11 +13,7 @@ WS
    -> skip;
 
 SL_COMMENT
-   : '!!'
-   (~'@')
-   (~('\n'|'\r'|'\uFFFF'))*
-   ('\n' | ('\r' ( '\n' )?)|'\uFFFF')
-   -> skip
+   : '!!' .*? '\n' -> skip
   ;
   
 ILI_DOC
@@ -130,10 +126,6 @@ VALIGNMENT
 
 UNDEFINED
    : 'UNDEFINED'
-   ;
-   
-BOOLEAN
-   : 'BOOLEAN'
    ;
    
 ILIDOMAIN

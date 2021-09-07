@@ -224,6 +224,8 @@ namespace metamodel {
       list<Constraint *> Constraints;
       bool EmbeddedRoleTransfer = false;
       bool ili1OptionalTable = false;
+      bool Mandatory = false;
+      bool isDomainType = false;
       // role from ASSOCIATION ClassAttr
       list<metamodel::AttrOrParam *> ClassAttribute;
       // role from many to one ASSOCIATION
@@ -1024,6 +1026,8 @@ namespace metamodel {
    void init(string version);
 
    // model helpers
+   void add_dataunit(DataUnit* u);
+   list <DataUnit*> get_all_dataunits();
    void add_model(Model *model);
    list <Model *> get_all_models();
    void add_import(Import *import);

@@ -40,6 +40,9 @@ namespace output {
       string xsd_file;
       util::TextWriter xsd;
 
+      list<metamodel::Class*> all_classes;
+      list<metamodel::ExtendableME*> classAttributes;
+
       void writeAnnotations();
       void writeFixTypes1();
       void writeAliasTables();
@@ -62,9 +65,12 @@ namespace output {
       void writeMultiValue(metamodel::MultiValue* t);
       void writeClassType(metamodel::Class* t);
 
-      metamodel::EnumType* XsdOutput::getConsolidatedEnumeration(metamodel::EnumType* t);
-      void XsdOutput::mergeTree(list<metamodel::EnumNode*> tree, metamodel::EnumNode* enumNode);
+      list<metamodel::ExtendableME*> getClassAttributes(metamodel::Class* c);
+      bool isRealClass(metamodel::Class* c);
+      metamodel::EnumType* getConsolidatedEnumeration(metamodel::EnumType* t);
+      void mergeTree(list<metamodel::EnumNode*> tree, metamodel::EnumNode* enumNode);
       void buildEnum(list<string>* list, string prefix, metamodel::EnumNode* enumNode);
+      string getFormattedDateTime(string input);
    };
 
 };

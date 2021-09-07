@@ -62,7 +62,7 @@ antlrcpp::Any Ili2Input::visitFunctionDef(parser::Ili2Parser::FunctionDefContext
    f->Name = name;
    add_function(f);
    
-   if (!get_model_context()->Contracted) {
+   if (ili23 && !get_model_context()->Contracted) {
       Log.error("functions can only be defined in contracted models");
    }
    

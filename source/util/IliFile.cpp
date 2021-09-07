@@ -174,20 +174,16 @@ namespace util {
          exit(1);
       }
 
-      // replace special chars in input stream
-      string filtered;
-      replace_copy(istreambuf_iterator<char>(stream), istreambuf_iterator<char>(),back_inserter(filtered),'ä',' ');
-
       // create lexer
+      antlr4::ANTLRInputStream input(util::load_filtered_string_from_file(filepath));
       Log.debug("creating ilifile lexer (1) ...");
-      antlr4::ANTLRInputStream input(filtered);
-      Log.debug("creating ilifile lexer (2) ...");
       lexer::IliFileLexer lexer(&input);
+      Log.debug("creating ilifile lexer (2) ...");
+      antlr4::CommonTokenStream tokens(&lexer);
       lexer.removeErrorListeners();
 
       // create parser
       Log.debug("creating ilifile parser ...");
-      antlr4::CommonTokenStream tokens(&lexer);
       parser::IliFileParser parser(&tokens);
       parser::IliFileParser::IliFileContext *context = parser.iliFile();
       if (context == nullptr) {
@@ -286,6 +282,9 @@ namespace util {
             string filepath = entry.path().string();
             if (!ends_with(filepath, ".ili")) {
                continue;
+            }
+            if (filepath.substr(0,2) == "./") {
+               filepath = filepath.substr(2);
             }
             IliFile *ff = load_ilifile(filepath);
             for (string model : ff->getModels()) {

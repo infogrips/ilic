@@ -5,7 +5,7 @@
 parser grammar Ili2Parser;
 
 @members {
-   bool ili23=true; 
+   bool ili23=false; 
    bool ili24=false;
 }
 
@@ -321,7 +321,7 @@ contextDecl
    ;
    
 coordinateType
-   : ({ili23}?COORD | {ili24}?MULTICOORD) numtype1=numericType (COMMA numtype2=numericType (COMMA numtype3=numericType)?)? (COMMA rotationDef)?
+   : (COORD | {ili24}?MULTICOORD) numtype1=numericType (COMMA numtype2=numericType (COMMA numtype3=numericType)?)? (COMMA rotationDef)?
    ;
    
 rotationDef
@@ -360,7 +360,7 @@ lineType
      lineForm? 
      (VERTEX coordref=path)? 
      (WITHOUT OVERLAPS (GREATER overlap=decimal)?)? // 2.4
-     (LINE ATTRIBUTES lineattrstruct=path)?
+     ({ili23}? LINE ATTRIBUTES lineattrstruct=path)?
    ;
 
 lineForm 
