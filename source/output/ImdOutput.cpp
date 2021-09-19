@@ -1209,6 +1209,9 @@ void ImdOutput::visitAnyOIDType(AnyOIDType *t)
 
 void ImdOutput::visitFunctionDef(FunctionDef *t)
 {
+      
+   visit(t->ResultType);
+   //visit(t->LocalType);
 
    xtf.openObject("IlisMeta07", "ModelData", "FunctionDef", get_path(t));
    xtf.writeComment("line=" + to_string(t->_line));
@@ -1235,6 +1238,8 @@ void ImdOutput::visitFunctionDef(FunctionDef *t)
 
 void ImdOutput::visitArgument(Argument *t)
 {
+   
+   visit(t->Type);
 
    xtf.openObject("IlisMeta07", "ModelData", "Argument", get_path(t));
    xtf.writeComment("line=" + to_string(t->_line));
@@ -1483,7 +1488,6 @@ void ImdOutput::visitEnumNode(EnumNode *t)
       }
       xtf.closeTag();
    }
-   xtf.writeReference("ElementInPackage", get_path(t->ElementInPackage));
 
    // ExtendableME
    xtf.writeTag("Abstract", to_string_bool(t->Abstract));
@@ -1496,7 +1500,7 @@ void ImdOutput::visitEnumNode(EnumNode *t)
    // EnumNode
    xtf.writeReference("EnumType", get_path(t->EnumType));
    xtf.writeReference("ParentNode", get_path(t->ParentNode));
-
+   
    xtf.closeObject();
 
 }

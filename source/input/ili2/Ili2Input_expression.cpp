@@ -299,11 +299,12 @@ antlrcpp::Any Ili2Input::visitTerm3(parser::Ili2Parser::Term3Context *ctx)
    if (ctx->relation() == nullptr) {
       /* struct UnaryExpr : public Expression {
       public:
-         enum {Not, Defined} Operation;
+         enum {Not, Defined, None} Operation;
          Expression *SubExpression = nullptr;
       */
       UnaryExpr *u = new UnaryExpr();
       init_mmobject(u,ctx->start->getLine());
+      u->Operation = UnaryExpr::None;
       u->SubExpression = visitTerm(ctx->t1);
       if (u->SubExpression != nullptr) {
          u->_type = u->SubExpression->_type;
@@ -385,7 +386,6 @@ antlrcpp::Any Ili2Input::visitTerm(parser::Ili2Parser::TermContext *ctx)
       UnaryExpr *u = new UnaryExpr();
       init_mmobject(u,ctx->start->getLine());
       if (ctx->NOT() != nullptr) {
-         debug(ctx,"NOT");
          u->Operation = UnaryExpr::Not;
       }
       else {
@@ -407,6 +407,12 @@ antlrcpp::Any Ili2Input::visitTerm(parser::Ili2Parser::TermContext *ctx)
       UnaryExpr *u = new UnaryExpr();
       u->Operation = UnaryExpr::Defined;
       Factor *f = visitFactor(ctx->factor());
+      if (ctx->DEFINED() != nullptr) {
+         u->Operation = UnaryExpr::Defined;
+      }
+      else {
+         u->Operation = UnaryExpr::None;
+      }
       u->SubExpression = f;
       u->_type = "BooleanType";
       e = u;
@@ -544,7 +550,7 @@ antlrcpp::Any Ili2Input::visitConstant(parser::Ili2Parser::ConstantContext *ctx)
    | formattedConst
    | enumConst
    | classConst
-   | attributeConst
+   | attributePathConst
    */
 
    debug(ctx,">>> visitConstant()");
@@ -572,8 +578,8 @@ antlrcpp::Any Ili2Input::visitConstant(parser::Ili2Parser::ConstantContext *ctx)
    else if (ctx->classConst() != nullptr) {
       c = visitClassConst(ctx->classConst());
    }
-   else if (ctx->attributeConst() != nullptr) {
-      c = visitAttributeConst(ctx->attributeConst());
+   else if (ctx->attributePathConst() != nullptr) {
+      c = visitAttributePathConst(ctx->attributePathConst());
    }
    
    Log.decNestLevel();
@@ -722,14 +728,14 @@ antlrcpp::Any Ili2Input::visitClassConst(parser::Ili2Parser::ClassConstContext *
    
 }
 
-antlrcpp::Any Ili2Input::visitAttributeConst(parser::Ili2Parser::AttributeConstContext *ctx)
+antlrcpp::Any Ili2Input::visitAttributePathConst(parser::Ili2Parser::AttributePathConstContext *ctx)
 {
    
-   /* attributeConst
-   : GREATERGREATER (classref=path DOT)? attribute=NAME
+   /* attributePathConst
+   : GREATERGREATER (classref=path RARROW)? attribute=NAME
    */
 
-   debug(ctx,">>> visitAttributeConst()");
+   debug(ctx,">>> visitAttributePathConst()");
    Log.incNestLevel();
 
    Constant *c = new Constant();
@@ -737,14 +743,14 @@ antlrcpp::Any Ili2Input::visitAttributeConst(parser::Ili2Parser::AttributeConstC
    c->_type = "TextType";
    if (ctx->path() != nullptr) {
       string path = visitPath(ctx->path());
-      c->Value = path + "." + ctx->NAME()->getSymbol()->getText();
+      c->Value = path + "->" + ctx->NAME()->getSymbol()->getText();
    }
    else {
       c->Value = ctx->NAME()->getText();
    }
 
    Log.decNestLevel();
-   debug(ctx,"<<< visitAttributeConst(" + c->Value + ")");
+   debug(ctx,"<<< visitAttributePathConst(" + c->Value + ")");
    return c;
    
 }

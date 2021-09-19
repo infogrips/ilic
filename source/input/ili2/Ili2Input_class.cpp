@@ -173,8 +173,7 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
    }
 
    for (auto pctx : ctx->classOrStructureDef()->parameterDef()) {
-      // to do !!!
-      // visitParamDef(pctx);
+      visitParameterDef(pctx);
    }
 
    pop_context();
@@ -293,15 +292,14 @@ antlrcpp::Any Ili2Input::visitStructureDef(Ili2Parser::StructureDefContext *ctx)
    }
 
    for (auto pctx : ctx->classOrStructureDef()->parameterDef()) {
-      // to do !!!
-      // visitParamDef(pctx);
+      visitParameterDef(pctx);
    }
 
    pop_context();
 
    Log.decNestLevel();
    debug(ctx,"<<< visitStructureDef(" + name1 + ")");
-   
+
    return c;
 
 }
@@ -440,10 +438,6 @@ antlrcpp::Any Ili2Input::visitAttributeDef(parser::Ili2Parser::AttributeDefConte
    // MetaElement attributes
    a->Name = name;
    
-   push_context(a);
-   a->Type = visitAttrTypeDef(ctx->attrTypeDef());
-   pop_context();
-
    // ExtendableME attributes
    if (ctx->properties() != nullptr) {
       map <string,bool> properties = get_properties(ctx->properties(),vector<string>({ABSTRACT,FINAL,EXTENDED,TRANSIENT}));
@@ -465,6 +459,10 @@ antlrcpp::Any Ili2Input::visitAttributeDef(parser::Ili2Parser::AttributeDefConte
          }
       }
    }
+
+   push_context(a);
+   a->Type = visitAttrTypeDef(ctx->attrTypeDef());
+   pop_context();
 
    // AttrOrParam Attributes
    if (ctx->SUBDIVISION() != nullptr) {
@@ -500,20 +498,20 @@ antlrcpp::Any Ili2Input::visitAttrTypeDef(parser::Ili2Parser::AttrTypeDefContext
 {
    
    /* attrTypeDef
-   : MANDATORY? attrType
+   : MANDATORY attrType?
+   | attrType
    | bagOrListType
    */
 
    debug(ctx,">>> visitAttrTypeDef()");
    Log.incNestLevel();
 
-   Type *t;
+   Type *t = nullptr;
    
    if (ctx->attrType() != nullptr) {
       t = visitAttrType(ctx->attrType());
       if (t != nullptr && ctx->MANDATORY() != nullptr) {
          Class* ct = dynamic_cast<Class*>(t);
-
          if (ct != nullptr) {
             ct->Mandatory = true;
          }
@@ -529,12 +527,25 @@ antlrcpp::Any Ili2Input::visitAttrTypeDef(parser::Ili2Parser::AttrTypeDefContext
          }
       }
    }
+   else if (ctx->MANDATORY() != nullptr) {
+      AttrOrParam *a = static_cast<AttrOrParam *>(get_context());
+      if (a->Extending != nullptr) {
+         DomainType* dt = static_cast<DomainType*>((a->Extending->Type)->clone());
+         dt->Mandatory = true;
+         t = dt;
+      }
+      else {
+         Log.error("MANDATORY restriction only allowed on EXTENDED attributes",get_line(ctx));
+      }
+   }
    else {
       MultiValue *m = visitBagOrListType(ctx->bagOrListType());
       t = m;
    }
    
    if (t != nullptr) {
+      t->Name = "TYPE";
+      //t->LTParent = dynamic_cast<AttrOrParam *>(get_context());
       t->_attr = dynamic_cast<AttrOrParam *>(get_context());
    }
 
@@ -547,6 +558,63 @@ antlrcpp::Any Ili2Input::visitAttrTypeDef(parser::Ili2Parser::AttrTypeDefContext
    }
 
    return t;
+
+}
+
+antlrcpp::Any Ili2Input::visitParameterDef(parser::Ili2Parser::ParameterDefContext *ctx)
+{
+   
+   /* parameterDef 
+   : parameterName=NAME
+     properties? // ABSTRACT,EXTENDED,FINAL
+     COLON (attrTypeDef | METAOBJECT (OF path)?) SEMI
+   */
+   
+   string name = ctx->parameterName->getText();
+   debug(ctx,">>> visitParameterDef(" + name + ")");
+   Log.incNestLevel();
+
+   // init AttrOrParam
+   AttrOrParam *a = new AttrOrParam();
+   init_extendableme(a, ctx->parameterName->getLine());
+
+   // MetaElement attributes
+   a->Name = name;
+   
+   // ExtendableME attributes
+   if (ctx->properties() != nullptr) {
+      map <string,bool> properties = get_properties(ctx->properties(),vector<string>({ABSTRACT,FINAL,EXTENDED,TRANSIENT}));
+      a->Abstract = properties[ABSTRACT];
+      a->Final = properties[FINAL];
+      a->Extended = properties[EXTENDED];
+      if (properties[EXTENDED]) {
+         Class *c = get_class_context();
+         if (c->Super == nullptr) {
+            Log.error(string("EXTENDED can only by used in extended classes / structures / associations"),ctx->parameterName->getLine());
+         }
+         else {
+            Class* s = static_cast<Class*>(c->Super);
+            AttrOrParam *aa = metamodel::find_parameter(s,name,get_line(ctx));
+            if (aa != nullptr) {
+               //check_type_restriction(aa->Type, a->Type, name, ctx->attributname->getLine());
+               a->Extending = aa;
+            }
+         }
+      }
+   }
+
+   push_context(a);
+   a->Type = visitAttrTypeDef(ctx->attrTypeDef());
+   pop_context();
+
+   // ASSOCIATION ClassParam
+   a->ParamParent = get_class_context();
+   get_class_context()->ClassParameter.push_back(a);
+   
+   Log.decNestLevel();
+   debug(ctx,"<<< visitParameterDef(" + name + ")");
+
+   return nullptr;
 
 }
 
@@ -583,15 +651,16 @@ antlrcpp::Any Ili2Input::visitAttrType(parser::Ili2Parser::AttrTypeContext * ctx
 
    Type *t = nullptr;
 
-   if (ctx->type() != nullptr) {
-      t = visitType(ctx->type());
-   }
-   else if (ctx->path() != nullptr) {
+   if (ctx->path() != nullptr) {
       Type *tt = find_type(visitPath(ctx->path()),get_line(ctx));
       if (tt != nullptr) {
          t = static_cast<Type *>(tt->clone());
          t->Super = tt;
       }
+   }
+   else if (ctx->type() != nullptr) {
+      t = visitType(ctx->type());
+      t->Name = "TYPE";
    }
    else if (ctx->referenceAttr() != nullptr) {
       ReferenceType *rt = visitReferenceAttr(ctx->referenceAttr());
@@ -672,9 +741,6 @@ antlrcpp::Any Ili2Input::visitReferenceAttr(parser::Ili2Parser::ReferenceAttrCon
          if (c->Kind == Class::Structure) {
             Log.error("target of reference type must be a class or association, found structure",get_line(ctx));
             t->BaseClass = nullptr;
-         }
-         if (!t->External && (get_parent_path(c) != get_parent_path(get_class_context()))) {
-            // Log.error("reference attribute must be declared EXTERNAL",get_line(ctx));
          }
       }
       else {

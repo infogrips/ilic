@@ -49,7 +49,7 @@ namespace input {
       antlrcpp::Any visitLineForm(parser::Ili2Parser::LineFormContext *ctx) override;
       antlrcpp::Any visitOIDType(parser::Ili2Parser::OIDTypeContext *ctx) override;
       antlrcpp::Any visitBlackboxType(parser::Ili2Parser::BlackboxTypeContext *ctx) override;
-      antlrcpp::Any visitClassType(parser::Ili2Parser::ClassTypeContext *ctx) override;
+      antlrcpp::Any visitClassRefType(parser::Ili2Parser::ClassRefTypeContext *ctx) override;
       antlrcpp::Any visitExpression(parser::Ili2Parser::ExpressionContext *ctx) override;
       antlrcpp::Any visitTerm1(parser::Ili2Parser::Term1Context *ctx) override;
       antlrcpp::Any visitTerm2(parser::Ili2Parser::Term2Context *ctx) override;
@@ -86,12 +86,13 @@ namespace input {
       antlrcpp::Any visitEnumConst(parser::Ili2Parser::EnumConstContext *ctx) override;
       antlrcpp::Any visitNumericConst(parser::Ili2Parser::NumericConstContext *ctx) override;
       antlrcpp::Any visitClassConst(parser::Ili2Parser::ClassConstContext *ctx) override;
-      antlrcpp::Any visitAttributeConst(parser::Ili2Parser::AttributeConstContext *ctx) override;
+      antlrcpp::Any visitAttributePathConst(parser::Ili2Parser::AttributePathConstContext *ctx) override;
       antlrcpp::Any visitDecConst(parser::Ili2Parser::DecConstContext *ctx) override;
       antlrcpp::Any visitFormattedConst(parser::Ili2Parser::FormattedConstContext *ctx) override;
       antlrcpp::Any visitUnitDef(parser::Ili2Parser::UnitDefContext *ctx) override;
       antlrcpp::Any visitDerivedUnit(parser::Ili2Parser::DerivedUnitContext *ctx) override;
-      antlrcpp::Any visitComposedUnit(parser::Ili2Parser::ComposedUnitContext *ctx) override;
+      antlrcpp::Any visitComposedUnit(parser::Ili2Parser::ComposedUnitContext* ctx) override;
+      antlrcpp::Any visitComposedUnitExpr(parser::Ili2Parser::ComposedUnitExprContext* ctx) override;
       antlrcpp::Any visitBaseAttrRef(parser::Ili2Parser::BaseAttrRefContext *ctx) override;
       antlrcpp::Any visitMetaObjectRef(parser::Ili2Parser::MetaObjectRefContext *ctx) override;
       antlrcpp::Any visitAttributeRef(parser::Ili2Parser::AttributeRefContext *ctx) override;

@@ -81,16 +81,16 @@ antlrcpp::Any Ili2Input::visitRestrictedRef(parser::Ili2Parser::RestrictedRefCon
    init_mmobject(r,ctx->start->getLine());
    
    if (ctx->typeref != nullptr) {
-      // returns DomainType
-      r->BaseType = find_type(visitPath(ctx->typeref),get_line(ctx->typeref));
+      string path = visitPath(ctx->typeref);
+      r->BaseType = find_type(path,get_line(ctx->typeref));
    }
    else if (ctx->ANYCLASS() != nullptr) {
       // returns Class / Type
-      r->BaseType = find_class("INTERLIS.ANYCLASS",get_line(ctx->ANYCLASS()->getSymbol()));
+      r->BaseType = find_class("ANYCLASS",get_line(ctx->ANYCLASS()->getSymbol()));
    }
    else {
       // returns Class / Type
-      r->BaseType = find_class("INTERLIS.ANYSTRUCTURE", get_line(ctx->ANYSTRUCTURE()->getSymbol()));
+      r->BaseType = find_class("ANYSTRUCTURE", get_line(ctx->ANYSTRUCTURE()->getSymbol()));
    }
    
    if (ctx->restriction() != nullptr) {

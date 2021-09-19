@@ -159,8 +159,9 @@ antlrcpp::Any Ili2Input::visitDerivedUnit(parser::Ili2Parser::DerivedUnitContext
 antlrcpp::Any Ili2Input::visitComposedUnit(parser::Ili2Parser::ComposedUnitContext *ctx)
 {
 
-   /* composedUnit
-   : LPAREN path ((STAR | SLASH) path)*  RPAREN
+   /*
+   composedUnit
+      : LPAREN composedUnitExpr RPAREN
    */
 
    /* struct Expression : public MMObject { // ABSTRACT
@@ -171,13 +172,54 @@ antlrcpp::Any Ili2Input::visitComposedUnit(parser::Ili2Parser::ComposedUnitConte
    debug(ctx,">>> visitComposedUnit()");
    Log.incNestLevel();
    
-   Expression *e = new Expression();
-   init_mmobject(e,get_line(ctx));
+   Expression* e = visitComposedUnitExpr(ctx->composedUnitExpr());
       
    Log.decNestLevel();
    debug(ctx,"<<< visitComposedUnit()");
 
-   return e; // do to !!!
+   return e;
    
 }
 
+antlrcpp::Any Ili2Input::visitComposedUnitExpr(parser::Ili2Parser::ComposedUnitExprContext* ctx)
+{
+
+   /* composedUnitExpr
+      : path
+      | composedUnitExpr STAR path
+      | composedUnitExpr SLASH path
+   */
+
+   debug(ctx, ">>> visitComposedUnitExpr()");
+
+   Expression* e = nullptr;
+
+   if (ctx->STAR() != nullptr) {
+      CompoundExpr* ce = new CompoundExpr();
+      ce->Operation = CompoundExpr_OperationType::Mult;
+      ce->SubExpressions.push_back(visitComposedUnitExpr(ctx->composedUnitExpr()));
+      UnitRef* r = new UnitRef;
+      r->Unit = find_unit(visitPath(ctx->path()), get_line(ctx));
+      ce->SubExpressions.push_back(r);
+      e = ce;
+   }
+   else if (ctx->SLASH() != nullptr) {
+      CompoundExpr* ce = new CompoundExpr();
+      ce->Operation = CompoundExpr_OperationType::Div;
+      ce->SubExpressions.push_back(visitComposedUnitExpr(ctx->composedUnitExpr()));
+      UnitRef * r = new UnitRef;
+      r->Unit = find_unit(visitPath(ctx->path()), get_line(ctx));
+      ce->SubExpressions.push_back(r);
+      e = ce;
+   }
+   else {
+      UnitRef* r = new UnitRef;
+      r->Unit = find_unit(visitPath(ctx->path()), get_line(ctx));
+      e = r;
+   }
+
+   debug(ctx, "<<< visitComposedUnitExpr()");
+
+   return e;
+
+}

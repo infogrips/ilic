@@ -130,12 +130,11 @@ dateType
    ;
 
 enumerationType
-   : LPAREN enumElement (COMMA enumElement)* 
-     RPAREN
+   : LPAREN enumElement (COMMA enumElement)* RPAREN
    ;
 
 enumElement
-   : enumelement=NAME (DOT enumelement=NAME)* enumerationType?
+   : enumelement=NAME enumerationType?
    ;
 
 horizAlignment

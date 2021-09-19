@@ -38,14 +38,14 @@ antlrcpp::Any Ili1Input::visitTableDef(Ili1Parser::TableDefContext *ctx)
    // Class Attributes
    c->Name = name1;
    c->Kind = Class::ClassVal;
+   init_type(c,get_line(ctx));
    if (ctx->OPTIONAL() != nullptr) {
       c->ili1OptionalTable = true;
    }
    list<metamodel::AttrOrParam *> classattribute;
    c->ClassAttribute = classattribute;
+   add_class(c);
 
-   // ASSOCIATION PackageElements
-   c->ElementInPackage = get_package_context();
    push_context(c);
 
    for (auto actx : ctx->attribute()) {
@@ -74,6 +74,10 @@ antlrcpp::Any Ili1Input::visitAttribute(Ili1Parser::AttributeContext *ctx)
    */
 
    string name = ctx->attributename->getText();
+   if (is_reserved_name(name)) {
+      name += "_ILI1";
+   }
+
    debug(ctx,">>> visitAttribute(" + name + ")");
    Log.incNestLevel();
 
@@ -82,7 +86,7 @@ antlrcpp::Any Ili1Input::visitAttribute(Ili1Parser::AttributeContext *ctx)
    a->Name = name;
    
    push_context(a);
-   DomainType *dt;
+   DomainType *dt = nullptr;
    if (ctx->type() != nullptr) {
       Type *t = visitType(ctx->type());
       dt = static_cast<DomainType*>(t);
@@ -92,21 +96,23 @@ antlrcpp::Any Ili1Input::visitAttribute(Ili1Parser::AttributeContext *ctx)
    }
    else {
       // reference attribute
-      string tablename = ctx->tablename->toString();
       ReferenceType *rt = new ReferenceType();
       init_domaintype(rt,ctx->start->getLine());
       dt = static_cast<DomainType*>(rt);
+      rt->External = false;
+      rt->BaseClass = find_class(ctx->tablename->getText(),get_line(ctx));
       a->Type = dt;
-      // to do !!!
    }
    pop_context();
 
    if (ctx->OPTIONAL() == nullptr && dt != nullptr) {
-      dt->Mandatory = true;
+      if (dt != nullptr) {
+         dt->Mandatory = true;
+      }
    }
    
    if (ctx->EXPLANATION() != nullptr) {
-      // to do !!!
+      // can not be mapped to metamodel, ignored
    }
 
    // ASSOCIATION ClassAttr
@@ -134,7 +140,24 @@ antlrcpp::Any Ili1Input::visitIdentifications(Ili1Parser::IdentificationsContext
    if (ctx->NO() == nullptr) {
       for (auto ictx : ctx->identification()) {
          vector<string> attr_names = visitIdentification(ictx);
-         // create constraint, to do !!!
+         /* class UniqueConstraint : public Constraint {
+         public:
+         list<Expression *> Where;
+         enum {GlobalU, LocalU} Kind;
+         list<PathOrInspFactor *> UniqueDef;
+         */
+         UniqueConstraint *c = new UniqueConstraint;
+         init_constraint(c,get_line(ctx));
+         for (auto a : attr_names) {
+            PathEl *pl = new PathEl;
+            pl->Kind = PathEl::Attribute;
+            pl->Ref = find_attribute(get_class_context(),a,get_line(ictx));
+            PathOrInspFactor * pf = new PathOrInspFactor;
+            pf->PathEls.push_back(pl);
+            pf->_path = a;
+            c->UniqueDef.push_back(pf);
+         }
+         get_class_context()->Constraints.push_back(c);
       }
    }
    

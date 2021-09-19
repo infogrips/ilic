@@ -21,7 +21,7 @@ decimal
    ;
    
 path
-   : INTERLIS DOT (SIGN | URI | REFSYSTEM | BOOLEAN | HALIGNMENT | VALIGNMENT)
+   : (INTERLIS DOT)? (SIGN | URI | REFSYSTEM | BOOLEAN | HALIGNMENT | VALIGNMENT)
    | (INTERLIS DOT)? NAME (DOT NAME)*
    ;
    
@@ -124,7 +124,8 @@ attributeDef
    ;
 
 attrTypeDef
-   : MANDATORY? attrType
+   : MANDATORY attrType?
+   | attrType
    | bagOrListType
    ;
    
@@ -210,7 +211,7 @@ baseType
    | coordinateType
    | oIDType
    | blackboxType
-   | classType
+   | classRefType
    | attributePathType
    ;
 
@@ -221,7 +222,7 @@ constant
    | formattedConst
    | enumConst
    | classConst
-   | attributeConst
+   | attributePathConst
    ;
 
 textType
@@ -252,9 +253,8 @@ booleanType
    ;
 
 enumeration
-   : LPAREN enumElement (COMMA enumElement)* 
-     ((COLON FINAL)? | FINAL)? 
-     RPAREN
+   : LPAREN enumElement (COMMA enumElement)* (COLON FINAL)? RPAREN
+   | LPAREN FINAL RPAREN
    ;
 
 enumElement
@@ -292,9 +292,9 @@ numericConst
    ;
 
 formattedType
-   : (FORMAT BASED ON structref=path formatDef)?
-     (min=STRING DOTDOT max=STRING)?
-	| FORMAT formatref=path min=STRING DOTDOT max=STRING
+   : FORMAT BASED ON structref=path formatDef (min=STRING DOTDOT max=STRING)?
+   | FORMAT formatref=path min=STRING DOTDOT max=STRING
+   | min=STRING DOTDOT max=STRING
    ;
 
 formatDef 
@@ -313,11 +313,11 @@ formattedConst
    ;
 
 contextDef
-   : CONTEXT (contextDecl SEMI)*
+   : CONTEXT name=NAME EQUAL (contextDecl SEMI)*
    ;
 
 contextDecl
-   : name=NAME EQUAL path (OR path)*
+   : generic=path EQUAL path (OR path)*
    ;
    
 coordinateType
@@ -336,7 +336,7 @@ blackboxType
    : BLACKBOX (XML | BINARY)
    ;
 
-classType
+classRefType
    : CLASS restriction?
    | STRUCTURE restriction?
    ;
@@ -350,13 +350,12 @@ classConst
    : GREATER classref=path
    ;
 
-attributeConst
-   : GREATERGREATER (classref=path DOT)? attribute=NAME
+attributePathConst
+   : GREATERGREATER (classref=path RARROW)? attribute=NAME
    ;
 
 lineType
-   : (DIRECTED? POLYLINE|SURFACE|AREA)
-     ({ili24}?(DIRECTED? MULTIPOLYLINE|MULTISURFACE|MULTIAREA))?
+   : (directed=DIRECTED? POLYLINE|SURFACE|AREA|({ili24}? (multdir=DIRECTED? MULTIPOLYLINE) | MULTISURFACE | MULTIAREA))
      lineForm? 
      (VERTEX coordref=path)? 
      (WITHOUT OVERLAPS (GREATER overlap=decimal)?)? // 2.4
@@ -399,7 +398,13 @@ derivedUnit
    ;
 
 composedUnit
-   : LPAREN path ((STAR | SLASH) path)*  RPAREN
+   : LPAREN composedUnitExpr RPAREN
+   ;
+
+composedUnitExpr
+   : path
+   | composedUnitExpr STAR path
+   | composedUnitExpr SLASH path
    ;
 
 metaDataBasketDef
@@ -427,8 +432,8 @@ parameterDef
 
 properties
    : LPAREN 
-     (ABSTRACT|EXTENDED|FINAL|TRANSIENT|OID|HIDING|ORDERED|EXTERNAL) 
-     (COMMA (ABSTRACT|EXTENDED|FINAL|TRANSIENT|OID|HIDING|ORDERED|EXTERNAL))* 
+     (ABSTRACT|EXTENDED|FINAL|TRANSIENT|OID|HIDING|ORDERED|EXTERNAL|GENERIC) 
+     (COMMA (ABSTRACT|EXTENDED|FINAL|TRANSIENT|OID|HIDING|ORDERED|EXTERNAL|GENERIC))* 
      RPAREN
    ;
 

@@ -3,6 +3,7 @@
 #include "GmlOutput.h"
 #include "../metamodel/MetaModelOutput.h"
 #include "../util/StringMap.h"
+#include "../util/StringUtil.h"
 #include "../util/Logger.h"
 
 using namespace util;
@@ -18,7 +19,50 @@ GmlOutput::GmlOutput(string gml_output_dir, string iliversion, string ilic_versi
 
 void GmlOutput::preVisit()
 {
-   Log.warning("gml generation not fully implemented yet");
+   list<Model*> allModels = get_all_models();
+   set<string> writtenNames;
+
+   for (Model* m : allModels) {
+      if (m->Name == "INTERLIS" || m->Kind == Model::TypeM) {
+         continue;
+      }
+
+      writtenNames.clear();
+
+      for (auto* me : m->Element) {
+         if (me == nullptr) {
+            continue;
+         }
+
+         if (me->getClass() != "SubModel") {
+            continue;
+         }
+
+         string topicName = me->Name;
+
+         SubModel* sm = static_cast<SubModel*>(me);
+
+         writtenNames.insert(topicName);
+         ObjectToNameDefinition.insert({ me,topicName });
+
+         for (auto* sme : sm->Element) {
+            if (sme->getClass() != "Class") {
+               continue;
+            }
+            string className = sme->Name;
+            if (writtenNames.find(className) != writtenNames.end()) {
+               string topicName = sme->ElementInPackage->Name;
+               string scopedName = topicName + "." + className;
+               writtenNames.insert(scopedName);
+               ObjectToNameDefinition.insert({ sme,scopedName });
+            }
+            else {
+               writtenNames.insert(className);
+               ObjectToNameDefinition.insert({ sme,className });
+            }
+         }
+      }
+   }
 }
 
 void GmlOutput::preVisitModel(Model* m) {
@@ -109,6 +153,10 @@ void GmlOutput::postVisitModel(Model* m) {
    gml.closeFile();
 }
 
+void GmlOutput::preVisitSubModel(metamodel::SubModel* s) {
+   currentSubModel = s->Name;
+}
+
 void GmlOutput::postVisitSubModel(metamodel::SubModel* s) {
    gml.writeln("<xsd:complexType name=\"" + s->Name + "MemberType\">");
    gml.writelnIncNestLevel("<xsd:complexContent>");
@@ -119,7 +167,7 @@ void GmlOutput::postVisitSubModel(metamodel::SubModel* s) {
    gml.incNestLevel();
 
    list<string> allClassNames;
-   list<string> allPathNames;
+   vector<string> allPathNames;
 
    list<MetaElement*> allElements;
 
@@ -127,19 +175,36 @@ void GmlOutput::postVisitSubModel(metamodel::SubModel* s) {
 
    list<Package*> packages;
    while (sIter != nullptr) {
+      if (sIter->Name == "INTERLIS") {
+         break;
+      }
+
       packages.push_front(sIter);
 
       sIter = sIter->_super;
    }
 
-   for (auto *p : packages) {
+   for (auto* p : packages) {
       for (auto* a : p->Element) {
          if (a->getClass() == "Class") {
             Class* c = static_cast<Class*>(a);
 
-            if (c->Kind == Class::ClassVal ||
-               (c->Kind == Class::Association && c->RoleAttribute.size() > 0)) {
+            if (c->isDomainType) {
+               continue;
+            }
+            else if (c->Abstract) {
+               continue;
+            }
+            else if (c->Kind != Class::ClassVal && c->Kind != Class::Association) {
+               continue;
+            }
+            //else if (getModelName(c) != currentModel) {
+            //   continue;
+            //}
 
+            list<ExtendableME*> attributes = getClassAttributes(c);
+
+            if (attributes.size() > 0 || c->Kind == Class::ClassVal) {
                if (c->Super != nullptr) {
                   if (find(allElements.begin(), allElements.end(), c->Super) == allElements.end()) {
                      allElements.push_back(c->Super);
@@ -157,22 +222,42 @@ void GmlOutput::postVisitSubModel(metamodel::SubModel* s) {
       if (a->getClass() == "Class") {
          Class* c = static_cast<Class*>(a);
 
-         if (c->Kind == Class::ClassVal ||
-            (c->Kind == Class::Association && c->RoleAttribute.size() > 0)) {
+         if (c->Abstract) {
+            continue;
+         }
+         else if (c->Kind != Class::ClassVal && c->Kind != Class::Association) {
+            continue;
+         }
+         else if (!isRealClass(c)) {
+            continue;
+         }
+         //else if (getModelName(c) != currentModel) {
+         //   continue;
+         //}
 
+         list<ExtendableME*> attributes = getClassAttributes(c);
+
+         if (attributes.size() > 0 || c->Kind == Class::ClassVal) {
             auto iteratorClassName = find(allClassNames.begin(), allClassNames.end(), c->Name);
-            
+
             if (iteratorClassName != allClassNames.end()) {
                int index = distance(allClassNames.begin(), iteratorClassName);
                auto iteratorPathName = allPathNames.begin();
-               advance(iteratorPathName,index);
+               advance(iteratorPathName, index);
 
                allClassNames.erase(iteratorClassName);
                allPathNames.erase(iteratorPathName);
             }
 
-            allClassNames.push_back(c->Name);
-            allPathNames.push_back(getScopedName(c));
+            string path = getScopedName(c);
+
+            if (path.rfind("INTERLIS.", 0) == 0) {
+
+            }
+            else {
+               allClassNames.push_back(c->Name);
+               allPathNames.push_back(path);
+            }
          }
       }
    }
@@ -182,7 +267,11 @@ void GmlOutput::postVisitSubModel(metamodel::SubModel* s) {
    }
 
    for (auto* a : areaAttributes) {
-      gml.writeln("<xsd:element ref=\"" + a->AttrParent->Name + "." + a->Name + "\"/>");
+      if (a->AttrParent->ElementInPackage != s) {
+         continue;
+      }
+
+      gml.writeln("<xsd:element ref=\"" + getScopedName(a->AttrParent) + "." + a->Name + "\"/>");
    }
 
    gml.decNestLevel();
@@ -193,7 +282,21 @@ void GmlOutput::postVisitSubModel(metamodel::SubModel* s) {
    gml.writelnDecNestLevel("</xsd:complexContent>");
    gml.writelnDecNestLevel("</xsd:complexType>");
 
-   gml.writeln("<xsd:element name=\"" + s->Name + "\" type=\"" + s->Name + "Type\" substitutionGroup=\"gml:AbstractFeature\"/>");
+   string baseElement = "gml:AbstractFeature";
+
+   string searchDataUnit = get_path(s) + ".BASKET";
+   for (auto* du : get_all_dataunits()) {
+      string dataunit_path = get_path(du);
+
+      if (searchDataUnit == dataunit_path) {
+         if (du->Extended) {
+            baseElement = getScopedName(du->Super);
+         }
+         break;
+      }
+   }
+
+   gml.writeln("<xsd:element name=\"" + s->Name + "\" type=\"" + s->Name + "Type\" substitutionGroup=\"" + baseElement + "\"/>");
    gml.writeln("<xsd:complexType name=\"" + s->Name + "Type\">");
    gml.writelnIncNestLevel("<xsd:complexContent>");
    gml.writelnIncNestLevel("<xsd:extension base=\"gml:AbstractFeatureType\">");
@@ -211,11 +314,9 @@ void GmlOutput::preVisitClass(metamodel::Class* c) {
       return;
    }
 
-   if (c->Kind == c->Association) {
-      if (c->ClassAttribute.size() == 0 && c->RoleAttribute.size() == 0) {
-         //return;
-      }
-   }
+   if (c->Kind == Class::Association && c->Final) {
+      return;
+   }  
 
    string base = "gml:AbstractFeature";
    string baseXsd = "gml:AbstractFeatureType";
@@ -224,12 +325,25 @@ void GmlOutput::preVisitClass(metamodel::Class* c) {
       base = getScopedName(c->Super);
       baseXsd = base + "Type";
    }
+   else if (c->ElementInPackage != nullptr && c->Extended) {
+      base = getModelName(c->ElementInPackage->_super) + ":" + c->Name;
+      baseXsd = base + "Type";
+   }
 
-   gml.writeln("<xsd:element name=\"" + c->Name + "\" type=\"" + c->Name + "Type\" substitutionGroup=\"" + base + "\"/>");
-   gml.writeln("<xsd:complexType  name=\"" + c->Name + "Type\">");
+   gml.writeln("<xsd:element name=\"" + getScopedName(c) + "\" type=\"" + getScopedName(c) + "Type\" substitutionGroup=\"" + base + "\"/>");
+   gml.writeln("<xsd:complexType  name=\"" + getScopedName(c) + "Type\">");
    gml.writelnIncNestLevel("<xsd:complexContent>");
    gml.writelnIncNestLevel("<xsd:extension base=\"" + baseXsd + "\">");
    gml.writelnIncNestLevel("<xsd:sequence>");
+
+   if (c->isDomainType) {
+      gml.writelnIncNestLevel("<xsd:simpleContent>");
+      gml.writelnIncNestLevel("<xsd:extension base=\"xsd:string\"/>");
+      gml.writelnDecNestLevel("</xsd:simpleContent>");
+      gml.writelnDecNestLevel("</xsd:complexType>");
+
+      return;
+   }
 
    gml.incNestLevel();
 }
@@ -239,10 +353,12 @@ void GmlOutput::visitClass(metamodel::Class* c) {
       return;
    }
 
-   if (c->Kind == c->Association) {
-      if (c->ClassAttribute.size() == 0 && c->RoleAttribute.size() == 0) {
-         return;
-      }
+   if (c->isDomainType) {
+      return;
+   }
+
+   if (c->Kind == Class::Association && c->Final) {
+      return;
    }
 
    list<ExtendableME*> classesToScan;
@@ -297,67 +413,202 @@ void GmlOutput::visitClass(metamodel::Class* c) {
             continue;
          }
 
-         writeAttrOrParam(static_cast<AttrOrParam*>(v));
+         AttrOrParam* attr = static_cast<AttrOrParam*>(v);
+
+         if (attr->Extended) {
+            continue;
+         }
+
+         writeAttrOrParam(attr);
       }
       else if (v->getClass() == "Role") {
          string minOccurs = "";
 
          Role* role = static_cast<Role*>(v);
 
-         if (role->Strongness == Role::Comp) {
-            minOccurs = " minOccurs=\"0\"";
+         if (role->Extended) {
+            continue;
          }
-         else if (role->Multiplicity.Min == -1 && role->Multiplicity.Max == -1) {
-            minOccurs = "";
-         }
-         else if (role->Multiplicity.Min < 1) {
+
+         //if (getModelName(role) != currentModel) {
+         //   continue;
+         //}
+
+         if (role->Multiplicity.Min < 1) {
             minOccurs = " minOccurs=\"0\"";
          }
 
-         if (role->Ordered) {
-            gml.writeln("<xsd:element name=\"" + role->Name + "\"" + minOccurs + ">");
+         bool isLightWeight = true;
+
+         if (role->Association->Role.size() > 2) {
+            isLightWeight = false;
          }
          else {
-            gml.writeln("<xsd:element name=\"" + role->Name + "\" type=\"gml:ReferenceType\"" + minOccurs + ">");
-         }
+            Role* role1 = role->Association->Role.front();
+            Role* role2 = role->Association->Role.back();
 
-         string target = "???";
-         for (auto b : get_all_baseclasses()) {
-            if (b->CRT != role) {
-               continue;
+            int role1Min = role1->Multiplicity.Min;
+            int role1Max = role1->Multiplicity.Max;
+
+            if (role1Min == -1) {
+               role1Min = 0;
             }
-            target = getScopedName(b->BaseClass_);
-            break; // more than one target, to do !!
+
+            if (role1Max == -1) {
+               if (role1->Strongness == Role::Comp) {
+                  role1Max = 1;
+               }
+               else {
+                  role1Max = INT_MAX;
+               }
+            }
+
+            int role2Min = role2->Multiplicity.Min;
+            int role2Max = role2->Multiplicity.Max;
+
+            if (role2Min == -1) {
+               role2Min = 0;
+            }
+
+            if (role2Max == -1) {
+               if (role2->Strongness == Role::Comp) {
+                  role2Max = 1;
+               }
+               else {
+                  role2Max = INT_MAX;
+               }
+            }
+
+            if (role1Max > 1 && role2Max > 1) {
+               isLightWeight = false;
+            }
+            else {
+               Role* check = nullptr;
+               if (role1Max == 1) {
+                  check = role2;
+               }
+               else {
+                  check = role1;
+               }
+
+               Class* baseClass = nullptr;
+
+               for (auto bc : get_all_baseclasses()) {
+                  if (bc->CRT == check) {
+                     baseClass = bc->BaseClass_;
+                     break;
+                  }
+               }
+
+               ExtendableME* base = baseClass;
+
+               while (true) {
+                  if (base->Super == nullptr) {
+                     break;
+                  }
+
+                  base = base->Super;
+               }
+
+               ExtendableME* currentBase = c;
+
+               while (true) {
+                  if (currentBase->Super == nullptr) {
+                     break;
+                  }
+
+                  currentBase = currentBase->Super;
+               }
+
+               if (base->ElementInPackage != currentBase->ElementInPackage) {
+                  isLightWeight = false;
+               }
+            }
          }
 
-         gml.writelnIncNestLevel("<xsd:annotation>");
-         gml.writelnIncNestLevel("<xsd:appinfo>");
-         gml.writelnIncNestLevel("<gml:targetElement>" + target + "</gml:targetElement>");
-         gml.writelnDecNestLevel("</xsd:appinfo>");
-         gml.writelnDecNestLevel("</xsd:annotation>");
 
-         if (role->Ordered) {
-            string ORDER_POS = "ORDER_POS";
+         if (!isLightWeight) {
+            if (role->Ordered) {
+               gml.writeln("<xsd:element name=\"" + role->Name + "\">");
+            }
+            else {
+               gml.writeln("<xsd:element name=\"" + role->Name + "\" type=\"gml:ReferenceType\">");
+            }
 
-            gml.writeln("<xsd:complexType>");
-            gml.writelnIncNestLevel("<xsd:sequence/>");
-            gml.writeln("<xsd:attributeGroup ref=\"gml:OwnershipAttributeGroup\"/>");
-            gml.writeln("<xsd:attributeGroup ref=\"gml:AssociationAttributeGroup\"/>");
-            gml.writeln("<xsd:attribute ref=\"INTERLIS:" + ORDER_POS + "\"/>");
-            gml.writelnDecNestLevel("</xsd:complexType>");
-         }
+            string target = "???";
+            for (auto b : get_all_baseclasses()) {
+               if (b->CRT != role) {
+                  continue;
+               }
+               target = getScopedName(b->BaseClass_);
 
-         gml.writelnDecNestLevel("</xsd:element>");
+               break; // more than one target, to do !!
+            }
 
-         if (c->Kind != Class::Association && !c->Extended &&
-            (!role->Association->Final || role->Association->ClassAttribute.size() > 0)) {
-            gml.writeln("<xsd:element name=\"" + role->Name + ".LINK_DATA\" minOccurs=\"0\">");
-            gml.writelnIncNestLevel("<xsd:complexType>");
-            gml.writelnIncNestLevel("<xsd:sequence>");
-            gml.writelnIncNestLevel("<xsd:element ref=\"" + getScopedName(role->Association) + "\"/>");
-            gml.writelnDecNestLevel("</xsd:sequence>");
-            gml.writelnDecNestLevel("</xsd:complexType>");
+            gml.writelnIncNestLevel("<xsd:annotation>");
+            gml.writelnIncNestLevel("<xsd:appinfo>");
+            gml.writelnIncNestLevel("<gml:targetElement>" + target + "</gml:targetElement>");
+            gml.writelnDecNestLevel("</xsd:appinfo>");
+            gml.writelnDecNestLevel("</xsd:annotation>");
+
+            if (role->Ordered) {
+               string ORDER_POS = "ORDER_POS";
+
+               gml.writeln("<xsd:complexType>");
+               gml.writelnIncNestLevel("<xsd:sequence/>");
+               gml.writeln("<xsd:attributeGroup ref=\"gml:OwnershipAttributeGroup\"/>");
+               gml.writeln("<xsd:attributeGroup ref=\"gml:AssociationAttributeGroup\"/>");
+               gml.writeln("<xsd:attribute ref=\"INTERLIS:" + ORDER_POS + "\"/>");
+               gml.writelnDecNestLevel("</xsd:complexType>");
+            }
+
             gml.writelnDecNestLevel("</xsd:element>");
+         }
+         else {
+            if (role->Ordered) {
+               gml.writeln("<xsd:element name=\"" + role->Name + "\"" + minOccurs + ">");
+            }
+            else {
+               gml.writeln("<xsd:element name=\"" + role->Name + "\" type=\"gml:ReferenceType\"" + minOccurs + ">");
+            }
+
+            string target = "???";
+            for (auto b : get_all_baseclasses()) {
+               if (b->CRT != role) {
+                  continue;
+               }
+               target = getScopedName(b->BaseClass_);
+               break; // more than one target, to do !!
+            }
+
+            gml.writelnIncNestLevel("<xsd:annotation>");
+            gml.writelnIncNestLevel("<xsd:appinfo>");
+            gml.writelnIncNestLevel("<gml:targetElement>" + target + "</gml:targetElement>");
+            gml.writelnDecNestLevel("</xsd:appinfo>");
+            gml.writelnDecNestLevel("</xsd:annotation>");
+
+            if (role->Ordered) {
+               string ORDER_POS = "ORDER_POS";
+
+               gml.writeln("<xsd:complexType>");
+               gml.writelnIncNestLevel("<xsd:sequence/>");
+               gml.writeln("<xsd:attributeGroup ref=\"gml:OwnershipAttributeGroup\"/>");
+               gml.writeln("<xsd:attributeGroup ref=\"gml:AssociationAttributeGroup\"/>");
+               gml.writeln("<xsd:attribute ref=\"INTERLIS:" + ORDER_POS + "\"/>");
+               gml.writelnDecNestLevel("</xsd:complexType>");
+            }
+
+            gml.writelnDecNestLevel("</xsd:element>");
+
+            if (!role->Association->Final || role->Association->ClassAttribute.size() > 0) {
+               gml.writeln("<xsd:element name=\"" + role->Name + ".LINK_DATA\" minOccurs=\"0\">");
+               gml.writelnIncNestLevel("<xsd:complexType>");
+               gml.writelnIncNestLevel("<xsd:sequence>");
+               gml.writelnIncNestLevel("<xsd:element ref=\"" + getScopedName(role->Association) + "\"/>");
+               gml.writelnDecNestLevel("</xsd:sequence>");
+               gml.writelnDecNestLevel("</xsd:complexType>");
+               gml.writelnDecNestLevel("</xsd:element>");
+            }
          }
       }
    }
@@ -368,10 +619,12 @@ void GmlOutput::postVisitClass(metamodel::Class* c) {
       return;
    }
 
-   if (c->Kind == c->Association) {
-      if (c->ClassAttribute.size() == 0 && c->RoleAttribute.size() == 0) {
-         //return;
-      }
+   if (c->isDomainType) {
+      return;
+   }
+
+   if (c->Kind == Class::Association && c->Final) {
+      return;
    }
 
    gml.writelnDecNestLevel("</xsd:sequence>");
@@ -470,25 +723,37 @@ void GmlOutput::writeAttrOrParam(metamodel::AttrOrParam* a) {
       }
    }
 
-   if (t != nullptr && a->Type->Name != "TOP" && a->Type->Name != "" && a->Type->Name != "TYPE" && a->Type->Name != "TEXT" && a->Type->Name != "XMLDate"
-      && a->Type->Name != "XMLTime" && a->Type->Name != "XMLDateTime") {
-      if (a->Type->Name == "BOOLEAN") {
+   if (t != nullptr && t->Name != "TOP" && t->Name != "" && t->Name != "TYPE" && t->Name != "TEXT"
+      && t->Name != "BLACKBOX") {
+      if (t->Name == "BOOLEAN") {
          gml.writeln("<xsd:element name=\"" + a->Name + "\" type=\"xsd:boolean\"" + minOccurs + "/>");
       }
-      else if (a->Type->Name == "HALIGNMENT") {
+      else if (t->Name == "HALIGNMENT") {
          gml.writeln("<xsd:element name=\"" + a->Name + "\" type=\"INTERLIS:HALIGNMENT\"" + minOccurs + "/>");
       }
-      else if (a->Type->Name == "VALIGNMENT") {
+      else if (t->Name == "VALIGNMENT") {
          gml.writeln("<xsd:element name=\"" + a->Name + "\" type=\"INTERLIS:VALIGNMENT\"" + minOccurs + "/>");
       }
-      else if (a->Type->Name == "XmlDate") {
+      else if (t->Name == "XMLDate") {
          gml.writeln("<xsd:element name=\"" + a->Name + "\" type=\"xsd:date\"" + minOccurs + "/>");
       }
-      else if (a->Type->Name == "XmlDateTime") {
+      else if (t->Name == "XMLDateTime") {
          gml.writeln("<xsd:element name=\"" + a->Name + "\" type=\"xsd:dateTime\"" + minOccurs + "/>");
       }
-      else if (a->Type->Name == "XmlTime") {
-         gml.writeln("<xsd:element name=\"" + a->Name + "\" type=\"xsd:time\"" + minOccurs + " / > ");
+      else if (t->Name == "XMLTime") {
+         gml.writeln("<xsd:element name=\"" + a->Name + "\" type=\"xsd:time\"" + minOccurs + "/>");
+      }
+      else if (t->Name == "GregorianYear") {
+         gml.writeln("<xsd:element name=\"" + a->Name + "\" type=\"xsd:gYear\"" + minOccurs + "/>");
+      }
+      else if (t->Name == "URI") {
+         gml.writeln("<xsd:element name=\"" + a->Name + "\"" + minOccurs + ">");
+         gml.writelnIncNestLevel("<xsd:simpleType>");
+         gml.writelnIncNestLevel("<xsd:restriction base=\"xsd:anyURI\">");
+         gml.writelnIncNestLevel("<xsd:maxLength value=\"1023\"/>");
+         gml.writelnDecNestLevel("</xsd:restriction>");
+         gml.writelnDecNestLevel("</xsd:simpleType>");
+         gml.writelnDecNestLevel("</xsd:element>");
       }
       else {
          if (a->Type->Super == nullptr) {
@@ -545,18 +810,18 @@ void GmlOutput::writeAttrOrParam(metamodel::AttrOrParam* a) {
 
       string baseClass = t->getBaseClass();
 
-      if (!lt->Final) {
-         if (lt->TopNode.size() > 0) {
+      if (!a->Final) {
+         if (lt->TopNode->Node.size() > 0) {
             if (a->Extended == false) {
                gml.writeln("<xsd:element name=\"" + a->Name + "\" type=\"gml:CodeWithAuthorityType\"" + minOccurs + "/>");
 
                list<string> enums;
 
-               for (auto node : lt->TopNode) {
+               for (auto node : lt->TopNode->Node) {
                   buildEnum(&enums, "", node);
                }
 
-               codelistKeys.push_back(a->AttrParent->Name + "." + a->Name);
+               codelistKeys.push_back(getScopedName(a->AttrParent) + "." + a->Name);
                codelistValues.push_back(enums);
             }  
          }
@@ -568,14 +833,15 @@ void GmlOutput::writeAttrOrParam(metamodel::AttrOrParam* a) {
             typeAttribute = " name=\"" + t->Name + "\"";
          }
 
-         gml.writeln("<xsd:simpleType" + typeAttribute + ">");
+         gml.writeln("<xsd:element name=\"" + a->Name + "\"" + minOccurs + ">");
+         gml.writelnIncNestLevel("<xsd:simpleType" + typeAttribute + ">");
          gml.writelnIncNestLevel("<xsd:restriction base=\"xsd:normalizedString\">");
 
          gml.incNestLevel();
 
          list<string> enums;
 
-         for (auto node : lt->TopNode) {
+         for (auto node : lt->TopNode->Node) {
             buildEnum(&enums, "", node);
          }
 
@@ -585,6 +851,7 @@ void GmlOutput::writeAttrOrParam(metamodel::AttrOrParam* a) {
 
          gml.writelnDecNestLevel("</xsd:restriction>");
          gml.writelnDecNestLevel("</xsd:simpleType>");
+         gml.writeln("</xsd:element>");
       }
    }
    else {
@@ -643,6 +910,18 @@ void GmlOutput::writeType(metamodel::Type *t) {
          gml.writelnIncNestLevel("<xsd:restriction base=\"xsd:token\"/>");
          gml.writelnDecNestLevel("</xsd:simpleType>");
       }
+      else if (textType->Kind == TextType::Uri) {
+         string typeAttribute;
+         if (t->Name != "" && t->Name != "TOP" && t->Name != "TYPE" && t->Name != "TEXT") {
+            typeAttribute = " name=\"" + t->Name + "\"";
+         }
+
+         gml.writeln("<xsd:simpleType" + typeAttribute + ">");
+         gml.writelnIncNestLevel("<xsd:restriction base=\"xsd:anyURI\">");
+         gml.writelnIncNestLevel("<xsd:maxLength value=\"1023\"/>");
+         gml.writelnDecNestLevel("</xsd:restriction>");
+         gml.writelnDecNestLevel("</xsd:simpleType>");
+      }
       else {
          writeTextType(textType);
       }
@@ -688,7 +967,7 @@ void GmlOutput::writeType(metamodel::Type *t) {
    else if (t->getClass() == "MultiValue") {
       writeMultiValue(static_cast<MultiValue*>(t));
    }
-   else if (t->getClass() == "Class") {
+   else if (t->getClass() == "Class" && t->Name != "ANYCLASS" && t->Name != "ANYSTRUCTURE") {
       writeClassType(static_cast<Class*>(t));
    }
    else {
@@ -710,7 +989,7 @@ void GmlOutput::writeTextType(metamodel::TextType *t) {
 
    gml.writeln("<xsd:simpleType" + typeAttribute + ">");
 
-   if (t->Kind == t->Text) {
+   if (t->Kind == TextType::Text) {
       gml.writelnIncNestLevel("<xsd:restriction base=\"xsd:normalizedString\">");
    }
    else {
@@ -766,6 +1045,20 @@ void GmlOutput::writeEnumType(metamodel::EnumType *t) {
       typeAttribute = " name=\"" + t->Name + "\"";
    }
 
+   if (t->TopNode->Node.size() == 2) {
+      ;
+      t->TopNode->Node.back();
+
+      if (t->TopNode->Node.front()->Name == "false" && t->TopNode->Node.back()->Name == "true") {
+         gml.writeln("<xsd:simpleType" + typeAttribute + ">");
+         gml.writelnIncNestLevel("<xsd:restriction base=\"xsd:boolean\">");
+         gml.writelnDecNestLevel("</xsd:restriction>");
+         gml.writeln("</xsd:simpleType>");
+
+         return;
+      }
+   }
+
    if (!isFinal) {
       string base = "gml:CodeWithAuthorityType";
 
@@ -783,7 +1076,7 @@ void GmlOutput::writeEnumType(metamodel::EnumType *t) {
 
       list<string> enums;
 
-      for (auto node : t->TopNode) {
+      for (auto node : t->TopNode->Node) {
          buildEnum(&enums, "", node);
       }
 
@@ -799,7 +1092,7 @@ void GmlOutput::writeEnumType(metamodel::EnumType *t) {
 
       list<string> enums;
 
-      for (auto node : t->TopNode) {
+      for (auto node : t->TopNode->Node) {
          buildEnum(&enums, "", node);
       }
 
@@ -825,6 +1118,9 @@ void GmlOutput::writeNumType(metamodel::NumType *t) {
 
    gml.writeln("<xsd:simpleType" + typeAttribute + ">");
 
+   string min = t->Min;
+   string max = t->Max;
+
    if (t->Min.find(".") < t->Min.length()) {
 
       if (t->Min.find("S") < t->Min.length() ||
@@ -839,10 +1135,27 @@ void GmlOutput::writeNumType(metamodel::NumType *t) {
    }
    else {
       gml.writelnIncNestLevel("<xsd:restriction base=\"xsd:integer\">");
+
+      long long minll = stoll(t->Min);
+      if (minll >= INT_MAX) {
+         minll = INT_MAX;
+      }
+
+      long long maxll = stoll(t->Max);
+      if (maxll >= INT_MAX) {
+         maxll = INT_MAX;
+      }
+
+      min = to_string(minll);
+      max = to_string(maxll);
    }
 
-   gml.writelnIncNestLevel("<xsd:minInclusive value=\"" + t->Min + "\"/>");
-   gml.writeln("<xsd:maxInclusive value=\"" + t->Max + "\"/>");
+   if (util::starts_with(max, "+")) {
+      max.erase(0, 1);
+   }
+
+   gml.writelnIncNestLevel("<xsd:minInclusive value=\"" + min + "\"/>");
+   gml.writeln("<xsd:maxInclusive value=\"" + max + "\"/>");
    gml.writelnDecNestLevel("</xsd:restriction>");
    gml.writelnDecNestLevel("</xsd:simpleType>");
 }
@@ -856,7 +1169,7 @@ void GmlOutput::writeLineType(metamodel::LineType *t) {
 
    string base;
 
-   if (t->Extended) {
+   if (t->Super != nullptr) {
       base = getScopedName(t->Super);
    }
    else if(t->Kind == t->Area || t->Kind == t->Surface){
@@ -924,7 +1237,7 @@ void GmlOutput::writeFormattedType(metamodel::FormattedType *t) {
    gml.writelnIncNestLevel("<xsd:restriction base=\"" + base + "\">");
 
    if (!hasBaseDomain) {
-      string regex = "([\\+\\-0-9\\.]+)-([\\+\\-0-9\\.]+)-([\\+\\-0-9\\.]+)";
+      string regex = "([\\+\\-0-9\\.]+):([\\+\\-0-9\\.]+):([\\+\\-0-9\\.]+)";
       gml.writelnIncNestLevel("<xsd:pattern value=\"" + regex + "\"/>");
       gml.decNestLevel();
    }
@@ -936,7 +1249,7 @@ void GmlOutput::writeFormattedType(metamodel::FormattedType *t) {
 void GmlOutput::writeBlackboxType(metamodel::BlackboxType *t) {
    string typeAttribute = "";
 
-   if (t->Name != "" && t->Name != "TOP" && t->Name != "TYPE") {
+   if (t->Name != "" && t->Name != "TOP" && t->Name != "BLACKBOX") {
       typeAttribute = " name=\"" + t->Name + "\"";
    }
 
@@ -981,10 +1294,14 @@ void GmlOutput::writeMultiValue(metamodel::MultiValue* t) {
 
    gml.incNestLevel();
 
-   gml.writeln("<xsd:element ref=\"" + getScopedName(t->BaseType) + "\"/>");
+   if(t->BaseType != nullptr) {
+      gml.writeln("<xsd:element ref=\"" + getScopedName(t->BaseType) + "\"/>");
+   }
+
+   gml.decNestLevel();
 
    gml.writelnDecNestLevel("</xsd:sequence>");
-   gml.writelnDecNestLevel("</xsd:complexType>");
+   gml.writeln("</xsd:complexType>");
 }
 
 void GmlOutput::writeClassType(metamodel::Class* t) {
@@ -1002,7 +1319,26 @@ void GmlOutput::writeClassType(metamodel::Class* t) {
    else {
       gml.writeln("<xsd:complexType" + typeAttribute + ">");
       gml.writelnIncNestLevel("<xsd:sequence>");
-      gml.writelnIncNestLevel("<xsd:element ref=\"" + getScopedName(t) + "\"/>");
+
+      /*if (t->Super->Sub.size() > 0) {
+         gml.writelnIncNestLevel("<xsd:choice>");
+
+         gml.incNestLevel();
+
+         for (auto* entry : t->Super->Sub) {
+            gml.writeln("<xsd:element name=\"" + getScopedName(entry) + "\" type=\"" + getScopedName(entry) + "\"/>");
+         }
+
+         gml.writeln("<xsd:element name=\"" + getScopedName(t->Super) + "\" type=\"" + getScopedName(t->Super) + "\"/>");
+
+         gml.decNestLevel();
+
+         gml.writeln("</xsd:choice>");
+      }
+      else {*/
+         gml.writelnIncNestLevel("<xsd:element ref=\"" + getScopedName(t->Super) + "\"/>");
+      /* } */
+
       gml.writelnDecNestLevel("</xsd:sequence>");
       gml.writelnDecNestLevel("</xsd:complexType>");
    }
@@ -1065,7 +1401,7 @@ void GmlOutput::write_linetables() {
          gml.writeln("<xsd:element name=\"lineattr\">");
          gml.writelnIncNestLevel("<xsd:complexType>");
          gml.writelnIncNestLevel("<xsd:sequence>");
-         gml.writelnIncNestLevel("<xsd:element ref=\"" + lt->LAStructure->Name + "\"/>");
+         gml.writelnIncNestLevel("<xsd:element ref=\"" + getScopedName(lt->LAStructure) + "\"/>");
          gml.writelnDecNestLevel("</xsd:sequence>");
          gml.writeln("<xsd:attributeGroup ref=\"gml:OwnershipAttributeGroup\"/>");
          gml.writelnDecNestLevel("</xsd:complexType>");
@@ -1157,9 +1493,153 @@ string GmlOutput::getScopedName(metamodel::MetaElement* o) {
    string modelName = getModelName(o);
    string elementName = o->Name;
 
-   if (modelName == currentModel) {
-      return elementName;
+   map<metamodel::MetaElement*, string>::iterator foundIter = ObjectToNameDefinition.find(o);
+   if (foundIter != ObjectToNameDefinition.end())
+   {
+      elementName = foundIter->second;
+   }
+
+   if (modelName != currentModel) {
+      elementName = modelName + ":" + elementName;
    }
    
-   return modelName + ":" + elementName;
+   return elementName;
+}
+
+list<metamodel::ExtendableME*> GmlOutput::getClassAttributes(metamodel::Class* c) {
+   list<ExtendableME*> attributes;
+   list<ExtendableME*> classesToScan;
+
+   ExtendableME* attributeClass = c;
+
+   while (attributeClass != nullptr) {
+
+      if (attributeClass->getClass() == "Class") {
+         classesToScan.push_front(attributeClass);
+
+      }
+
+      attributeClass = attributeClass->Super;
+   }
+
+   for (auto cts : classesToScan) {
+      Class* ac = static_cast<Class*>(cts);
+
+      if (ac->Kind == Class::Association) {
+         for (auto ra : ac->RoleAttribute) {
+            string findString = ra->Name;
+            auto it = std::find_if(attributes.begin(), attributes.end(), [&findString](metamodel::ExtendableME* obj) {return obj->Name == findString; });
+
+            if (it != attributes.end()) {
+               it = attributes.erase(it);
+               attributes.insert(it, ra);
+            }
+            else {
+               attributes.push_back(ra);
+            }
+         }
+      }
+
+      for (auto ca : ac->ClassAttribute) {
+
+         string findString = ca->Name;
+         auto it = std::find_if(attributes.begin(), attributes.end(), [&findString](metamodel::ExtendableME* obj) {return obj->Name == findString; });
+
+         if (it != attributes.end()) {
+            it = attributes.erase(it);
+            attributes.insert(it, ca);
+         }
+         else {
+            attributes.push_back(ca);
+         }
+      }
+
+      if (ac->Kind != Class::Association) {
+         for (auto ra : ac->RoleAttribute) {
+            string findString = ra->Name;
+            auto it = std::find_if(attributes.begin(), attributes.end(), [&findString](metamodel::ExtendableME* obj) {return obj->Name == findString; });
+
+            if (it != attributes.end()) {
+               it = attributes.erase(it);
+               attributes.insert(it, ra);
+            }
+            else {
+               attributes.push_back(ra);
+            }
+         }
+      }
+   }
+
+   return attributes;
+}
+
+bool GmlOutput::isRealClass(metamodel::Class* c) {
+   if (c->Kind != Class::Association) {
+      return true;
+   }
+
+   if (c->Role.size() > 2) {
+      return true;
+   }
+
+   if (c->Role.size() < 2) {
+      if (getClassAttributes(c).size() > 0) {
+         return true;
+      }
+
+      return false;
+   }
+
+   Role* role1 = c->Role.front();
+   Role* role2 = c->Role.back();
+
+   int role1Min = role1->Multiplicity.Min;
+   int role1Max = role1->Multiplicity.Max;
+
+   if (role1Min == -1) {
+      role1Min = 0;
+   }
+
+   if (role1Max == -1) {
+      if (role2->Strongness == Role::Comp) {
+         role1Max = 1;
+      }
+      else {
+         role1Max = INT_MAX;
+      }
+   }
+
+   int role2Min = role2->Multiplicity.Min;
+   int role2Max = role2->Multiplicity.Max;
+
+   if (role2Min == -1) {
+      role2Min = 0;
+   }
+
+   if (role2Max == -1) {
+      if (role2->Strongness == Role::Comp) {
+         role2Max = 1;
+      }
+      else {
+         role2Max = INT_MAX;
+      }
+   }
+
+   if (role1Min == 1 && role1Max == 1) {
+      return false;
+   }
+
+   if (role2Min == 1 && role2Max == 1) {
+      return false;
+   }
+
+   if (getClassAttributes(c).size() > 0) {
+      return true;
+   }
+
+   if (role1Max > 1 && role2Max > 1) {
+      return true;
+   }
+
+   return false;
 }

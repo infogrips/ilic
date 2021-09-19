@@ -228,6 +228,8 @@ namespace metamodel {
       bool isDomainType = false;
       // role from ASSOCIATION ClassAttr
       list<metamodel::AttrOrParam *> ClassAttribute;
+      // role from ASSOCIATION ClassParam
+      list<metamodel::AttrOrParam *> ClassParameter;
       // role from many to one ASSOCIATION
       list<Role*> RoleAttribute;
       // role from ASSOCIATION AssocRole
@@ -271,6 +273,8 @@ namespace metamodel {
       list<Type *> LocalType;
       // ROLE from ASSOCIATION ClassAttr
       Class *AttrParent = nullptr;
+      // ROLE from ASSOCIATION ClassParam
+      Class *ParamParent = nullptr;
       // ROLE from ASSOCIATION AttrOrParamType
       Type *Type = nullptr;
       AttrOrParam* Extending = nullptr;
@@ -629,6 +633,7 @@ namespace metamodel {
    class ObjectType : public ClassRelatedType {
    public:
       bool Multiple = false;
+      Type * _basetype = nullptr;
       virtual string getClass() { return "ObjectType"; }
       virtual string getBaseClass() { return "ClassRelatedType"; };
    };
@@ -655,7 +660,7 @@ namespace metamodel {
    public:
       enum {Unordered, Ordered, Circular} Order;
       // role from ASSOCIATION TopNode
-      list <EnumNode *> TopNode;
+      EnumNode * TopNode;
       // role from ASSOCIATION TreeValueTypeOf
       list <EnumTreeValueType *> ETVT;
       virtual string getClass() { return "EnumType"; }
@@ -700,7 +705,8 @@ namespace metamodel {
 
    class LineType : public DomainType {
    public:
-      enum {Polyline, DirectedPolyline, Surface, Area} Kind;
+      enum {Polyline, DirectedPolyline, Surface, Area, 
+            MultiPolyline, DirectedMultiPolyline, MultiSurface, MultiArea} Kind;
       string MaxOverlap;
       bool Multi = false; // 2.4
       // role from ASSOCIATION LineCoord
@@ -1043,5 +1049,14 @@ namespace metamodel {
    // path helpers
    string get_path(MMObject *o);
    string get_parent_path(MetaElement *e);
+
+   // context helpers
+   void push_context(MetaElement *p);
+   MetaElement* get_context();
+   Class* get_class_context();
+   Package* get_package_context();
+   SubModel* get_topic_context();
+   Model* get_model_context();
+   void pop_context();
 
 };

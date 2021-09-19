@@ -3,8 +3,9 @@
 #include "../util/TextWriter.h"
 #include "../metamodel/MetaModelTreeVisitor.h"
 
-//#include <map>
 #include <vector>
+#include <map>
+#include <set>
 
 namespace output {
    
@@ -19,6 +20,7 @@ namespace output {
       void visitModel(metamodel::Model* m) override;
       void postVisitModel(metamodel::Model *m) override;
 
+      void preVisitSubModel(metamodel::SubModel* s) override;
       void postVisitSubModel(metamodel::SubModel *s) override;
       
       void preVisitClass(metamodel::Class *c) override;
@@ -41,11 +43,13 @@ namespace output {
       util::TextWriter gml;
 
       string currentModel;
+      string currentSubModel;
       vector<string> codelistKeys;
       vector<list<string>> codelistValues;
       list<metamodel::AttrOrParam*> areaAttributes;
 
       list<metamodel::Class*> writtenClasses;
+      map<metamodel::MetaElement*,string> ObjectToNameDefinition;
 
       void writeAttrOrParam(metamodel::AttrOrParam* a);
 
@@ -68,6 +72,9 @@ namespace output {
 
       string getModelName(metamodel::MMObject *o);
       string getScopedName(metamodel::MetaElement *o);
+
+      list<metamodel::ExtendableME*> getClassAttributes(metamodel::Class* c);
+      bool isRealClass(metamodel::Class* c);
    };
 
 };

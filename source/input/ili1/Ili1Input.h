@@ -18,8 +18,6 @@ namespace input {
       antlrcpp::Any Ili1Input::visitTableDef(parser::Ili1Parser::TableDefContext *ctx) override;
       antlrcpp::Any Ili1Input::visitDecimal(parser::Ili1Parser::DecimalContext *ctx) override;
       antlrcpp::Any Ili1Input::visitDerivatives(parser::Ili1Parser::DerivativesContext *ctx) override;
-      antlrcpp::Any Ili1Input::visitView(parser::Ili1Parser::ViewContext *ctx) override;
-      antlrcpp::Any Ili1Input::visitViewDef(parser::Ili1Parser::ViewDefContext *ctx) override;
       antlrcpp::Any Ili1Input::visitFormatEncoding(parser::Ili1Parser::FormatEncodingContext *ctx) override;
       antlrcpp::Any Ili1Input::visitFont(parser::Ili1Parser::FontContext *ctx) override;
       antlrcpp::Any Ili1Input::visitCode(parser::Ili1Parser::CodeContext *ctx) override;
@@ -45,7 +43,7 @@ namespace input {
       antlrcpp::Any Ili1Input::visitLineType(parser::Ili1Parser::LineTypeContext *ctx) override;
       antlrcpp::Any Ili1Input::visitAreaType(parser::Ili1Parser::AreaTypeContext *ctx) override;
       antlrcpp::Any Ili1Input::visitForm(parser::Ili1Parser::FormContext *ctx) override;
-      antlrcpp::Any Ili1Input::visitLineForm(parser::Ili1Parser::LineFormContext *ctx) override;
+      //antlrcpp::Any Ili1Input::visitLineForm(parser::Ili1Parser::LineFormContext *ctx) override;
       antlrcpp::Any Ili1Input::visitIntersectionDef(parser::Ili1Parser::IntersectionDefContext *ctx) override;
       antlrcpp::Any Ili1Input::visitControlPoints(parser::Ili1Parser::ControlPointsContext *ctx) override;
       antlrcpp::Any Ili1Input::visitLineAttributes(parser::Ili1Parser::LineAttributesContext *ctx) override;

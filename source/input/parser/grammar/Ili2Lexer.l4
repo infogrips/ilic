@@ -8,6 +8,18 @@ lexer grammar Ili2Lexer;
 // whitespace & comments
 //
 
+SL_COMMENT
+   : '!!' .*? '\n' -> skip
+   ;
+  
+ILI_OPTION
+   : '!!@' .*? '\n' -> skip
+   ;
+  
+ILI_BLOCKCOMMENT
+    : '/*' .*? '*/' -> skip
+    ;
+    
 WS
    : (' ' | '\t' | '\f' | ('\r'? '\n'))+
    -> skip
@@ -17,20 +29,8 @@ NL
    : '\r'? '\n'
    ;
 
-SL_COMMENT
-   : '!!' (~'@') ~('\n')* '\n' -> skip
-   ;
-  
 ILI_DOC
     : '/**' .*? '*/' -> skip
-    ;
-
-ILI_OPTION
-    : '!!@' .*? ('\n' | ('\r' ( '\n' )?)|'\uFFFF') -> skip
-    ;
-    
-ILI_BLOCKCOMMENT
-    : '/*' .*? '*/' -> skip
     ;
     
 //
@@ -359,6 +359,10 @@ PARAMETER
 
 MANDATORY
    : 'MANDATORY'
+   ;
+
+GENERIC
+   : 'GENERIC'
    ;
 
 GENERICS

@@ -45,7 +45,7 @@ antlrcpp::Any Ili2Input::visitViewDef(parser::Ili2Parser::ViewDefContext *ctx)
    string name1 = ctx->viewname1->getText();
    string name2 = ctx->viewname2->getText();
 
-   debug(ctx,"visitViewDef(" + name1 + ")");
+   debug(ctx,">>> visitViewDef(" + name1 + ")");
    
    if (name1 != name2) {
       Log.error(name1 + " expected",get_line(ctx->viewname2));
@@ -129,6 +129,8 @@ antlrcpp::Any Ili2Input::visitViewDef(parser::Ili2Parser::ViewDefContext *ctx)
 
    // bool Transient = false;
    
+   push_context(v);
+
    for (auto actx : ctx->viewAttribute()) {
       visitViewAttribute(actx);
    }
@@ -136,6 +138,8 @@ antlrcpp::Any Ili2Input::visitViewDef(parser::Ili2Parser::ViewDefContext *ctx)
    for (auto cctx : ctx->constraintDef()) {
       v->Constraints.push_back(visitConstraintDef(cctx));
    }
+   
+   pop_context();
 
    // role from ASSOCIATION BaseViewDef
    // list<RenamedBaseView *> RenamedBaseView;
@@ -145,6 +149,8 @@ antlrcpp::Any Ili2Input::visitViewDef(parser::Ili2Parser::ViewDefContext *ctx)
    // list <Class *> DeriAssoc;
    // to do !!!
 
+   debug(ctx,"<<< visitViewDef(" + name1 + ")");
+   
    return v;
    
 }

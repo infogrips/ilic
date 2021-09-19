@@ -133,16 +133,6 @@ namespace metamodel {
 
    // path utilities
 
-   string get_enumnode_path(EnumNode* n)
-   {
-      if (n->ParentNode == nullptr) {
-         return n->Name; // TOP ???, to do !!!
-      }
-      else {
-         return get_enumnode_path(n->ParentNode) + "." + n->Name;
-      }
-   }
-      
    string get_type_path(Type* t)
    {
 
@@ -160,12 +150,20 @@ namespace metamodel {
          path = get_path(t->LTParent) + "." + t->Name;
       }
       else if (t->LFTParent != nullptr) {
-         // function argument
-         path = get_path(t->LFTParent) + "." + t->Name + ".TYPE";
+         // function argument, result
+         path = get_path(t->LFTParent) + "." + t->Name;
+         if (t->Name != "TYPE") {
+            path += ".TYPE";
+         }
       }
       else {
          // local attribute type
-         path = get_path(t->_attr) + ".TYPE";
+         if (t->Name == "TYPE") {
+            path = get_path(t->_attr) + ".TYPE";
+         }
+         else {
+            path = get_path(t->Super);
+         }
       }
 
       return path;
@@ -181,11 +179,24 @@ namespace metamodel {
       else if (!dynamic_cast<MetaElement*>(o)) {
          return "unknown";
       }
-
+      
       MetaElement* e = dynamic_cast<MetaElement*>(o);
+      
+      if (e->Name == "ANYCLASS") {
+         return "ANYCLASS";
+      }
+      if (e->Name == "ANYSTRUCTURE") {
+         return "ANYSTRUCTURE";
+      }
+      
       if (e->getClass() == "EnumNode") {
          EnumNode *n = dynamic_cast<EnumNode *>(e);
-         return get_path(n->EnumType) + "." + get_enumnode_path(n);
+         if (n->EnumType != nullptr) {
+            return get_path(n->EnumType) + "." + n->Name;
+         }
+         else {
+            return get_path(n->ParentNode) + "." + n->Name;
+         }
       }
       else if (e->getClass() == "AttrOrParam") {
          AttrOrParam *a = dynamic_cast<AttrOrParam *>(e);
@@ -221,6 +232,79 @@ namespace metamodel {
          return "nullptr";
       }
       return get_path(e->ElementInPackage);
+   }
+
+   // context helpers
+
+   static list<MetaElement*> context;
+   
+   static string get_context_string()
+   {
+      string cstring = "";
+      for (auto c : context) {
+         cstring += ">>>" + c->getClass() + ":" + c->Name;
+      }
+      return cstring;
+   }
+
+   void push_context(MetaElement* m)
+   {
+      context.push_back(m);
+      Log.debug(">>> push_context " + get_context_string());
+   }
+
+   void pop_context()
+   {
+      MetaElement* m = context.back();
+      Log.debug("<<< pop_context " + get_context_string());
+      context.pop_back();
+   }
+
+   MetaElement* get_context()
+   {
+      if (context.size() > 0) {
+         return context.back();
+      }
+      else {
+         return nullptr;
+      }
+   }
+
+   MetaElement* get_context(string classname)
+   {
+      list<MetaElement*> c;
+      c = context;
+      while (true) {
+         if (c.empty()) {
+            break;
+         }
+         MetaElement* m = c.back();
+         if (m->isSubClassOf(classname)) {
+            return m;
+         }
+         c.pop_back();
+      }
+      return nullptr;
+   }
+
+   Class* get_class_context()
+   {
+      return dynamic_cast<Class*>(get_context("Class"));
+   }
+
+   Package* get_package_context()
+   {
+      return dynamic_cast<Package*>(get_context("Package"));
+   }
+
+   SubModel* get_topic_context()
+   {
+      return dynamic_cast<SubModel*>(get_context("SubModel"));
+   }
+
+   Model* get_model_context()
+   {
+      return dynamic_cast<Model*>(get_context("Model"));
    }
 
    // instance methods
@@ -1006,10 +1090,7 @@ namespace metamodel {
 
    static void clone_init_anyoidtype(AnyOIDType *clone,AnyOIDType *org)
    {
-
       clone_init_domaintype(clone,org);
-
-
    }
 
    static void clone_init_functiondef(FunctionDef *clone,FunctionDef *org)
@@ -1036,19 +1117,13 @@ namespace metamodel {
 
    static void clone_init_classreftype(ClassRefType *clone,ClassRefType *org)
    {
-
       clone_init_classrelatedtype(clone,org);
-
-
    }
 
    static void clone_init_objecttype(ObjectType *clone,ObjectType *org)
    {
-
       clone_init_classrelatedtype(clone,org);
-
       clone->Multiple = org->Multiple;
-
    }
 
    static void clone_init_attributereftype(AttributeRefType *clone,AttributeRefType *org)
@@ -1103,13 +1178,8 @@ namespace metamodel {
 
       clone->Order = org->Order;
 
-      for (auto* orgNode : org->TopNode) {
-         MMObject* cloneNode = nullptr;
-         cloneNode = new EnumNode();
-         EnumNode* c = static_cast<EnumNode*>(cloneNode);
-         clone_init_enumnode(c, orgNode);
-         clone->TopNode.push_back(c);
-      }
+      clone->TopNode = new EnumNode;
+      clone_init_enumnode(clone->TopNode, org->TopNode);
 
       for (auto* orgNode : org->ETVT) {
          MMObject* cloneNode = nullptr;

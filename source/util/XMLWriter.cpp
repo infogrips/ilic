@@ -60,7 +60,7 @@ void XMLWriter::closeFile()
 
 void XMLWriter::openTag(string tag,StringMap attributes)
 {
-   txt.writeln("<" + tag + ">");
+   writeTag(tag,attributes);
    tags.push_back(tag);
    txt.incNestLevel();
 };

@@ -40,7 +40,7 @@ string get_program_name()
 
 string get_version()
 {
-   return "0.9.8";
+   return "0.9.9";
 }
 
 string get_version_string()
@@ -390,6 +390,7 @@ static bool compile(IliFile *f)
    Log.info("");
    Log.info("compiling " + f->getFilePath() + " ...");
    Log.incNestLevel();
+   int errors = Log.getErrorCount();
 
    // parse input
    if (f->getIliVersion() == "1.0") {
@@ -410,7 +411,12 @@ static bool compile(IliFile *f)
    }
 
    Log.decNestLevel();
-	Log.info(f->getFilePath() + " compiled.");
+   if (Log.getErrorCount() == errors) {
+      Log.info(f->getFilePath() + " compiled.");
+   }
+   else {
+      Log.info(f->getFilePath() + " compiled with errors.");
+   }
    
    return true;
 
@@ -761,9 +767,7 @@ int main(int argc, char* argv[])
 
    // compile all .ili files
    bool multiple_iliversions = false;
-   if (iliversion != "1.0") {
-      compile(load_ilifiles_by_model("INTERLIS",iliversion));
-   }
+   compile(load_ilifiles_by_model("INTERLIS",iliversion));
    int count=0;
    while (true) {
       bool all_compiled = true;

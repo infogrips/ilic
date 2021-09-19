@@ -256,10 +256,7 @@ namespace metamodel {
          search = name;
       }
 
-      if (search == "BOOLEAN") {
-         search = "INTERLIS.BOOLEAN";
-      }
-      else if (search == "HALIGNMENT") {
+      if (search == "HALIGNMENT") {
          search = "INTERLIS.HALIGNMENT";
       }
       else if (search == "VALIGNMENT") {
@@ -267,6 +264,7 @@ namespace metamodel {
       }
 
       MetaElement *ctx = get_package_context();
+         
       string package_path = get_path(get_package_context());
       Log.debug(">>> find_type <" + search + "> in context " + package_path);
 
@@ -527,6 +525,27 @@ namespace metamodel {
       }
    }
 
+   AttrOrParam* find_parameter(Class* c,string name,int line)
+   {
+      Log.debug("find_paramer " + name);
+      if (c == nullptr) {
+         return nullptr;
+      }
+      for (auto a : c->ClassParameter) {
+         if (a->Name == name) {
+            return a;
+         }
+      }
+      if (c->Super != nullptr) {
+         Class* s = static_cast<Class*>(c->Super);
+         return find_parameter(s,name,line);
+      }
+      else {
+         Log.error("parameter " + name + " not found", line);
+         return nullptr;
+      }
+   }
+
    // expression helpers
 
    void init_expression(Expression* e, int line)
@@ -626,79 +645,6 @@ namespace metamodel {
    void init_constraint(Constraint* c, int line)
    {
       init_metaelement(c, line);
-   }
-
-   // context helpers
-
-   static list<MetaElement*> context;
-   
-   static string get_context_string()
-   {
-      string cstring = "";
-      for (auto c : context) {
-         cstring += ">>>" + c->getClass() + ":" + c->Name;
-      }
-      return cstring;
-   }
-
-   void push_context(MetaElement* m)
-   {
-      context.push_back(m);
-      Log.debug(">>> push_context " + get_context_string());
-   }
-
-   void pop_context()
-   {
-      MetaElement* m = context.back();
-      Log.debug("<<< pop_context " + get_context_string());
-      context.pop_back();
-   }
-
-   MetaElement* get_context()
-   {
-      if (context.size() > 0) {
-         return context.back();
-      }
-      else {
-         return nullptr;
-      }
-   }
-
-   MetaElement* get_context(string classname)
-   {
-      list<MetaElement*> c;
-      c = context;
-      while (true) {
-         if (c.empty()) {
-            break;
-         }
-         MetaElement* m = c.back();
-         if (m->isSubClassOf(classname)) {
-            return m;
-         }
-         c.pop_back();
-      }
-      return nullptr;
-   }
-
-   Class* get_class_context()
-   {
-      return dynamic_cast<Class*>(get_context("Class"));
-   }
-
-   Package* get_package_context()
-   {
-      return dynamic_cast<Package*>(get_context("Package"));
-   }
-
-   SubModel* get_topic_context()
-   {
-      return dynamic_cast<SubModel*>(get_context("SubModel"));
-   }
-
-   Model* get_model_context()
-   {
-      return dynamic_cast<Model*>(get_context("Model"));
    }
 
    // other helpers
@@ -856,6 +802,161 @@ namespace metamodel {
    int get_line(antlr4::tree::TerminalNode* node)
    {
       return node->getSymbol()->getLine();
+   }
+   
+   static list <string> reserved_names = {
+      "INTERLIS",
+      "CONTRACTED",
+      "REFSYSTEM",
+      "SYMBOLOGY",
+      "TYPE",
+      "MODEL",
+      "END",
+      "VERSION",
+      "NOINCREMENTALTRANSFER",
+      "TRANSLATION",
+      "OF",
+      "AT",
+      "CHARSET",
+      "XMLNS",
+      "IMPORTS",
+      "UNQUALIFIED",
+      "TOPIC",
+      "DEPENDS",
+      "ON",
+      "AS",
+      "VIEW",
+      "EXTENDS",
+      "BASKET",
+      "OID",
+      "BOOLEAN",
+      "HALIGNMENT",
+      "VALIGNMENT",
+      "CLASS",
+      "ABSTRACT",
+      "EXTENDED",
+      "FINAL",
+      "TRANSIENT",
+      "CONTINUOUS",
+      "SUBDIVISION",
+      "NO",
+      "ATTRIBUTE",
+      "TEXT",
+      "DATE",
+      "TIMEOFDAY",
+      "DATETIME",
+      "STRUCTURE",
+      "PARAMETER",
+      "MANDATORY",
+      "GENERIC",
+      "GENERICS",
+      "DEFERRED",
+      "CONTEXT",
+      "MULTICOORD",
+      "MULTIPOLYLINE",
+      "MULTISURFACE",
+      "MULTIAREA",
+      "BAG",
+      "LIST",
+      "REFERENCE",
+      "TO",
+      "ANYCLASS",
+      "RESTRICTION",
+      "ASSOCIATION",
+      "DERIVED",
+      "EXTERNAL",
+      "FROM",
+      "UNDEFINED",
+      "MTEXT",
+      "NAME",
+      "URI",
+      "ALL",
+      "CIRCULAR",
+      "OTHERS",
+      "NUMERIC",
+      "CLOCKWISE",
+      "COUNTERCLOCKWISE",
+      "CARDINALITY",
+      "OR",
+      "HIDING",
+      "ORDERED",
+      "DOMAIN",
+      "PI",
+      "LNBASE",
+      "FORMAT",
+      "INHERIT",
+      "COORD",
+      "ROTATION",
+      "ANY",
+      "BLACKBOX",
+      "XML",
+      "BINARY",
+      "DIRECTED",
+      "POLYLINE",
+      "SURFACE",
+      "AREA",
+      "WITH",
+      "STRAIGHTS",
+      "ARCS",
+      "VERTEX",
+      "WITHOUT",
+      "OVERLAPS",
+      "LINE",
+      "ATTRIBUTES",
+      "FORM",
+      "UNIT",
+      "FUNCTION",
+      "SIGN",
+      "OBJECTS",
+      "METAOBJECT",
+      "CONSTRAINT",
+      "CONSTRAINTS",
+      "EXISTENCE",
+      "REQUIRED",
+      "IN",
+      "UNIQUE",
+      "WHERE",
+      "LOCAL",
+      "SET",
+      "AND",
+      "NOT",
+      "BASED",
+      "BASE",
+      "INHERITANCE",
+      "DEFINED",
+      "INSPECTION",
+      "THIS",
+      "THISAREA",
+      "THATAREA",
+      "PARENT",
+      "FIRST",
+      "LAST",
+      "AGGREGATES",
+      "OBJECT",
+      "ENUMVAL",
+      "ENUMTREEVAL",
+      "PROJECTION",
+      "JOIN",
+      "NULL",
+      "UNION",
+      "AGGREGATION",
+      "BY",
+      "GRAPHIC",
+      "ACCORDING",
+      "WHEN",
+      "ANYSTRUCTURE",
+      "TRANSFER",
+      "URL"
+   };
+
+   bool is_reserved_name(string name) 
+   {
+      for (auto n: reserved_names) {
+         if (n == name) {
+            return true;
+         }
+      }
+      return false;
    }
 
 }

@@ -39,6 +39,7 @@ void input::parseIli2(string ilifile)
       }
 
       antlr4::ANTLRInputStream inputstream(input);
+      int errors = Log.getErrorCount();
 
       Log.debug("creating ili2 lexer ...");
       lexer::Ili2Lexer ili2lexer(&inputstream);
@@ -49,6 +50,11 @@ void input::parseIli2(string ilifile)
       ili2parser.removeErrorListeners();
       ili2parser.addErrorListener(new parser::IliParserErrorListener());
       parser::Ili2Parser::Interlis2DefContext *ili2d = ili2parser.interlis2Def();
+
+      if (Log.getErrorCount() != errors) {
+         Log.info("compiling aborted due to parsing errors");
+         return;
+      }
 
       Log.debug("ili2 building meta model ...");
       input::Ili2Input ili2input;
@@ -101,14 +107,6 @@ antlrcpp::Any Ili2Input::visitMetaDataBasketRef(parser::Ili2Parser::MetaDataBask
    return nullptr;
 }
 
-antlrcpp::Any Ili2Input::visitParameterDef(parser::Ili2Parser::ParameterDefContext *ctx)
-{
-   debug(ctx,">>> visitParameterDef()");
-   // to do !!!
-   debug(ctx,"<<< visitParameterDef()");
-   return nullptr;
-}
-   
 antlrcpp::Any Ili2Input::visitMetaDataBasketDef(parser::Ili2Parser::MetaDataBasketDefContext *ctx)
 {
 

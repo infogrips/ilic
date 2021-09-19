@@ -50,7 +50,6 @@ static void visitAttributeRefType(MetaModelTreeVisitor *visitor, AttributeRefTyp
 static void visitRole(MetaModelTreeVisitor *visitor, Role *t);
 static void visitMetaObjectDef(MetaModelTreeVisitor *visitor, MetaObjectDef *t);
 static void visitLineType(MetaModelTreeVisitor *visitor, LineType *t);
-static void visitFunctionDef(MetaModelTreeVisitor *visitor, FunctionDef *t);
 static void visitArgument(MetaModelTreeVisitor *visitor, Argument *t);
 static void visitType(MetaModelTreeVisitor* visitor, Type* t);
 static void visitDataUnit(MetaModelTreeVisitor* visitor, DataUnit* t);
@@ -66,7 +65,7 @@ static void debug1(MMObject *o,string classname)
 static void debug2(MMObject *o,string classname)
 {
    Log.decNestLevel();
-   Log.debug("<<< visit" + o->getClass() + "(path=" + get_path(o) + ", line=" + to_string(o->_line) + ")");
+   Log.debug("<<< visit" + classname + "(path=" + get_path(o) + ", line=" + to_string(o->_line) + ")");
 }
 
 static string metamodel_ignore_visit_exception = "ignoreVisit";
@@ -352,7 +351,7 @@ static void visitPackage(MetaModelTreeVisitor *visitor, Package *t)
       // ROLE from ASSOCIATION PackageElements
       list <MetaElement *> Element;
    */
-   
+
    visitMetaElement(visitor,t);
    if (visitor->visitPackageOverride()) {
       debug1(t,"Package");
@@ -503,7 +502,9 @@ static void preVisitSubModel(MetaModelTreeVisitor *visitor,SubModel *m)
 {
    if (visitor->preVisitSubModelOverride()) {
       Log.debug(">>> preVisitSubModel(" + get_path(m) + ")");
+      Log.incNestLevel();
       visitor->preVisitSubModel(m);
+      Log.decNestLevel();
       Log.debug("<<< preVisitSubModel(" + get_path(m) + ")");
    }
 }
@@ -512,7 +513,9 @@ static void postVisitSubModel(MetaModelTreeVisitor *visitor,SubModel *m)
 {
    if (visitor->postVisitSubModelOverride()) {
       Log.debug(">>> postVisitSubModel(" + get_path(m) + ")");
+      Log.incNestLevel();
       visitor->postVisitSubModel(m);
+      Log.decNestLevel();
       Log.debug("<<< postVisitSubModel(" + get_path(m) + ")");
    }
 }
@@ -525,13 +528,22 @@ static void visitSubModel(MetaModelTreeVisitor *visitor, SubModel *t)
       // MetaElement.Name := TopicName as defined in the INTERLIS-Model
    public:
    */
-
+   
    preVisitSubModel(visitor,t);
-   visitPackage(visitor,t);
 
    if (visitor->visitSubModelOverride()) {
       debug1(t,"SubModel");
+   }
+   
+   try {   
       visitor->visitSubModel(t);
+      visitPackage(visitor,t);
+   }
+   catch (string e){
+      accept_exception(e,"ignoreVisit");
+   }
+
+   if (visitor->visitSubModelOverride()) {
       debug2(t,"SubModel");
    }
 
@@ -779,16 +791,24 @@ static void visitClass(MetaModelTreeVisitor *visitor, Class *t)
       debug2(t,"Class");
    }
 
-   for (auto v : t->Constraints) {
-      visitConstraint(visitor,v);
+   for (auto v : t->Role) {
+      visitRole(visitor,v);
    }
 
    for (auto v : t->ClassAttribute) {
       visitAttrOrParam(visitor,v);
    }
 
-   for (auto v : t->Role) {
-      visitRole(visitor,v);
+   for (auto v : t->Constraint) {
+      visitConstraint(visitor,v);
+   }
+
+   for (auto v : t->Constraints) {
+      visitConstraint(visitor,v);
+   }
+
+   for (auto v : t->ClassParameter) {
+      visitAttrOrParam(visitor,v);
    }
 
    for (auto v : t->ExplicitAssocAccess) {
@@ -821,10 +841,6 @@ static void visitClass(MetaModelTreeVisitor *visitor, Class *t)
 
    for (auto v : t->DrawingRule) {
       visitDrawingRule(visitor,v);
-   }
-
-   for (auto v : t->Constraint) {
-      visitConstraint(visitor,v);
    }
 
    postVisitClass(visitor,t);
@@ -1369,7 +1385,7 @@ static void visitFunctionDef(MetaModelTreeVisitor *visitor, FunctionDef *t)
       // role from ASSOCIATION FormalArgument
       list <Argument *> Argument;
    */
-
+   
    visitMetaElement(visitor,t);
    if (visitor->visitFunctionDefOverride()) {
       debug1(t,"FunctionDef");
@@ -1480,9 +1496,7 @@ static void visitEnumType(MetaModelTreeVisitor *visitor, EnumType *t)
       debug2(t,"EnumType");
    }
 
-   for (auto v : t->TopNode) {
-      visitEnumNode(visitor,v);
-   }
+   visitEnumNode(visitor,t->TopNode);
 
    for (auto v : t->ETVT) {
       visitEnumTreeValueType(visitor,v);

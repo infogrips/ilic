@@ -38,6 +38,8 @@ antlrcpp::Any Ili2Input::visitDecimal(parser::Ili2Parser::DecimalContext *ctx)
    return value;
    
 }
+
+static Type* basetype;
    
 antlrcpp::Any Ili2Input::visitDomainType(parser::Ili2Parser::DomainTypeContext *ctx)
 {
@@ -68,30 +70,29 @@ antlrcpp::Any Ili2Input::visitDomainType(parser::Ili2Parser::DomainTypeContext *
 
    debug(ctx,">>> visitDomainType(" + name + ")");
    Log.incNestLevel();
-   
+      
+   if (ctx->EXTENDS() != nullptr) {
+      basetype = find_type(visitPath(ctx->basedomain),get_line(ctx));
+   }
+
    DomainType *t = nullptr;
    if (ctx->type() != nullptr) {
       Type *tt = visitType(ctx->type());
-
+      
       if (tt->getClass() == "Class") {
          Class* ct = static_cast<Class*>(tt);
          ct->isDomainType = true;
       }
 
-      t = static_cast<DomainType *>(tt->clone());
+      t = static_cast<DomainType *>(tt);
    }
    else {
-      // overwritten MANDATORY, to do !!!
-      t = new DomainType();
+      t = static_cast<DomainType *>(basetype->clone());
+      t->Mandatory = true;
    }
-
-   init_type(t, get_line(ctx));
+   
    t->Name = name;
-
-   if (ctx->EXTENDS() != nullptr) {
-      t->Super = find_type(visitPath(ctx->basedomain),get_line(ctx));
-      // type compatibliity check, to do !!!
-   }
+   t->Super = basetype;
       
    map<string,bool> properties = get_properties(ctx->properties(),vector<string>({ABSTRACT,FINAL}));
    t->Abstract = properties[ABSTRACT];
@@ -102,8 +103,10 @@ antlrcpp::Any Ili2Input::visitDomainType(parser::Ili2Parser::DomainTypeContext *
 
    add_type(t);
 
+   basetype = nullptr;
    Log.decNestLevel();
    debug(ctx,"<<< visitDomainType(" + name + ")");
+
    return t;
 
 }
@@ -148,7 +151,6 @@ antlrcpp::Any Ili2Input::visitBaseType(parser::Ili2Parser::BaseTypeContext *ctx)
    /* baseType
    : textType
    | enumerationType
-   | booleanType
    | alignmentType
    | enumTreeValueType
    | booleanType
@@ -206,8 +208,8 @@ antlrcpp::Any Ili2Input::visitBaseType(parser::Ili2Parser::BaseTypeContext *ctx)
          BlackboxType *tt = visitBlackboxType(ctx->blackboxType());
          t = tt;
       }
-      else if (ctx->classType() != nullptr) {
-         Class *tt = visitClassType(ctx->classType());      
+      else if (ctx->classRefType() != nullptr) {
+         ClassRefType *tt = visitClassRefType(ctx->classRefType());      
          t = tt;
       }
       else if (ctx->attributePathType() != nullptr) {
@@ -280,6 +282,11 @@ antlrcpp::Any Ili2Input::visitEnumerationType(parser::Ili2Parser::EnumerationTyp
    : enumeration (ORDERED | CIRCULAR)?
    */
 
+   /* enumeration
+   : LPAREN enumElement (COMMA enumElement)* COLON FINAL RPAREN 
+   | LPAREN FINAL RPAREN 
+   */
+
    /* class EnumType : public DomainType {
    public:
       enum {Unordered, Ordered, Circular} Order;
@@ -293,11 +300,9 @@ antlrcpp::Any Ili2Input::visitEnumerationType(parser::Ili2Parser::EnumerationTyp
    Log.incNestLevel();
 
    EnumType *t = new EnumType;
+   
    init_domaintype(t,ctx->start->getLine());
 
-   // MetaElement
-   t->Name = "TOP";
-   
    // EnumType
    if (ctx->ORDERED() != nullptr) {
       t->Order = EnumType::Ordered;
@@ -309,18 +314,31 @@ antlrcpp::Any Ili2Input::visitEnumerationType(parser::Ili2Parser::EnumerationTyp
       t->Order = EnumType::Unordered;
    }
    
-   /* enumeration
-   : LPAREN enumElement (COMMA enumElement)* 
-     ((COLON FINAL)? | FINAL)? 
-     RPAREN
-   */
-
+   // TopNode
+   EnumNode* tn = new EnumNode;
+   tn->Name = "TOP";
+   tn->EnumType = t;
+   t->TopNode = tn;
+   
    // role from ASSOCIATION TopNode
+   push_context(t);
    for (auto ectx : ctx->enumeration()->enumElement()) {
       EnumNode *nn = visitEnumElement(ectx);
-      t->TopNode.push_back(nn);
-      nn->EnumType = t;
-      // FINAL, to do !!!
+      tn->Node.push_back(nn);
+      nn->ParentNode = tn;
+   }
+   pop_context();
+   if (ctx->enumeration()->COLON() != nullptr) {
+      tn->Final = true;
+   }
+   else if (ctx->enumeration()->FINAL() != nullptr) {
+      tn->Final = true;
+   }
+
+   if (basetype != nullptr) {
+      if (basetype->getClass() != "EnumType") {
+         Log.error("incompatible base type " + basetype->getClass(),get_line(ctx));
+      }
    }
 
    // role from ASSOCIATION TreeValueTypeOf
@@ -332,6 +350,62 @@ antlrcpp::Any Ili2Input::visitEnumerationType(parser::Ili2Parser::EnumerationTyp
 
 }
 
+antlrcpp::Any Ili2Input::visitEnumElement(parser::Ili2Parser::EnumElementContext *ctx)
+{
+   
+   /* enumElement
+   : NAME (DOT NAME)* (sub=enumeration)?
+   */
+   
+   /* class EnumNode : public ExtendableME {
+      // MetaElement.Name := "TOP" for topnode,
+      //                     enumeration value (without constant prefix #)
+      //                     for all real nodes
+   public:
+      // role from ASSOCIATION TopNode
+      EnumType *EnumType = nullptr;
+      // roles from ASSOCIATION SubNode
+      EnumNode *ParentNode = nullptr;
+      list <EnumNode *> Node;
+   */
+
+   EnumNode *n = new EnumNode();
+   init_extendableme(n,ctx->start->getLine());
+   n->Name = "";
+   for (auto nn : ctx->NAME()) {
+      if (n->Name == "") {
+         n->Name = nn->getText();
+      }
+      else {
+         n->Name = n->Name + "." + nn->getText();
+      }
+   }
+
+   debug(ctx,">>> visitEnumElement(" + n->Name + ")");
+
+   // list <EnumNode *> Node;
+   if (ctx->enumeration() != nullptr) {
+      Log.incNestLevel();
+      for (auto ectx : ctx->enumeration()->enumElement()) {
+         EnumNode *nn = visitEnumElement(ectx);
+         n->Node.push_back(nn);
+         nn->ParentNode = n;
+      }
+      if (ctx->enumeration()->COLON() != nullptr) {
+         n->Final = true;
+      }
+      else if (ctx->enumeration()->FINAL() != nullptr) {
+         n->Final = true;
+      }
+      Log.decNestLevel();
+   }
+
+   debug(ctx,"<<< visitEnumElement(" + n->Name + ")");
+
+   return n;
+
+}
+
 antlrcpp::Any Ili2Input::visitBooleanType(parser::Ili2Parser::BooleanTypeContext *ctx)
 {
 
@@ -339,13 +413,15 @@ antlrcpp::Any Ili2Input::visitBooleanType(parser::Ili2Parser::BooleanTypeContext
    : BOOLEAN
    */
 
+   /* class BooleanType : public DomainType {
+   */
+
    debug(ctx,">>> visitBooleanType()");
-   Log.incNestLevel();
-   Type *t = find_type("INTERLIS.BOOLEAN",get_line(ctx));
-   Log.decNestLevel();
+   Type *t = new BooleanType;
+   init_type(t,get_line(ctx));
    debug(ctx,"<<< visitBooleanType() " + t->Name);
 
-   return static_cast<Type *>(t->clone());
+   return t;
 
 }
 
@@ -366,44 +442,12 @@ antlrcpp::Any Ili2Input::visitAlignmentType(parser::Ili2Parser::AlignmentTypeCon
       t = find_type("INTERLIS.VALIGNMENT",get_line(ctx));
    }
    
+   Type *tt = static_cast<Type *>(t->clone());
+   tt->Super = t;
+   
    debug(ctx,"<<< visitAlignmentType() " + t->Name);
 
-   return static_cast<Type *>(t->clone());
-
-}
-
-antlrcpp::Any Ili2Input::visitEnumElement(parser::Ili2Parser::EnumElementContext *ctx)
-{
-   
-   /* enumElement
-   : NAME (DOT NAME)* (sub=enumeration)?
-   */
-   
-   EnumNode *n = new EnumNode();
-   init_extendableme(n,ctx->start->getLine());
-   n->Name = ctx->NAME(0)->getText(); // (DOT NAME)*, to do !!!
-
-   debug(ctx,"visitEnumElement(" + n->Name + ")");
-
-   // role from ASSOCIATION TopNode
-   // EnumType *EnumType;
-
-   // roles from ASSOCIATION SubNode
-   // EnumNode *ParentNode;
-
-   // list <EnumNode *> Node;
-   if (ctx->enumeration() != nullptr) {
-      Log.incNestLevel();
-      for (auto ectx : ctx->enumeration()->enumElement()) {
-         EnumNode *nn = visitEnumElement(ectx);
-         n->Node.push_back(nn);
-         nn->ParentNode = n;
-         // FINAL, to do !!!
-      }
-      Log.decNestLevel();
-   }
-
-   return n;
+   return tt;
 
 }
 
@@ -587,7 +631,8 @@ antlrcpp::Any Ili2Input::visitFormattedType(parser::Ili2Parser::FormattedTypeCon
       else {
          Log.error(ctx->structref->getText() + " must be a structure", get_line(ctx->structref));
       }
-      t->Format = "a:b:c"; // visitFormatDef(ctx->formatDef()); to do !!!
+      string format = visitFormatDef(ctx->formatDef());
+      t->Format = format;
       if (ctx->min != nullptr) {
          t->Min = visitString(ctx->min);
          t->Max = visitString(ctx->max);
@@ -596,8 +641,6 @@ antlrcpp::Any Ili2Input::visitFormattedType(parser::Ili2Parser::FormattedTypeCon
    else if (ctx->FORMAT() != nullptr) {
       Type *f = find_type(ctx->formatref->getText(),get_line(ctx->formatref));
       if (f->getClass() == "FormattedType") {
-         //delete(t);
-         //t = static_cast<FormattedType *>(f->clone());
          t->BaseFormattedType = static_cast<FormattedType*>(f);
          t->Min = visitString(ctx->min);
          t->Max = visitString(ctx->max);
@@ -617,6 +660,43 @@ antlrcpp::Any Ili2Input::visitFormattedType(parser::Ili2Parser::FormattedTypeCon
 
 }
 
+antlrcpp::Any Ili2Input::visitFormatDef(parser::Ili2Parser::FormatDefContext *ctx)
+{
+
+   /* formatDef 
+   : LPAREN INHERITANCE?
+     nonnumeric=STRING? (baseAttrRef nonnumeric=STRING)*
+     baseAttrRef nonnumeric=STRING? RPAREN
+   */
+
+   debug(ctx,">>> visitFormatDef()");
+
+   string format = "";
+   for (auto c : ctx->children) {
+      string tag = c->getText();
+      if (tag == "INHERITANCE") {
+         continue;
+      }
+      else if (tag == "(") {
+         continue;
+      }
+      else if (tag == ")") {
+         continue;
+      }
+      if (format == "") {
+         format += tag;
+      }
+      else {
+         format += " " + tag;
+      }
+   }
+   
+   debug(ctx,"<<< visitFormatDef(" + format + ")");
+   
+   return format;
+
+}
+   
 antlrcpp::Any Ili2Input::visitCoordinateType(parser::Ili2Parser::CoordinateTypeContext *ctx)
 {
 
@@ -654,7 +734,6 @@ antlrcpp::Any Ili2Input::visitCoordinateType(parser::Ili2Parser::CoordinateTypeC
 
    // C1
    NumType *n = visitNumericType(ctx->numtype1);
-   //NumType *n = static_cast<NumType *>(nt->clone());
    n->Name = "C1";
    n->ElementInPackage = nullptr;
    n->_other_type = t;
@@ -670,7 +749,6 @@ antlrcpp::Any Ili2Input::visitCoordinateType(parser::Ili2Parser::CoordinateTypeC
    if (ctx->numtype2 != nullptr) {
 
       n = visitNumericType(ctx->numtype2);
-      // n = static_cast<NumType *>(nt->clone());
       n->Name = "C2";
       n->ElementInPackage = nullptr;
       n->_other_type = t;
@@ -688,7 +766,6 @@ antlrcpp::Any Ili2Input::visitCoordinateType(parser::Ili2Parser::CoordinateTypeC
    if (ctx->numtype3 != nullptr) {
 
       n = visitNumericType(ctx->numtype2);
-      // n = static_cast<NumType *>(nt->clone());
       n->Name = "C3";
       n->ElementInPackage = nullptr;
       n->_other_type = t;
@@ -752,6 +829,21 @@ antlrcpp::Any Ili2Input::visitBagOrListType(parser::Ili2Parser::BagOrListTypeCon
       m->BaseType = r->BaseType;
       m->TypeRestriction = r->TypeRestriction;
    }
+
+   if (ctx->attrType() != nullptr) {
+      Type *t = visitAttrType(ctx->attrType());
+
+      if (t->getClass() == "RestrictedRef") {
+         RestrictedRef* rr = dynamic_cast<RestrictedRef *>(t);
+
+         m->BaseType = rr->BaseType;
+         m->TypeRestriction == rr->TypeRestriction;
+      }
+      else {
+         m->BaseType = t;
+      }
+      
+   }
    
    string message = "<<< visitBagOrListType()";
    if (m->Ordered) {
@@ -804,19 +896,31 @@ antlrcpp::Any Ili2Input::visitLineType(parser::Ili2Parser::LineTypeContext *ctx)
    LineType *t = new LineType();
    init_domaintype(t,ctx->start->getLine());
    
-   if (ctx->POLYLINE() != nullptr) {
+   if (ctx->directed != nullptr) {
+      t->Kind = LineType::DirectedPolyline;
+   }
+   else if (ctx->POLYLINE() != nullptr) {
       t->Kind = LineType::Polyline;
    }
    else if (ctx->SURFACE() != nullptr) {
       t->Kind = LineType::Surface;
    }
-   else {
+   else if (ctx->AREA() != nullptr) {
       t->Kind = LineType::Area;
    }
-   if (ctx->DIRECTED().size() == 1) { // size() ???
-      t->Kind = LineType::DirectedPolyline;
+   else if (ctx->multdir != nullptr) {
+      t->Kind = LineType::DirectedMultiPolyline;
    }
-   
+   else if (ctx->MULTIPOLYLINE() != nullptr) {
+      t->Kind = LineType::MultiPolyline;
+   }
+   else if (ctx->MULTISURFACE() != nullptr) {
+      t->Kind = LineType::MultiSurface;
+   }
+   else if (ctx->MULTIAREA() != nullptr) {
+      t->Kind = LineType::MultiArea;
+   }
+
    if (ctx->lineForm() != nullptr) {
       list<LineForm *> f = visitLineForm(ctx->lineForm());
       t->LineForm = f;
@@ -1051,30 +1155,34 @@ antlrcpp::Any Ili2Input::visitBlackboxType(parser::Ili2Parser::BlackboxTypeConte
 
 }
 
-antlrcpp::Any Ili2Input::visitClassType(parser::Ili2Parser::ClassTypeContext *ctx)
+antlrcpp::Any Ili2Input::visitClassRefType(parser::Ili2Parser::ClassRefTypeContext *ctx)
 {
 
-   /* classType
+   /* classRefType
    : CLASS restriction?
    | STRUCTURE restriction?
    */
 
-   debug(ctx,">>> visitClassType()");
+   debug(ctx,">>> visitClassRefType()");
    Log.incNestLevel();
    
-   Class *t;
+   ClassRefType *r = new ClassRefType;
+   init_type(r,get_line(ctx));
    
+   Class* c = nullptr;
    if (ctx->CLASS() != nullptr) {
-      t = find_class("ANYCLASS",get_line(ctx->CLASS()->getSymbol())); // restriction, to do !!!
+      c = find_class("ANYCLASS",get_line(ctx->CLASS()->getSymbol())); // restriction, to do !!!
    }
    else {
-      t = find_class("ANYSTRUCTURE", get_line(ctx->STRUCTURE()->getSymbol())); // restriction, to do !!!
+      c = find_class("ANYSTRUCTURE", get_line(ctx->STRUCTURE()->getSymbol())); // restriction, to do !!!
    }
    
-   Log.decNestLevel();
-   debug(ctx,"<<< visitClassType()");
+   // assign c to r, to do !!!
 
-   return t;
+   Log.decNestLevel();
+   debug(ctx,"<<< visitClassRefType()");
+
+   return r;
 
 }
 
@@ -1089,21 +1197,6 @@ antlrcpp::Any Ili2Input::visitRefSys(parser::Ili2Parser::RefSysContext *ctx)
    debug(ctx,">>> visitRefSys()");
    debug(ctx,"<<< visitRefSys()");
    return nullptr;
-
-}
-
-antlrcpp::Any Ili2Input::visitFormatDef(parser::Ili2Parser::FormatDefContext *ctx)
-{
-   
-   /* formatDef 
-   : LPAREN INHERITANCE?
-     nonnumeric=STRING? (baseAttrRef nonnumeric=STRING)*
-     baseAttrRef nonnumeric=STRING? RPAREN
-   */
-
-   debug(ctx,">>> visitFormatDef()");
-   debug(ctx,"<<< visitFormatDef()");
-   return "a:b:c"; // to do !!!
 
 }
 

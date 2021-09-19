@@ -55,34 +55,46 @@ antlrcpp::Any Ili1Input::visitModelDef(Ili1Parser::ModelDefContext *ctx)
    init_package(m,ctx->modelname1->getLine());
    m->_ilifile = input_file;
 
-   // Package -> MetaElement, to do !!!
-
    // Model Attributes
    m->Name = ctx->modelname1->getText();
    m->iliVersion = "1.0";
-   m->Version = "";
+   m->Version = "1.0";
+   m->At = "http://www.interlis.ch/ilic";
    m->Contracted = false;
    m->Kind = Model::NormalM;
-   m->Language = "";
+   m->Language = "de";
 
    push_context(m);
    add_model(m);
    
+   // Units
+   Unit *u = nullptr;
+   u = static_cast<Unit *>(find_unit("INTERLIS.m2",get_line(ctx))->clone());
+   m->Element.push_back(u);
+   u->ElementInPackage = m;
+   add_unit(u);
+   u = static_cast<Unit *>(find_unit("INTERLIS.grd",get_line(ctx))->clone());
+   m->Element.push_back(u);
+   u->ElementInPackage = m;
+   add_unit(u);
+   u = static_cast<Unit *>(find_unit("INTERLIS.dgr",get_line(ctx))->clone());
+   m->Element.push_back(u);
+   u->ElementInPackage = m;
+   add_unit(u);
+
    if (ctx->domainDefs() != nullptr) {
       visitDomainDefs(ctx->domainDefs());
    }
    
    for (auto tctx : ctx->topicDef()) {
-      SubModel *s = visitTopicDef(tctx);
-      s->ElementInPackage = m;
-      m->Element.push_back(s);
+      visitTopicDef(tctx);
    }
    
    pop_context();
 
    Log.decNestLevel();
    debug(ctx,"<<< visitModelDef(" + modelname1 + ")");
-   
+      
    return m;
 
 }
@@ -114,12 +126,8 @@ antlrcpp::Any Ili1Input::visitTopicDef(Ili1Parser::TopicDefContext *ctx)
 
    // SubModel Attributes
    s->Name = name1;
+   init_package(s,get_line(ctx));
 
-   // ASSOCIATION PackageElements
-   s->ElementInPackage = get_package_context();
-   get_package_context()->Element.push_back(s);
-   //add_package(s);
-   
    push_context(s);
 
    for (auto dctx : ctx->domainDefs()) {      
@@ -127,9 +135,7 @@ antlrcpp::Any Ili1Input::visitTopicDef(Ili1Parser::TopicDefContext *ctx)
    }
    
    for (auto tctx : ctx->tableDef()) {
-      Class *c = visitTableDef(tctx);
-      c->ElementInPackage = s;
-      s->Element.push_back(c);
+      visitTableDef(tctx);
    }
 
    pop_context();

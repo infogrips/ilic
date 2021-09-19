@@ -22,15 +22,6 @@ namespace metamodel {
    void init_metaelement(MetaElement *e, int line);
    void init_extendableme(ExtendableME *e, int line);
 
-   // context helpers
-   void push_context(MetaElement *p);
-   MetaElement* get_context();
-   Class* get_class_context();
-   Package* get_package_context();
-   SubModel* get_topic_context();
-   Model* get_model_context();
-   void pop_context();
-
    // package helpers
    void init_package(Package *p, int line);
 
@@ -67,6 +58,7 @@ namespace metamodel {
    Class* find_association(string name,int line);
    Class* find_association(Package *p,string name,int line);
    AttrOrParam* find_attribute(Class *c,string name,int line);
+   AttrOrParam* find_parameter(Class *c,string name,int line);
    
    // Function helpers
    void init_function(FunctionDef *f, int line);
@@ -92,5 +84,6 @@ namespace metamodel {
    int get_line(antlr4::ParserRuleContext *ctx);
    int get_line(antlr4::Token *token);
    int get_line(antlr4::tree::TerminalNode* node);
+   bool is_reserved_name(string name);
 
 }

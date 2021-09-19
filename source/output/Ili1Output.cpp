@@ -367,7 +367,7 @@ string Ili1Output::get_type(DomainType* t, bool domainflag)
         else if (t->getClass() == "EnumType") {
             EnumType* tt = static_cast<EnumType*>(t);
 
-            string nodes = get_enum_nodes(tt->TopNode);
+            string nodes = get_enum_nodes(tt->TopNode->Node);
 
             if (nodes.size() > 0) {
                 type = type + nodes;

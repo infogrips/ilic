@@ -48,10 +48,10 @@ void input::parseIli1(string input)
 
    antlr4::ANTLRInputStream inputstream(util::load_filtered_string_from_file(input));
    input_file = input;
+   int errors = Log.getErrorCount();
 
-   Log.debug("creating ili1 lexer (1) ...");
+   Log.debug("creating ili1 lexer ...");
    lexer::Ili1Lexer ili1lexer(&inputstream);
-   Log.debug("creating ili1 lexer (2) ...");
    antlr4::CommonTokenStream tokens(&ili1lexer);
 
    Log.debug("creating ili1 parser ...");
@@ -59,6 +59,11 @@ void input::parseIli1(string input)
    ili1parser.removeErrorListeners();
    ili1parser.addErrorListener(new parser::IliParserErrorListener());
    parser::Ili1Parser::Interlis1DefContext *ili1d = ili1parser.interlis1Def();
+   
+   if (Log.getErrorCount() != errors) {
+      Log.info("compiling aborted due to parsing errors");
+      return;
+   }
 
    Log.debug("ili1 building meta model ...");
    input::Ili1Input ili1input;
@@ -95,10 +100,6 @@ antlrcpp::Any Ili1Input::visitInterlis1Def(Ili1Parser::Interlis1DefContext *ctx)
    Model *m = visitModelDef(ctx->modelDef());
    m->ili1Format = visitFormatEncoding(ctx->formatEncoding());
    m->ili1Transfername = ctx->transfername->getText();
-   
-   for (auto vctx : ctx->view()) {
-      visitView(vctx); // to do !!!
-   }
    
    Log.decNestLevel();
    debug(ctx,"<<< visitInterlis1Def()");
@@ -144,128 +145,6 @@ antlrcpp::Any Ili1Input::visitDerivatives(Ili1Parser::DerivativesContext *ctx)
 
 }
 
-antlrcpp::Any Ili1Input::visitView(Ili1Parser::ViewContext *ctx)
-{
-
-   /*
-   class View : public Class {
-   public:
-      enum {Projection, Join, Union,
-            Aggregation_All, Aggregation_Equal,
-            Inspection_Normal, Inspection_Area} FormationKind;
-
-      list<Expression *> FormationParameter; // PathOrInspFactor only
-                          // Aggr.Equal: UniqueEl
-                          // Inspection: Attributepath
-      Expression *Where;
-      bool Transient = false;
-      // role from ASSOCIATION BaseViewDef
-      // list<RenamedBaseView *> RenamedBaseView;
-      // role from ASSOCIATION DerivedAssoc
-      list <Class *> DeriAssoc;
-      virtual string getClass() { return "View"; }
-   };
-   */
-
-   /* view
-   : VIEW
-     modelname1=NAME (
-        topicname=NAME DOT tablename=NAME COLON
-        viewDef (COMMA viewDef)* SEMI
-     )*
-     END
-     modelname2=NAME
-     DOT
-   */
-
-   string name1 = ctx->modelname1->getText();
-   string name2 = ctx->modelname2->getText();
-   debug(ctx,">>> visitView(" + name1 + ")");
-   Log.incNestLevel();
-   
-   if (name1 != name2) {
-      Log.error(
-         name2 + " must match " + name1,
-         ctx->modelname2->getLine()
-      );
-   }
-   
-   if (find_model(name1,get_line(ctx->modelname1)) == nullptr) {
-      Log.error(
-         "base model " + name1 + " unknown",
-         ctx->modelname1->getLine()
-      );
-   }
-   
-   View *v = new View();
-   init_class(v,ctx->start->getLine());
-   string reftable = get_package_context()->Name + "." + ctx->topicname->getText() + "." + ctx->tablename->getText();
-   Class *t = find_class(reftable,get_line(ctx));
-   if (t == nullptr) {
-      Log.error(
-         "referenced table " + reftable + " not found",
-         ctx->tablename->getLine()
-      );
-   }
-   // assign t, to do !!!
-
-   init_class(v,ctx->tablename->getLine());
-   push_context(v);
-   
-   for (auto vctx : ctx->viewDef()) {
-      visitViewDef(vctx);
-   }
-   
-   Log.decNestLevel();
-   debug(ctx,"<<< visitView(" + name1 + ")");
-   
-   return v;
-   
-}
-
-antlrcpp::Any Ili1Input::visitViewDef(Ili1Parser::ViewDefContext *ctx)
-{
-
-   /* viewDef
-   : VERTEXINFO vertexinfo=NAME explanation=EXPLANATION
-   | WITH PERIPHERY periphery=NAME
-   | CONTOUR contour=NAME ( WITH PERIPHERY )?
-   | LARROW table=NAME DOT attr=NAME
-   */
-
-   debug(ctx,">>> visitViewDef()");
-   Log.incNestLevel();
-
-   if (ctx->VERTEXINFO() != nullptr) {
-      string vertexinfo = ctx->vertexinfo->getText();
-      string explanation = ctx->explanation->getText();
-      // to do !!!
-   }
-   else if (ctx->CONTOUR() != nullptr) {
-      string contour = ctx->periphery->getText();
-      bool periphery = false;
-      if (ctx->PERIPHERY() != nullptr) {
-         periphery = true;
-      }
-      // to do !!!
-   }
-   else if (ctx->PERIPHERY() != nullptr) {
-      string periphery = ctx->periphery->getText();
-      // to do !!!
-   }
-   else { // LARROW
-      string attrref = get_path(get_package_context()) + "." + ctx->table->getText() + "." + ctx->attr->getText();
-      // to do !!!
-   }
-
-   Log.decNestLevel();
-   debug(ctx,"<<< visitViewDef()");
-
-   // to do !!!
-   return nullptr;
-
-}
-
 antlrcpp::Any Ili1Input::visitFormatEncoding(Ili1Parser::FormatEncodingContext *ctx)
 {
 
@@ -275,7 +154,7 @@ antlrcpp::Any Ili1Input::visitFormatEncoding(Ili1Parser::FormatEncodingContext *
       bool isFree = false;
       int LineSize = 80;
       int tidSize = 10;
-      char blankCode = ' ';
+      char blankCode = ", ';
       char undefinedCode = '@';
       char continueCode = '\\';
       string Font = "";
@@ -316,22 +195,24 @@ antlrcpp::Any Ili1Input::visitFormatEncoding(Ili1Parser::FormatEncodingContext *
       f->tidSize = atoi(ctx->tidSize->getText().c_str());
    }
 
-   // to do !!!
-   //f->Font = visitFont(ctx->font());
+   if (ctx->font() != nullptr) {
+      string font = visitFont(ctx->font()); 
+      f->Font = font;
+   }
 
-   f->blankCode = 99; // DEFAULT
+   f->blankCode = '_'; // DEFAULT
    if (ctx->blankcode != nullptr) {
-      int code = visitCode(ctx->blankcode);
+      char code = visitCode(ctx->blankcode);
       f->blankCode = code;
    }
-   f->undefinedCode = 99; // DEFAULT
+   f->undefinedCode = '@'; // DEFAULT
    if (ctx->undefinedcode != nullptr) {
-      int code = visitCode(ctx->undefinedcode);
+      char code = visitCode(ctx->undefinedcode);
       f->undefinedCode = code;
    }
-   f->continueCode = 99; // DEFAULT
+   f->continueCode = '\\'; // DEFAULT
    if (ctx->continuecode != nullptr) {
-      int code = visitCode(ctx->continuecode);
+      char code = visitCode(ctx->continuecode);
       f->continueCode = code;
    }
 
@@ -366,6 +247,8 @@ antlrcpp::Any Ili1Input::visitFont(Ili1Parser::FontContext *ctx)
    debug(ctx,">>> visitFont()");
    string value = ctx->expl->getText();
    debug(ctx,"<<< visitFont(" + value + ")");
+   
+   return value;
 
 }
 
@@ -379,18 +262,17 @@ antlrcpp::Any Ili1Input::visitCode(Ili1Parser::CodeContext *ctx)
 
    debug(ctx,">>> visitCode()");
    
-   int code;
+   unsigned int code;
 
    if (ctx->POSNUMBER() != nullptr) {
-      code = atoi(ctx->POSNUMBER()->getSymbol()->getText().c_str());
+      sscanf(ctx->POSNUMBER()->getSymbol()->getText().c_str(),"%d",&code);
    }
    else {
-      code = 99; // to do !!!
-      //return (char)hextoi(ctx->HEXNUMBER()->getSymbol()->getText().c_str());
+      sscanf(ctx->HEXNUMBER()->getSymbol()->getText().c_str(),"%x", &code);
    }
-
+ 
    debug(ctx,"<<< visitCode(" + to_string(code) + ")");
    
-   return code;
+   return (char)code;
 
 }

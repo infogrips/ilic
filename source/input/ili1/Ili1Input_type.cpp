@@ -19,9 +19,7 @@ antlrcpp::Any Ili1Input::visitDomainDefs(parser::Ili1Parser::DomainDefsContext *
    Log.incNestLevel();
    
    for (auto dctx : ctx->domainDef()) {
-      Type *t = visitDomainDef(dctx);
-      t->ElementInPackage = get_package_context();
-      get_package_context()->Element.push_back(t);
+      visitDomainDef(dctx);
    }
    
    Log.decNestLevel();
@@ -39,6 +37,10 @@ antlrcpp::Any Ili1Input::visitDomainDef(parser::Ili1Parser::DomainDefContext *ct
    */
    
    string domainname = ctx->domainname->getText();
+   if (is_reserved_name(domainname)) {
+      domainname += "_ILI1";
+   }
+
    debug(ctx,">>> visitDomainDef(" + domainname + ")");
    Log.incNestLevel();
 
@@ -83,7 +85,16 @@ antlrcpp::Any Ili1Input::visitType(parser::Ili1Parser::TypeContext *ctx)
       t = l;
    }
    else {
-      t = find_type(ctx->name->getText(),ctx->start->getLine()); // clone, to do !!!
+      string name = ctx->name->getText();
+      if (is_reserved_name(name)) {
+         name += "_ILI1";
+      }
+      Type *base = find_type(name,get_line(ctx));
+      if (base != nullptr) {
+         t = static_cast<Type *>(base->clone());
+         init_type(t,get_line(ctx->name));
+         t->Super = base;
+      }
    }
    
    Log.decNestLevel();
@@ -144,8 +155,8 @@ antlrcpp::Any Ili1Input::visitBaseType(parser::Ili1Parser::BaseTypeContext *ctx)
       t = tt;
    }
    else if (ctx->dateType() != nullptr) {
-      NumType *n = visitDateType(ctx->dateType());
-      t = n;
+      TextType *tt = visitDateType(ctx->dateType());
+      t = tt;
    }
    else if (ctx->enumerationType() != nullptr) {
       EnumType *e = visitEnumerationType(ctx->enumerationType());
@@ -185,12 +196,47 @@ antlrcpp::Any Ili1Input::visitCoord2(parser::Ili1Parser::Coord2Context *ctx)
    */
    
    debug(ctx,">>> visitCoord2()");
+   Log.incNestLevel();
    
    CoordType *t = new CoordType();
    init_domaintype(t,ctx->start->getLine());
 
-   // to do !!!
-   
+   t->NullAxis = 2;
+   t->PiHalfAxis = 1;
+
+   // C1
+   NumType *n = new NumType;
+   init_domaintype(n,get_line(ctx->emin));
+   n->Min = ctx->emin->getText();
+   n->Max = ctx->emax->getText();
+   n->Name = "C1";
+   n->ElementInPackage = nullptr;
+   n->_other_type = t;
+   t->Axis.push_back(n);
+
+   AxisSpec *as = new AxisSpec();
+   init_mmobject(as,n->_line);
+   as->CoordType = t;
+   as->Axis = n;
+   add_axisspec(as);
+
+   // C2
+   n = new NumType;
+   init_domaintype(n,get_line(ctx->emin));
+   n->Min = ctx->nmin->getText();
+   n->Max = ctx->nmax->getText();
+   n->Name = "C2";
+   n->ElementInPackage = nullptr;
+   n->_other_type = t;
+   t->Axis.push_back(n);
+
+   as = new AxisSpec();
+   init_mmobject(as,n->_line);
+   as->CoordType = t;
+   as->Axis = n;
+   add_axisspec(as);
+
+   Log.decNestLevel();
    debug(ctx,"<<< visitCoord2()");
    
    return t;
@@ -207,15 +253,67 @@ antlrcpp::Any Ili1Input::visitCoord3(parser::Ili1Parser::Coord3Context *ctx)
    */
 
    debug(ctx,">>> visitCoord3()");
+   Log.incNestLevel();
+   
    CoordType *t = new CoordType();
    init_domaintype(t,ctx->start->getLine());
 
-   // to do !!!
-   
-   debug(ctx,"<<< visitCoord3()");
+   t->NullAxis = 2;
+   t->PiHalfAxis = 1;
 
+   // C1
+   NumType *n = new NumType;
+   init_domaintype(n,get_line(ctx->emin));
+   n->Min = ctx->emin->getText();
+   n->Max = ctx->emax->getText();
+   n->Name = "C1";
+   n->ElementInPackage = nullptr;
+   n->_other_type = t;
+   t->Axis.push_back(n);
+
+   AxisSpec *as = new AxisSpec();
+   init_mmobject(as,n->_line);
+   as->CoordType = t;
+   as->Axis = n;
+   add_axisspec(as);
+
+   // C2
+   n = new NumType;
+   init_domaintype(n,get_line(ctx->emin));
+   n->Min = ctx->nmin->getText();
+   n->Max = ctx->nmax->getText();
+   n->Name = "C2";
+   n->ElementInPackage = nullptr;
+   n->_other_type = t;
+   t->Axis.push_back(n);
+
+   as = new AxisSpec();
+   init_mmobject(as,n->_line);
+   as->CoordType = t;
+   as->Axis = n;
+   add_axisspec(as);
+
+   // C3
+   n = new NumType;
+   init_domaintype(n,get_line(ctx->emin));
+   n->Min = ctx->hmin->getText();
+   n->Max = ctx->hmax->getText();
+   n->Name = "C3";
+   n->ElementInPackage = nullptr;
+   n->_other_type = t;
+   t->Axis.push_back(n);
+
+   as = new AxisSpec();
+   init_mmobject(as,n->_line);
+   as->CoordType = t;
+   as->Axis = n;
+   add_axisspec(as);
+
+   Log.decNestLevel();
+   debug(ctx,"<<< visitCoord3()");
+   
    return t;
-      
+   
 }
 
 antlrcpp::Any Ili1Input::visitNumericRange(parser::Ili1Parser::NumericRangeContext *ctx)
@@ -279,7 +377,7 @@ antlrcpp::Any Ili1Input::visitDim1Type(parser::Ili1Parser::Dim1TypeContext *ctx)
    
    t->Min = ctx->min->getText();
    t->Max = ctx->max->getText();
-   // t->Unit ???, to do !!!
+   t->Unit = find_unit("INTERLIS.m",get_line(ctx));
    
    debug(ctx,"<<< visitDim1Context()");
 
@@ -312,7 +410,7 @@ antlrcpp::Any Ili1Input::visitDim2Type(parser::Ili1Parser::Dim2TypeContext *ctx)
    
    t->Min = ctx->min->getText();
    t->Max = ctx->max->getText();
-   // t->Unit ???, to do !!!
+   t->Unit = find_unit(get_model_context()->Name + ".m2",get_line(ctx));
    
    debug(ctx,"<<< visitDim2Type()");
 
@@ -341,19 +439,19 @@ antlrcpp::Any Ili1Input::visitAngleType(parser::Ili1Parser::AngleTypeContext *ct
    debug(ctx,">>> visitAngleType()");
 
    NumType *t = new NumType();
-   init_domaintype(t,ctx->start->getLine());
+   init_domaintype(t,get_line(ctx));
    
    t->Min = ctx->min->getText();
    t->Max = ctx->max->getText();
 
    if (ctx->RADIANS() != nullptr) {
-      // t->Unit ???, to do !!!
+      t->Unit = find_unit("INTERLIS.rad",get_line(ctx));
    }
    else if (ctx->DEGREES() != nullptr) {
-      // t->Unit ???, to do !!!
+      t->Unit = find_unit(get_model_context()->Name + ".dgr",get_line(ctx));
    }
    else if (ctx->GRADS() != nullptr) {
-      // t->Unit ???, to do !!!
+      t->Unit = find_unit(get_model_context()->Name + ".grd",get_line(ctx));
    }
    
    debug(ctx,"<<< visitAngleType()");
@@ -379,6 +477,8 @@ antlrcpp::Any Ili1Input::visitTextType(parser::Ili1Parser::TextTypeContext *ctx)
    
    TextType *t = new TextType();
    init_domaintype(t,ctx->start->getLine());
+
+   t->Kind = TextType::Text;
    
    t->MaxLength = atoi(ctx->numchars->getText().c_str());
    
@@ -397,12 +497,15 @@ antlrcpp::Any Ili1Input::visitDateType(parser::Ili1Parser::DateTypeContext *ctx)
 
    debug(ctx,">>> visitDateType()");
 
-   NumType *n = new NumType();
-   init_domaintype(n,ctx->start->getLine());
+   Type *base = find_type("INTERLIS.INTERLIS_1_DATE",get_line(ctx));
+
+   TextType *t = static_cast<TextType *>(base->clone());
+   init_domaintype(t,get_line(ctx));
+   t->Super = base;
 
    debug(ctx,"<<< visitDateType()");
 
-   return n;
+   return t;
    
 }
 
@@ -410,14 +513,36 @@ antlrcpp::Any Ili1Input::visitEnumerationType(parser::Ili1Parser::EnumerationTyp
 {
    
    /* enumerationType
-   : LPAREN enumElement (COMMA enumElement)* 
-     RPAREN
+   : LPAREN enumElement (COMMA enumElement)* RPAREN
    */
    
    debug(ctx,">>> visitEnumerationType()");
-   EnumType *e = new EnumType();
+   Log.incNestLevel();
+
+   EnumType *t = new EnumType;
+   
+   init_domaintype(t,ctx->start->getLine());
+   t->Order = EnumType::Unordered;
+   
+   // TopNode
+   EnumNode* tn = new EnumNode;
+   tn->Name = "TOP";
+   tn->EnumType = t;
+   tn->Final = false;
+   t->TopNode = tn;
+   
+   // role from ASSOCIATION TopNode
+   push_context(t);
+   for (auto ectx : ctx->enumElement()) {
+      EnumNode *nn = visitEnumElement(ectx);
+      tn->Node.push_back(nn);
+      nn->ParentNode = tn;
+   }
+   pop_context();
+
+   Log.decNestLevel();
    debug(ctx,"<<< visitEnumerationType()");
-   return e;
+   return t;
    
 }
 
@@ -425,12 +550,28 @@ antlrcpp::Any Ili1Input::visitEnumElement(parser::Ili1Parser::EnumElementContext
 {
    
    /* enumElement
-   : enumelement=NAME (DOT enumelement=NAME)* enumerationType?
+   : enumelement=NAME enumerationType?
    */
 
-   debug(ctx,">>> visitEnumElement()");
-   debug(ctx,"<<< visitEnumElement()");
-   return nullptr;
+   EnumNode *n = new EnumNode();
+   n->Name = ctx->enumelement->getText();
+
+   debug(ctx,">>> visitEnumElement(" + n->Name + ")");
+
+   // list <EnumNode *> Node;
+   if (ctx->enumerationType() != nullptr) {
+      Log.incNestLevel();
+      for (auto ectx : ctx->enumerationType()->enumElement()) {
+         EnumNode *nn = visitEnumElement(ectx);
+         n->Node.push_back(nn);
+         nn->ParentNode = n;
+      }
+      Log.decNestLevel();
+   }
+
+   debug(ctx,"<<< visitEnumElement(" + n->Name + ")");
+
+   return n;
    
 }
 
@@ -442,10 +583,16 @@ antlrcpp::Any Ili1Input::visitHorizAlignment(parser::Ili1Parser::HorizAlignmentC
    */
    
    debug(ctx,">>> visitHorizAlignment()");
-   EnumType *e = new EnumType();
-   init_domaintype(e,ctx->start->getLine());
+
+   Type *base = find_type("INTERLIS.HALIGNMENT",get_line(ctx));
+
+   EnumType *t = static_cast<EnumType *>(base->clone());
+   init_domaintype(t,get_line(ctx));
+   t->Super = base;
+
    debug(ctx,"<<< visitHorizAlignment()");
-   return e;
+
+   return t;
    
 }
 
@@ -457,10 +604,16 @@ antlrcpp::Any Ili1Input::visitVertAlignment(parser::Ili1Parser::VertAlignmentCon
    */
 
    debug(ctx,">>> visitVertAlignment()");
-   EnumType *e = new EnumType();
-   init_domaintype(e,ctx->start->getLine());
+
+   Type *base = find_type("INTERLIS.VALIGNMENT",get_line(ctx));
+
+   EnumType *t = static_cast<EnumType *>(base->clone());
+   init_domaintype(t,get_line(ctx));
+   t->Super = base;
+
    debug(ctx,"<<< visitVertAlignment()");
-   return e;
+
+   return t;
    
 }
 
@@ -474,12 +627,55 @@ antlrcpp::Any Ili1Input::visitLineType(parser::Ili1Parser::LineTypeContext *ctx)
      intersectionDef?
    */
    
+   /* class LineType : public DomainType {
+   public:
+      enum {Polyline, DirectedPolyline, Surface, Area} Kind;
+      string MaxOverlap;
+      bool Multi = false; // 2.4
+      // role from ASSOCIATION LineCoord
+      CoordType *CoordType;
+      // role from ASSOCIATION LineAttr
+      Class *LAStructure;
+   */
+
    debug(ctx,">>> visitLineType()");
-   LineType *p = new LineType();
-   init_domaintype(p,ctx->start->getLine());
-   p->Kind = LineType::Polyline;
+   
+   LineType *t = new LineType();
+   init_domaintype(t,ctx->start->getLine());
+   t->Kind = LineType::Polyline;
+
+   if (ctx->form() != nullptr) {
+      list<LineForm *> f = visitForm(ctx->form());
+      t->LineForm = f;
+   }
+   
+   push_context(t);
+   t->CoordType = visitControlPoints(ctx->controlPoints());
+   pop_context();
+   
    debug(ctx,"<<< visitLineType()");
-   return p;
+   return t;
+   
+}
+
+antlrcpp::Any Ili1Input::visitForm(parser::Ili1Parser::FormContext *ctx)
+{
+   
+   /* form
+   : WITH LPAREN
+    lineForm (COMMA lineForm)*
+    RPAREN
+   */
+   
+   list<LineForm *> lf;
+   
+   for (auto *t : ctx->lineForm()) {
+      LineForm *f = new LineForm;
+      f->Name = t->getText();
+      lf.push_back(f);
+   }
+   
+   return lf;
    
 }
 
@@ -494,41 +690,39 @@ antlrcpp::Any Ili1Input::visitAreaType(parser::Ili1Parser::AreaTypeContext *ctx)
    */
 
    debug(ctx,">>> visitAreaType()");
-   LineType *a = new LineType();
-   init_domaintype(a,ctx->start->getLine());
-   a->Kind = LineType::Area;
-   debug(ctx,"<<< visitAreaType() " + a->getClass());
-   return a;
-   
-}
 
-antlrcpp::Any Ili1Input::visitForm(parser::Ili1Parser::FormContext *ctx)
-{
+   LineType *t = new LineType();
+   init_domaintype(t,ctx->start->getLine());
+   if (ctx->SURFACE() != nullptr) {
+      t->Kind = LineType::Surface;
+   }
+   else {
+      t->Kind = LineType::Area;
+   }
    
-   /* form
-   : WITH LPAREN
-    lineForm (COMMA lineForm)*
-    RPAREN
-   */
+   if (ctx->form() != nullptr) {
+      list<LineForm *> f = visitForm(ctx->form());
+      t->LineForm = f;
+   }
    
-   debug(ctx,">>> visitForm()");
-   debug(ctx,"<<< visitForm()");
-   return nullptr;
-   
-}
+   if (ctx->intersectionDef() != nullptr) {
+      string overlap = visitIntersectionDef(ctx->intersectionDef());
+      t->MaxOverlap = overlap;
+   }
+   else {
+      t->MaxOverlap = "0.1";
+   }
 
-antlrcpp::Any Ili1Input::visitLineForm(parser::Ili1Parser::LineFormContext *ctx)
-{
-   
-   /* lineForm
-   : STRAIGHTS
-   | ARCS
-   | explanation=EXPLANATION
-   */
+   push_context(t);
+   t->CoordType = visitControlPoints(ctx->controlPoints());
+   pop_context();
 
-   debug(ctx,">>> visitLineForm()");
-   debug(ctx,"<<< visitLineForm()");
-   return nullptr;
+   if (ctx->lineAttributes() != nullptr) {
+      t->LAStructure = visitLineAttributes(ctx->lineAttributes());
+   }
+
+   debug(ctx,"<<< visitAreaType()");
+   return t;
    
 }
 
@@ -540,10 +734,16 @@ antlrcpp::Any Ili1Input::visitIntersectionDef(parser::Ili1Parser::IntersectionDe
    */
    
    debug(ctx,">>> visitIntersectionDef()");
-   debug(ctx,"<<< visitIntersectionDef()");
-   return nullptr;
+   
+   string maxoverlap = ctx->maxoverlap->getText();
+   
+   debug(ctx,"<<< visitIntersectionDef(" + maxoverlap + ")");
+   
+   return maxoverlap;
    
 }
+
+static int control_point_counter = 0;
 
 antlrcpp::Any Ili1Input::visitControlPoints(parser::Ili1Parser::ControlPointsContext *ctx)
 {
@@ -555,8 +755,35 @@ antlrcpp::Any Ili1Input::visitControlPoints(parser::Ili1Parser::ControlPointsCon
    */
    
    debug(ctx,">>> visitControlPoints()");
+   Log.incNestLevel();
+   
+   CoordType *c = nullptr;
+   
+   if (ctx->coord2() != nullptr) {
+      c = visitCoord2(ctx->coord2());
+      c->Name = "ControlPoints" + to_string(++control_point_counter);
+      Package* p = get_package_context();
+      c->ElementInPackage = p;
+      p->Element.push_front(c);
+   }
+   else if (ctx->coord3() != nullptr) {
+      c = visitCoord3(ctx->coord3());
+      c->Name = "ControlPoints" + to_string(++control_point_counter);
+      Package* p = get_package_context();
+      c->ElementInPackage = p;
+      p->Element.push_front(c);
+   }
+   else {
+      string name = ctx->NAME()->getText();
+      if (is_reserved_name(name)) {
+         name += "_ILI1";
+      }
+      c = dynamic_cast<CoordType *>(find_type(name,get_line(ctx)));
+   }
+      
+   Log.decNestLevel();
    debug(ctx,"<<< visitControlPoints()");
-   return nullptr;
+   return c;
    
 }
 
@@ -570,8 +797,38 @@ antlrcpp::Any Ili1Input::visitLineAttributes(parser::Ili1Parser::LineAttributesC
      END
    */
 
-   debug(ctx,">>> visitLineAttributes()");
+   string name = get_class_context()->Name + "_" + get_context()->Name + "_LineAttrib";
+   debug(ctx,">>> visitLineAttributes(" + name + ")");
+   
+   Log.incNestLevel();
+
+   Class *c = new Class();
+
+   // Class Attributes
+   c->Name = name;
+   c->Kind = Class::Structure;
+   init_type(c,get_line(ctx));
+   add_class(c);
+
+   // because we are in class context, we have to set ElementInPackage manually
+   c->ElementInPackage = get_package_context();
+   c->ElementInPackage->Element.insert(get_package_context()->Element.begin(),c);
+
+   push_context(c);
+
+   for (auto actx : ctx->attribute()) {
+      visitAttribute(actx);
+   }
+   
+   if (ctx->identifications() != nullptr) {
+      visitIdentifications(ctx->identifications());
+   }
+
+   pop_context();
+   Log.decNestLevel();
+   
    debug(ctx,"<<< visitLineAttributes()");
-   return nullptr;
+
+   return c;
    
 }

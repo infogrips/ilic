@@ -342,7 +342,7 @@ antlrcpp::Any Ili2Input::visitTopicDef(Ili2Parser::TopicDefContext *ctx)
          }
       }
    }
-
+   
    Log.decNestLevel();
    debug(ctx,"<<< visitTopicDef(" + name1 + ")");
 

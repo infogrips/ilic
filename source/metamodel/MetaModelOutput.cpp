@@ -60,7 +60,7 @@ void write_expression(TextWriter *tw,Expression *e)
          Class *Viewable = nullptr;
       */
       PathOrInspFactor *f = dynamic_cast<PathOrInspFactor *>(e);
-      tw->write(0,e->getClass()); // to do !!!
+      tw->write(0,f->_path);
    }
    else if (e->getClass() == "EnumMapping") {
       /* struct EnumMapping : public Factor {
@@ -124,7 +124,7 @@ void write_expression(TextWriter *tw,Expression *e)
          Unit *Unit = nullptr;
       */
       UnitRef *r = dynamic_cast<UnitRef *>(e);
-      tw->write(0,r->Unit->Name);
+      tw->write(0,get_path(r->Unit));
    }
    else if (e->getClass() == "UnitFunction") {
       /* struct UnitFunction : public Factor {
@@ -141,25 +141,29 @@ void write_expression(TextWriter *tw,Expression *e)
       /*
       struct UnaryExpr : public Expression {
       public:
-         enum {Not, Defined} Operation;
+         enum {Not, Defined, None} Operation;
          Expression *SubExpression = nullptr;
       */
-      UnaryExpr *e = dynamic_cast<UnaryExpr *>(e);
-      switch (e->Operation) {
+      UnaryExpr *u = dynamic_cast<UnaryExpr *>(e);
+      switch (u->Operation) {
          case UnaryExpr::Not:
-            tw->write(0,"not(");
+            tw->write(0,"NOT(");
             break;
          case UnaryExpr::Defined:
-            tw->write(0,"defined(");
+            tw->write(0,"DEFINED(");
+            break;
+         case UnaryExpr::None:
             break;
          default:
-            Log.internal_error("write_unaryexpression(): unknown Operation id " + to_string(e->Operation));
+            Log.internal_error("write_unaryexpression(): unknown Operation id " + to_string(u->Operation));
             break;
       }
-      if (e->SubExpression != nullptr) {
-         write_expression(tw,e->SubExpression);
+      if (u->SubExpression != nullptr) {
+         write_expression(tw,u->SubExpression);
       }
-      tw->write(0,")");
+      if (u->Operation != UnaryExpr::None) {
+         tw->write(0, ")");
+      }
    }
    else if (e->getClass() == "CompoundExpr") {
       /* enum CompoundExpr_OperationType {
@@ -182,10 +186,10 @@ void write_expression(TextWriter *tw,Expression *e)
                   tw->write(0," -> ");
                   break;
                case CompoundExpr_OperationType::And:
-                  tw->write(0," and ");
+                  tw->write(0," AND ");
                   break;
                case CompoundExpr_OperationType::Or:
-                  tw->write(0," or ");
+                  tw->write(0," OR ");
                   break;
                case CompoundExpr_OperationType::Mult:
                   tw->write(0," * ");
@@ -243,19 +247,39 @@ static void write_enumnode(TextWriter* tw, EnumNode* n)
       write_enumnode(tw,nn);
       comma = true;
    }
+   if (comma && n->Final) {
+      tw->write(0,":FINAL");
+   }
    tw->decNestLevel();
    if (comma) {
       tw->writeln(0,"");
       tw->write(")");
    }
+   else if (n->Final) {
+      tw->write(0,"(FINAL)");
+   }
 }
 
 void write_enumtype(TextWriter *tw,EnumType *t) 
 {
+
+   if (t->Name == "BOOLEAN") {
+      tw->write("BOOLEAN");
+      return;
+   }
+   else if (t->Name == "HALIGNMENT") {
+      tw->write("HALIGNMENT");
+      return;
+   }
+   else if (t->Name == "VALIGNMENT") {
+      tw->write("VALIGNMENT");
+      return;
+   }
+
    tw->writeln(0, "(");
    tw->incNestLevel();
    bool comma = false;
-   for (auto n : t->TopNode) {
+   for (auto n : t->TopNode->Node) {
       if (comma) {
          tw->writeln(0, ",");
       }
@@ -265,6 +289,7 @@ void write_enumtype(TextWriter *tw,EnumType *t)
    tw->writeln(0,"");
    tw->decNestLevel();
    tw->write(")");
+
 }
 
 } // namespace metamodel

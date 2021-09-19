@@ -20,12 +20,14 @@ namespace output {
       void visitImport(metamodel::Import *i) override;
 
       void preVisitSubModel(metamodel::SubModel *s) override;
+      void visitSubModel(metamodel::SubModel* s) override;
       void postVisitSubModel(metamodel::SubModel *s) override;
 
       void preVisitClass(metamodel::Class *c) override;
       void postVisitClass(metamodel::Class *c) override;
 
       void visitSimpleConstraint(metamodel::SimpleConstraint* c) override;
+      void visitUniqueConstraint(metamodel::UniqueConstraint* c) override;
 
       void visitDomainType(metamodel::DomainType *t) override;
 
@@ -34,6 +36,8 @@ namespace output {
 
       void visitUnit(metamodel::Unit* u) override;
 
+      void visitFunctionDef(metamodel::FunctionDef* f) override;
+
       string getShortName() override { return "ili2"; };
 
 // create visit...Override() methods
@@ -41,10 +45,6 @@ namespace output {
 #define MMV_VISITOR Ili2Output
 #include "../metamodel/MetaModelTreeVisitor.inc"
 
-   private:
-      util::TextWriter ili2;
-      string ili_file;
-      string model_version;
    };
 
 };

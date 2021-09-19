@@ -1339,7 +1339,7 @@ void XsdOutput::writeEnumType(metamodel::EnumType *t) {
 
    list<string> enums;
    
-   for (auto node : consolidated->TopNode) {
+   for (auto node : consolidated->TopNode->Node) {
       buildEnum(&enums, "", node);
    }
 
@@ -1883,8 +1883,8 @@ metamodel::EnumType* XsdOutput::getConsolidatedEnumeration(metamodel::EnumType *
 
    EnumType *ret = getConsolidatedEnumeration(extending);
 
-   for (auto *node : t->TopNode) {
-      mergeTree(ret->TopNode, node);
+   for (auto *node : t->TopNode->Node) {
+      mergeTree(ret->TopNode->Node, node);
    }
 
    return ret;

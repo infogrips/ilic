@@ -96,6 +96,7 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
    map<string,bool> properties = get_properties(ctx->properties(),vector<string>({ABSTRACT,EXTENDED,FINAL,OID}));
    c->Abstract = properties[ABSTRACT];
    c->Final = properties[FINAL];
+   c->Extended = properties[EXTENDED];
    if (properties[EXTENDED]) {
       Package* p = get_package_context();
       int line = get_line(ctx);
@@ -310,6 +311,7 @@ antlrcpp::Any Ili2Input::visitRoleDef(parser::Ili2Parser::RoleDefContext *ctx)
    r->Abstract = properties[ABSTRACT];
    r->Final = properties[FINAL];
    r->Ordered = properties[ORDERED];
+   r->Extended = properties[EXTENDED];
    // HIDING ???
    // EXTERNAL ???
    r->Association = get_class_context();

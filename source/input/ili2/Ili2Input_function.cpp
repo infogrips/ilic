@@ -81,6 +81,7 @@ antlrcpp::Any Ili2Input::visitFunctionDef(parser::Ili2Parser::FunctionDefContext
       Log.incNestLevel();
       a->Kind = Argument::TypeVal; // to do !!!
       a->Type = visitArgumentType(pctx->argumentType());
+      a->Type->Name = a->Name;
       if (a->Type != nullptr) {
          a->Type->LFTParent = f;
       }
@@ -200,7 +201,10 @@ antlrcpp::Any Ili2Input::visitArgumentType(parser::Ili2Parser::ArgumentTypeConte
    else if (ctx->OBJECT() != nullptr) {
       if (ctx->restrictedRef() != nullptr) {
          RestrictedRef *r = visitRestrictedRef(ctx->restrictedRef());
-         t = r->BaseType; // restrictions, to do !!!
+         ObjectType *o = new ObjectType;
+         o->Multiple = false;
+         o->_basetype = r->BaseType;
+         t = o;
       }
       else {
          // viewRef, to do !!!
@@ -208,17 +212,17 @@ antlrcpp::Any Ili2Input::visitArgumentType(parser::Ili2Parser::ArgumentTypeConte
       }
    }
    else if (ctx->OBJECTS() != nullptr) {
-      MultiValue *tt = new MultiValue();
-      tt->Name = "Type";
       if (ctx->restrictedRef() != nullptr) {
-         RestrictedRef *r = visitRestrictedRef(ctx->restrictedRef());
-         tt->BaseType = r->BaseType;
+         RestrictedRef* r = visitRestrictedRef(ctx->restrictedRef());
+         ObjectType* o = new ObjectType;
+         o->Multiple = true;
+         o->_basetype = r->BaseType;
+         t = o;
       }
       else {
          // viewRef, to do !!!
          Log.internal_error("visitArgumentType(): viewRef not implemented",1);
       }
-      t = tt;
    }
    else if (ctx->ENUMVAL() != nullptr) {
       EnumTreeValueType *tt = new EnumTreeValueType();

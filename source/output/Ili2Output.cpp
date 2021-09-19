@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Ili2Output.h"
+#include "../metamodel/Metamodel.h"
 #include "../metamodel/MetaModelOutput.h"
 #include "../util/TextWriter.h"
 #include "../util/Logger.h"
@@ -9,10 +10,14 @@ using namespace util;
 using namespace metamodel;
 using namespace output;
 
-Ili2Output::Ili2Output(string ili_file,string model_version)
+static string ili_file;
+static string model_version;
+static TextWriter ili2;
+
+Ili2Output::Ili2Output(string ili_f,string model_v)
 {
-   this->ili_file = ili_file;
-   this->model_version = model_version;
+   ili_file = ili_f;
+   model_version = model_v;
 }
    
 void Ili2Output::preVisit()
@@ -34,10 +39,13 @@ namespace output {
    static Model *act_model = nullptr;
 }
 
-static void write_type(TextWriter *ili2,Type *t);
+static void write_type(Type *t);
 
 string multiplicity_to_string(Multiplicity m)
 {
+   if (m.Min == -1) {
+      return "";
+   }
    string multiplicity = "{";
    if (m.Min == m.Max) {
       multiplicity += to_string(m.Min);
@@ -51,42 +59,26 @@ string multiplicity_to_string(Multiplicity m)
    return multiplicity + "}";
 }
 
-static void write_texttype(TextWriter *ili2,TextType *t) 
-{
-   ili2->write(0, "TEXT*" + to_string(t->MaxLength));
-}
-
-static void write_coordtype(TextWriter *ili2,CoordType *t) 
+static void write_texttype(TextType *t) 
 {
 
-   /* class CoordType : public DomainType {
-   public:
-      int NullAxis = 1;
-      int PiHalfAxis = 2;
-      bool Multi = false; // 2.4
-      // role from ASSOCIATION LineCoord
-      list <NumType *> Axis;
-   */
-
-   if (t->Multi) {
-      ili2->write(0, "MULTICOORD ");
+   if (t->Kind == TextType::MText) {
+      ili2.write(0, "MTEXT");
+   }
+   else if (t->Kind == TextType::Uri) {
+      ili2.write(0, "URI");
    }
    else {
-      ili2->write(0, "COORD ");
+      ili2.write(0, "TEXT");
    }
-   string axis = "";
-   for (auto a : t->Axis) {
-      if (axis != "") {
-         axis += ", ";
-      }
-      axis += a->Min + ".." + a->Max;
+
+   if (t->MaxLength > 0) {
+      ili2.write(0, "*" + to_string(t->MaxLength));
    }
-   ili2->write(0,axis);
-   ili2->write(0,", ROTATION " + to_string(t->NullAxis) + "->" + to_string(t->PiHalfAxis));
 
 }
 
-static void write_numtype(TextWriter *ili2,NumType *t) 
+static void write_numtype(NumType *t) 
 {
 
    /* class NumType : public DomainType {
@@ -103,19 +95,56 @@ static void write_numtype(TextWriter *ili2,NumType *t)
       Unit *Unit;
    */
 
-   ili2->write(0,t->Min + ".." + t->Max);
+   if (t->Min == "" && t->Max == "") {
+      ili2.write(0,"NUMERIC");
+   }
+   else {
+      ili2.write(0,t->Min + ".." + t->Max);
+   }
    if (t->Circular) {
-      ili2->write(0," CIRCULAR");
+      ili2.write(0," CIRCULAR");
    }
    if (t->Unit != nullptr) {
-      ili2->write(0," [");
-      ili2->write(0,t->Unit->Name);
-      ili2->write(0,"]");
+      ili2.write(0," [");
+      ili2.write(0,get_path(t->Unit));
+      ili2.write(0,"]");
    }
 
 }
 
-static void write_linetype(TextWriter *ili2,LineType *t) 
+static void write_coordtype(CoordType *t) 
+{
+
+   /* class CoordType : public DomainType {
+   public:
+      int NullAxis = 1;
+      int PiHalfAxis = 2;
+      bool Multi = false; // 2.4
+      // role from ASSOCIATION LineCoord
+      list <NumType *> Axis;
+   */
+   
+   if (t->Multi) {
+      ili2.write(0, "MULTICOORD ");
+   }
+   else {
+      ili2.write(0, "COORD ");
+   }
+   bool start = true;
+   for (auto a : t->Axis) {
+      if (!start) {
+         ili2.write(0,", ");
+      }
+      write_numtype(a);
+      start = false;
+   }
+   if (t->NullAxis > 0) {
+      ili2.write(0,", ROTATION " + to_string(t->NullAxis) + "->" + to_string(t->PiHalfAxis));
+   }
+
+}
+
+static void write_linetype(LineType *t) 
 {
    
    /*class LineType : public DomainType {
@@ -131,36 +160,46 @@ static void write_linetype(TextWriter *ili2,LineType *t)
 
    switch (t->Kind) {
       case LineType::Polyline:
-         ili2->write(0,"POLYLINE");
+         ili2.write(0,"POLYLINE");
          break;
       case LineType::DirectedPolyline:
-         ili2->write(0,"DIRECTED POLYLINE");
+         ili2.write(0,"DIRECTED POLYLINE");
          break;
       case LineType::Surface:
-         ili2->write(0,"SURFACE");
+         ili2.write(0,"SURFACE");
          break;
       case LineType::Area:
-         ili2->write(0,"AREA");
+         ili2.write(0,"AREA");
          break;
    }
    
-   ili2->write(0," WITH (STRAIGHTS)"); // to do !!!
+   ili2.write(0," WITH (");
+   bool comma = false;
+   for (auto f : t->LineForm) {
+      if (comma) {
+         ili2.write(0,",");
+      }
+      ili2.write(0,f->Name);
+      comma = true;
+   }
+   ili2.write(0,")");
+
    if (t->CoordType != nullptr) {
-      ili2->write(0, " VERTEX " + t->CoordType->Name);
+      ili2.write(0, " VERTEX " + t->CoordType->Name);
    }
    else {
-      ili2->write(0, " VERTEX ?x?");
+      ili2.write(0, " VERTEX ???");
    }
    if (t->MaxOverlap != "") {
-      ili2->write(0," WITHOUT OVERLAPS>" + t->MaxOverlap);
+      ili2.write(0," WITHOUT OVERLAPS>" + t->MaxOverlap);
    }
    if (t->LAStructure != nullptr) {
-      ili2->write(0," LINE ATTRIBUTES " + get_path(t->LAStructure));
+      ili2.write(0," LINE ATTRIBUTES " + get_path(t->LAStructure));
    }
 
 }
 
-static void write_referencetype(TextWriter *ili2,ReferenceType *t) 
+static void write_referencetype(ReferenceType *t) 
 {
 
    /* class ClassRelatedType : public DomainType { // ABSTRACT
@@ -173,11 +212,11 @@ static void write_referencetype(TextWriter *ili2,ReferenceType *t)
       bool External = false;
    */
 
-   ili2->write(0, "REFERENCE TO " + get_path(t->BaseClass));
+   ili2.write(0, "REFERENCE TO " + get_path(t->BaseClass));
 
 }
 
-static void write_multivalue(TextWriter *ili2,MultiValue *t) 
+static void write_multivalue(MultiValue *t) 
 {
 
    /* class TypeRelatedType : public DomainType { // ABSTRACT
@@ -194,52 +233,124 @@ static void write_multivalue(TextWriter *ili2,MultiValue *t)
    */
 
    if (t->Ordered) {
-      ili2->write(0,"LIST ");
+      ili2.write(0,"LIST ");
    }
    else {
-      ili2->write(0,"BAG ");
+      ili2.write(0,"BAG ");
    }
 
-   ili2->write(0,multiplicity_to_string(t->Multiplicity));
-   ili2->write(0," OF ???");
-//   write_type(ili2,t->TypeRestriction.front()); // multiple type restrictions, to do !!!
+   ili2.write(0,multiplicity_to_string(t->Multiplicity));
+   ili2.write(0," OF " + get_path(t->BaseType));
+
+   if (t->TypeRestriction.size() > 0) {
+      ili2.write(0," RESTRICTION (");
+      bool semi = false;
+      for (auto r: t->TypeRestriction) {
+         if (semi) {
+            ili2.write(0,";");
+         }
+         ili2.write(0,get_path(r));
+         semi = true;
+      }
+      ili2.write(0,")");
+   }
 
 }
 
-static void write_type(TextWriter *ili2,Type *t) 
+static void write_blackboxtype(BlackboxType *t) 
 {
+
+   /* class BlackboxType : public DomainType {
+   public:
+      enum { Binary, Xml } Kind;
+   */
+
+   if (t->Kind == BlackboxType::Binary) {
+      ili2.write(0,"BLACKBOX BINARY");
+   }
+   else {
+      ili2.write(0,"BLACKBOX XML");
+   }
+
+}
+
+static void write_formattedtype(FormattedType *t) 
+{
+
+   /* class FormattedType : public NumType {
+   public:
+      string Format;
+      // role from ASSOCIATION
+      Class *Struct = nullptr;
+      FormattedType* BaseFormattedType = nullptr;
+   */
+
+   if (t->Struct != nullptr) {
+      ili2.write(0,"FORMAT BASED ON " + get_path(t->Struct) + " (" + t->Format + ")");
+   }
+   else {
+      ili2.write(0,"\"" + t->Min + "\" .. \"" + t->Max + "\"");
+   }
+
+}
+
+static void write_type(Type *t) 
+{
+   
    try {
-      if (t->Super != nullptr) {
-         ili2->write(0,get_path(t->Super));
+      if (t->getClass() == "TextType") {
+         write_texttype(static_cast<TextType *>(t));
       }
-      else if (t->getClass() == "TextType") {
-         write_texttype(ili2,static_cast<TextType *>(t));
+      else if (t->getClass() == "BooleanType") {
+         ili2.write(0,"BOOLEAN");
       }
       else if (t->getClass() == "CoordType") {
-         write_coordtype(ili2,static_cast<CoordType *>(t));
+         write_coordtype(static_cast<CoordType *>(t));
       }
       else if (t->getClass() == "EnumType") {
-         write_enumtype(ili2,static_cast<EnumType *>(t));
+         write_enumtype(&ili2,static_cast<EnumType *>(t));
       }
       else if (t->getClass() == "NumType") {
-         write_numtype(ili2,static_cast<NumType *>(t));
+         write_numtype(static_cast<NumType *>(t));
       }
       else if (t->getClass() == "LineType") {
-         write_linetype(ili2,static_cast<LineType *>(t));
+         write_linetype(static_cast<LineType *>(t));
       }
       else if (t->getClass() == "ReferenceType") {
-         write_referencetype(ili2,static_cast<ReferenceType *>(t));
+         write_referencetype(static_cast<ReferenceType *>(t));
       }
       else if (t->getClass() == "MultiValue") {
-         write_multivalue(ili2,static_cast<MultiValue *>(t));
+         write_multivalue(static_cast<MultiValue *>(t));
+      }
+      else if (t->getClass() == "FormattedType") {
+         write_formattedtype(static_cast<FormattedType *>(t));
+      }
+      else if (t->getClass() == "BlackboxType") {
+         write_blackboxtype(static_cast<BlackboxType *>(t));
+      }
+      else if (t->getClass() == "AnyOIDType") {
+         // to do !!!
+      }
+      else if (t->getClass() == "ReferenceType") {
+         // to do !!!
+      }
+      else if (t->getClass() == "ObjectType") {
+         ObjectType *o = static_cast<ObjectType *>(t);
+         if (o->Multiple) {
+            ili2.write(0,"OBJECTS OF " + get_path(o->_basetype));
+         }
+         else {
+            ili2.write(0,"OBJECT OF " + get_path(o->_basetype));
+         }
       }
       else {
-         Log.internal_error("write_class(): <" + t->getClass() + "> not implemented yet",1);
+         Log.internal_error("write_type(): <" + t->getClass() + "> not implemented yet",1);
       }
    } 
    catch (exception e) {
       Log.error("unexected exception " + string(e.what()));
    }
+
 }
 
 void Ili2Output::preVisitModel(Model *m)
@@ -269,9 +380,24 @@ void Ili2Output::preVisitModel(Model *m)
    if (m->Name == "INTERLIS") {
       ignoreVisit();
    }
+   
+   push_context(m);
 
    ili2.writeln("");
-   ili2.writeln("MODEL " + m->Name + " (" + m->Language + ")");
+   ili2.write("");
+   if (m->Contracted) {
+      ili2.write(0,"CONTRACTED ");
+   }
+   if (m->Kind == Model::TypeM) {
+      ili2.write(0,"TYPE ");
+   }
+   else if (m->Kind == Model::RefSystemM) {
+      ili2.write(0,"REFSYSTEM ");
+   }
+   else if (m->Kind == Model::SymbologyM) {
+      ili2.write(0,"SYMBOLOGY ");
+   }
+   ili2.writeln(0,"MODEL " + m->Name + " (" + m->Language + ")");
    ili2.incNestLevel();
    ili2.writeln("AT \"" + m->At + "\"");
    ili2.writeln("VERSION \"" + m->Version + "\" =");
@@ -293,57 +419,36 @@ void Ili2Output::visitModel(Model *m)
          visit(i);
       }
    }
-
-   // all functions
-   for (auto e : m->Element) {
-      if (e->isSubClassOf("Function")) {
-         visit(e);
-      }
-   }
-
-   // all units
-   if (count_metaelement(m->Element,"Unit") > 0) {
-      ili2.writeln("");
-      ili2.writeln("UNIT");
-      ili2.incNestLevel();
-      for (auto e : m->Element) {
-         if (e->isSubClassOf("Unit")) {
-            visit(e);
-         }
-      }
-      ili2.decNestLevel();
-   }
-
-   // all domaintypes
-
-   for (auto e : m->Element) {
+   
+   bool indomain = false;
+   bool inunit = false;
+   
+   for (auto e: m->Element) {
       if (e->ElementInPackage == nullptr) {
          continue;
       }
-      else if (e->isSubClassOf("DomainType")) {
-         ili2.writeln("");
-         ili2.writeln("DOMAIN");
-         break;
-      }
-   }
-         
-   ili2.incNestLevel();
-   for (auto e : m->Element) {
-      if (e->isSubClassOf("DomainType")) {
-         if (e->ElementInPackage == nullptr) {
-            continue;
+      if (e->isSubClassOf("Unit")) {
+         if (!inunit) {
+            ili2.writeln("");
+            ili2.writeln("UNIT");
          }
+         indomain = false;
+         inunit = true;
          visit(e);
       }
-   }
-   ili2.decNestLevel();
-
-   // all topics
-   for (auto e : m->Element) {
-      if (e->isSubClassOf("SubModel")) {
-         Log.incNestLevel();
+      else if (e->isSubClassOf("DomainType")) {
+         if (!indomain) {
+            ili2.writeln("");
+            ili2.writeln("DOMAIN");
+         }
+         indomain = true;
+         inunit = false;
          visit(e);
-         Log.decNestLevel();
+      }
+      else {
+         visit(e);
+         indomain = false;
+         inunit = false;
       }
    }
 
@@ -361,6 +466,8 @@ void Ili2Output::postVisitModel(Model *m)
    ili2.decNestLevel();
    ili2.writeln("");
    ili2.writeln("END " + m->Name + ".");
+   
+   pop_context();
 
 }
 
@@ -386,11 +493,13 @@ void Ili2Output::visitImport(metamodel::Import *i)
       ili2.writeNoIdent("UNQUALIFIED ");
    }
    ili2.writelnNoIdent(i->ImportedP->Name + ";");
-
+   
 }
 
 void Ili2Output::preVisitSubModel(SubModel *s)
 {
+
+   push_context(s);
 
    ili2.writeln("");
    ili2.write("TOPIC " + s->Name);
@@ -400,29 +509,44 @@ void Ili2Output::preVisitSubModel(SubModel *s)
    ili2.writeln(0," =");
    ili2.incNestLevel();
 
-   // all domaintypes
+}
+
+void Ili2Output::visitSubModel(SubModel *s)
+{
+
+   bool indomain = false;
+   bool inunit = false;
 
    for (auto e : s->Element) {
       if (e->ElementInPackage == nullptr) {
          continue;
       }
+      if (e->isSubClassOf("Unit")) {
+         if (!inunit) {
+            ili2.writeln("");
+            ili2.writeln("UNIT");
+         }
+         indomain = false;
+         inunit = true;
+         visit(e);
+      }
       else if (e->isSubClassOf("DomainType")) {
-         ili2.writeln("");
-         ili2.writeln("DOMAIN");
-         break;
+         if (!indomain) {
+            ili2.writeln("");
+            ili2.writeln("DOMAIN");
+         }
+         indomain = true;
+         inunit = false;
+         visit(e);
+      }
+      else {
+         visit(e);
+         indomain = false;
+         inunit = false;
       }
    }
 
-   ili2.incNestLevel();
-   for (auto e : s->Element) {
-      if (e->isSubClassOf("DomainType")) {
-         if (e->ElementInPackage == nullptr) {
-            continue;
-         }
-         visit(e);
-      }
-   }
-   ili2.decNestLevel();
+   ignoreVisit();
 
 }
 
@@ -433,7 +557,11 @@ void Ili2Output::postVisitSubModel(SubModel *s)
    ili2.writeln("");
    ili2.writeln("END " + s->Name + ";");
 
+   pop_context();
+
 }
+
+static bool firstClassParam;
 
 void Ili2Output::preVisitClass(Class *c)
 {
@@ -478,6 +606,8 @@ void Ili2Output::preVisitClass(Class *c)
       list<Constraint *> Constraint;
    */
 
+   push_context(c);
+
    ili2.writeln("");
 
    if (c->Kind == Class::ClassVal) {
@@ -503,14 +633,35 @@ void Ili2Output::preVisitClass(Class *c)
    }
    ili2.writeln(0," =");
 
+   firstClassParam = true;
+
    ili2.incNestLevel();
 
 }
 
 void Ili2Output::postVisitClass(Class *c)
 {
+
    ili2.decNestLevel();
    ili2.writeln("END " + c->Name + ";");
+   pop_context();
+
+   if (model_version == "2.3" && c->Kind != Class::Structure) {
+      for (auto a : c->ClassAttribute) {
+         if (a->Type->getClass() == "ReferenceType") {
+            ReferenceType *rt = static_cast<ReferenceType *>(a->Type);
+            string assocname = c->Name + "_" + a->Name;
+            ili2.writeln("");
+            ili2.writeln("ASSOCIATION " + assocname + " =");
+            ili2.incNestLevel();
+            ili2.writeln(a->Name + " -- {1} " + get_path(rt->BaseClass) + ";");
+            ili2.writeln(c->Name + " -- {0..*} " + get_path(c) + ";");
+            ili2.decNestLevel();
+            ili2.writeln("END " + assocname + ";");
+         }
+      }
+   }
+
 }
 
 void Ili2Output::visitSimpleConstraint(metamodel::SimpleConstraint *c)
@@ -552,19 +703,63 @@ void Ili2Output::visitSimpleConstraint(metamodel::SimpleConstraint *c)
       
 }
 
+void Ili2Output::visitUniqueConstraint(metamodel::UniqueConstraint *c)
+{
+
+   /* class UniqueConstraint : public Constraint {
+   public:
+      list<Expression *> Where;
+      enum {GlobalU, LocalU} Kind;
+      list<PathOrInspFactor *> UniqueDef;
+   */
+   
+   /* struct PathOrInspFactor : public Factor {
+   public:
+      list <PathEl *> PathEls; // LIST
+      View *Inspection = nullptr;
+      string _path = "";
+   */
+   
+   if (get_class_context()->Kind != Class::Structure && model_version == "2.3") {
+      for (auto f: c->UniqueDef) {
+         for (auto p: f->PathEls) {
+            if (p->Ref == nullptr) {
+               continue;
+            }
+            AttrOrParam *a = static_cast<AttrOrParam *>(p->Ref);
+            if (a->Type == nullptr) {
+               continue;
+            }
+            if (a->Type->getClass() == "ReferenceType") {
+               // this attribute was moved to association
+               return;
+            }
+         }
+      }
+   }
+
+   ili2.decNestLevel();
+   ili2.write("UNIQUE ");
+   
+   bool comma = false;
+   for (auto f: c->UniqueDef) {
+      if (comma) {
+         ili2.write(0,",");
+      }
+      ili2.write(0,f->_path);
+      comma = true;
+   }
+   
+   ili2.writeln(0,";");
+   ili2.incNestLevel();
+
+}
+
 static string get_properties(metamodel::Type* t)
 {
    string properties = "";
    if (t->Abstract) {
       properties = "ABSTRACT";
-   }
-   if (t->Super != nullptr) {
-      if (properties == "") {
-         properties = "EXTENDED";
-      }
-      else {
-         properties += ",EXTENDED";
-      }
    }
    if (t->Generic) {
       if (properties == "") {
@@ -610,20 +805,35 @@ void Ili2Output::visitAttrOrParam(AttrOrParam *a)
       virtual string getBaseClass() { return "ExtendableME"; };
    */
 
-   if (a->AttrParent == nullptr) {
-      return; // ???, to do !!!
+   if (a->ParamParent != nullptr && firstClassParam) {
+      ili2.writeln("PARAMETER ");
+      firstClassParam = false;
    }
 
    if (a->Type != nullptr) {
+      if (model_version == "2.3" && get_class_context()->Kind == Class::ClassVal && a->Type->getClass() == "ReferenceType") {
+         return;
+      }
       try {
          DomainType *t = dynamic_cast<DomainType *>(a->Type);
-         // ili2.write(a->Name + get_properties(t) + ": "); // properties, to do !!!
-         ili2.write(a->Name + ": ");
+         if (a->Extending != nullptr) {
+            ili2.write(a->Name + " (EXTENDED): ");
+         }
+         else {
+            ili2.write(a->Name + " " + get_properties(t) + ": ");
+         }
          if (t->Mandatory) {
             ili2.write(0,"MANDATORY ");
          }
-         write_type(&ili2,t);
-         // visit(t); ???, to do !!!
+         if (t->Super != nullptr) {
+            ili2.write(0,get_path(t->Super));
+         }
+         else if (t->ElementInPackage != nullptr) {
+            ili2.write(0,get_path(t));
+         }
+         else {
+            write_type(t);
+         }
          ili2.writeln(0,";");
       }
       catch (exception e) {
@@ -672,10 +882,10 @@ void Ili2Output::visitRole(Role *r)
       strongness = "--";
    }
    else if (r->Strongness == Role::Aggr) {
-      strongness = "<>--";
+      strongness = "-<>";
    }
    else { // Role::Comp
-      strongness = "<#>--";
+      strongness = "-<#>";
    }
    
    string target = "???";
@@ -714,37 +924,96 @@ void Ili2Output::visitUnit(metamodel::Unit* u)
       (EXTENDS super=path) ?
       (EQUAL (derivedUnit | composedUnit)) ?
       SEMI
-    */
+   */
+    
+   if (u->_unitname != u->Name) {
+      ili2.write(u->_unitname + " [" + u->Name + "]");
+   }
+   else {
+      ili2.write(u->Name);
+   }
 
-   ili2.write(u->Name);
    if (u->Abstract) {
       ili2.write(0," (ABSTRACT)");
    }
+   
    if (u->Kind == Unit::DerivedU) {
       ili2.write(0," = ");
       write_expression(&ili2,u->Definition);
+      ili2.write(0," [" + get_path(u->Super) + "]");
    }
    else if (u->Kind == Unit::ComposedU) {
-      ili2.write(0," = ");
-      // to do !!!
+      ili2.write(0," = (");
+      write_expression(&ili2,u->Definition);
+      ili2.write(0,")");
+   }
+   else if (u->Super != nullptr) {
+      ili2.write(0," EXTENDS " + get_path(u->Super));
    }
    
-   if (u->Super != nullptr) {
-      ili2.write(0," [" + u->Super->Name + "]");
-   }
    ili2.writeln(0,";");
 
 }
 
 void Ili2Output::visitDomainType(metamodel::DomainType* t)
 {
-
+   
    if (t->ElementInPackage == nullptr) {
-      return; // local attribute type, function argument type, COORD Axis Types
+      return;
    }
 
-   ili2.write(t->Name + get_properties(t) + " = ");
-   write_type(&ili2,t);
+   if (get_class_context() != nullptr) {
+      return;
+   }
+
+   if (t->Super != nullptr) {
+      ili2.write(t->Name + " EXTENDS " + get_path(t->Super) + " = ");
+   }
+   else {
+      ili2.write(t->Name + " = ");
+   }
+
+   write_type(t);
+   ili2.writeln(0,";");
+
+}
+
+void Ili2Output::visitFunctionDef(metamodel::FunctionDef* f)
+{
+
+   /* class FunctionDef : public MetaElement {
+      // MetaElement.Name := FunctionName as defined in the INTERLIS-Model
+   public:
+      string Explanation;
+      // role from ASSOCIATION LocalFType
+      Type *LocalType = nullptr;
+      Type *ResultType = nullptr;
+      // role from ASSOCIATION FormalArgument
+      list <Argument *> Argument;
+   */
+
+   /* class Argument : public MetaElement {
+      // MetaElement.Name := ArgumentName as defined in the INTERLIS-Model
+   public:
+      enum { TypeVal, EnumVal, EnumTreeVal } Kind;
+      // role from ASSOCIATION FormalArgument =
+      FunctionDef *Function = nullptr;
+      // role from ASSOCIATION ArgumentType
+      Type *Type = nullptr;
+   */
+   
+   ili2.write("FUNCTION " + f->Name + "(");
+   bool first = true;
+   for (auto a : f->Argument) {
+      if (!first) {
+         ili2.write(0,";");
+      }
+      ili2.write(0, a->Name + ": ");
+      write_type( a->Type);
+      first = false;
+   }
+   ili2.write(0, "): ");  
+   write_type( f->ResultType); 
    ili2.writeln(0,";");
 
 }
