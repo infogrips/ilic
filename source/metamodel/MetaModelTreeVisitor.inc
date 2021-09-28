@@ -42,11 +42,8 @@ virtual bool visitConstraintOverride() {return typeid(&MetaModelTreeVisitor::vis
 virtual bool visitDomainTypeOverride() {return typeid(&MetaModelTreeVisitor::visitDomainType) != typeid(&MMV_VISITOR::visitDomainType);};
 virtual bool visitTypeOverride() {return typeid(&MetaModelTreeVisitor::visitType) != typeid(&MMV_VISITOR::visitType);};
 virtual bool visitTypeRelatedTypeOverride() {return typeid(&MetaModelTreeVisitor::visitTypeRelatedType) != typeid(&MMV_VISITOR::visitTypeRelatedType);};
-virtual bool visitTypeRestrictionOverride() {return typeid(&MetaModelTreeVisitor::visitTypeRestriction) != typeid(&MMV_VISITOR::visitTypeRestriction);};
 virtual bool visitMultiValueOverride() {return typeid(&MetaModelTreeVisitor::visitMultiValue) != typeid(&MMV_VISITOR::visitMultiValue);};
 virtual bool visitClassRelatedTypeOverride() {return typeid(&MetaModelTreeVisitor::visitClassRelatedType) != typeid(&MMV_VISITOR::visitClassRelatedType);};
-virtual bool visitBaseClassOverride() {return typeid(&MetaModelTreeVisitor::visitBaseClass) != typeid(&MMV_VISITOR::visitBaseClass);};
-virtual bool visitClassRestrictionOverride() {return typeid(&MetaModelTreeVisitor::visitClassRestriction) != typeid(&MMV_VISITOR::visitClassRestriction);};
 virtual bool visitReferenceTypeOverride() {return typeid(&MetaModelTreeVisitor::visitReferenceType) != typeid(&MMV_VISITOR::visitReferenceType);};
 virtual bool visitRoleOverride() {return typeid(&MetaModelTreeVisitor::visitRole) != typeid(&MMV_VISITOR::visitRole);};
 virtual bool visitExplicitAssocAccessOverride() {return typeid(&MetaModelTreeVisitor::visitExplicitAssocAccess) != typeid(&MMV_VISITOR::visitExplicitAssocAccess);};

@@ -98,7 +98,12 @@ void write_expression(TextWriter *tw,Expression *e)
          AttrOrParam *RuntimeParam = nullptr;
       */
       RuntimeParamRef *r = dynamic_cast<RuntimeParamRef *>(e);
-      tw->write(0,r->RuntimeParam->Name);
+      if (r->RuntimeParam != nullptr) {
+         tw->write(0,"PARAMETER " + r->RuntimeParam->Name);
+      }
+      else {
+         tw->write(0,"PARAMETER ???");
+      }
    }
    else if (e->getClass() == "ClassConst") {
       /* struct ClassConst : public Factor {

@@ -12,7 +12,6 @@ namespace metamodel {
    static list <Import*> AllImports;
    static list <Dependency*> AllDependencies;
    static list <AxisSpec*> AllAxisSpecs;
-   static list <BaseClass*> AllBaseClasses;
    static Class* class_context;
 
    // helper functions
@@ -98,6 +97,31 @@ namespace metamodel {
       return AllDependencies;
    }
    
+   bool depends_on(Package *p)
+   {
+      if (p->getClass() != "SubModel") {
+         return true;
+      }
+      SubModel *s = get_topic_context();
+      if (s == nullptr) {
+         return true;
+      }
+      SubModel *ss = s;
+      while (ss != nullptr) {
+         if (ss == p) {
+            return true;
+         }
+         ss = static_cast<SubModel *>(ss->_super);
+      }
+      ss = static_cast<SubModel*>(p);
+      for (auto d : get_all_dependencies()) {
+         if ((d->Dependent == ss->_dataunit) && (d->Using == s->_dataunit)) {
+            return true;
+         }
+      }
+      return false;
+   }
+   
    // AxisSpec
 
    void add_axisspec(AxisSpec* s)
@@ -113,24 +137,6 @@ namespace metamodel {
       return AllAxisSpecs;
    }
    
-   // BaseClass
-
-   void add_baseclass(BaseClass* c)
-   {
-      if (c == nullptr) {
-         return;
-      }
-      else if (c->BaseClass_ == nullptr) {
-         return;
-      }
-      AllBaseClasses.push_back(c);
-   }
-
-   list<BaseClass*> get_all_baseclasses()
-   {
-      return AllBaseClasses;
-   }
-
    // path utilities
 
    string get_type_path(Type* t)
@@ -138,7 +144,7 @@ namespace metamodel {
 
       string path;
 
-      if (t->Name == "C1" || t->Name == "C2" || t->Name == "C3" ) {
+      if ((t->Name == "C1" || t->Name == "C2" || t->Name == "C3") && t->ElementInPackage == nullptr) {
          path = get_path(t->_other_type) + "." + t->Name;
       }
       else if (t->ElementInPackage != nullptr) {
@@ -306,7 +312,7 @@ namespace metamodel {
    {
       return dynamic_cast<Model*>(get_context("Model"));
    }
-
+   
    // instance methods
 
    static MMObject* get_instance(string classname)
@@ -365,20 +371,11 @@ namespace metamodel {
       else if (classname == "TypeRelatedType") {
          return new TypeRelatedType();
       }
-      else if (classname == "TypeRestriction") {
-         return new TypeRestriction();
-      }
       else if (classname == "MultiValue") {
          return new MultiValue();
       }
       else if (classname == "ClassRelatedType") {
          return new ClassRelatedType();
-      }
-      else if (classname == "BaseClass") {
-         return new BaseClass();
-      }
-      else if (classname == "ClassRestriction") {
-         return new ClassRestriction();
       }
       else if (classname == "ReferenceType") {
          return new ReferenceType();
@@ -675,7 +672,6 @@ namespace metamodel {
    {
 
       clone_init_metaelement(clone,org);
-
       clone->_super = org->_super;
 
    }
@@ -729,7 +725,9 @@ namespace metamodel {
 
    static void clone_init_submodel(SubModel *clone,SubModel *org)
    {
+Log.message(">>> clone topic");
       clone_init_package(clone,org);
+      clone->_dataunit = org->_dataunit;
    }
 
    static void clone_init_type(Type *clone,Type *org)
@@ -811,16 +809,6 @@ namespace metamodel {
 
    }
 
-   static void clone_init_typerestriction(TypeRestriction *clone,TypeRestriction *org)
-   {
-
-      clone_init_mmobject(clone,org);
-
-      clone->TRTR = org->TRTR;
-      clone->TypeRestriction_ = org->TypeRestriction_;
-
-   }
-
    static void clone_init_multivalue(MultiValue *clone,MultiValue *org)
    {
 
@@ -836,27 +824,8 @@ namespace metamodel {
 
       clone_init_domaintype(clone,org);
 
-      clone->BaseClass = org->BaseClass;
-
-   }
-
-   static void clone_init_baseclass(BaseClass *clone,BaseClass *org)
-   {
-
-      clone_init_mmobject(clone,org);
-
-      clone->CRT = org->CRT;
-      clone->BaseClass_ = org->BaseClass_;
-
-   }
-
-   static void clone_init_classrestriction(ClassRestriction *clone,ClassRestriction *org)
-   {
-
-      clone_init_mmobject(clone,org);
-
-      clone->CRTR = org->CRTR;
-      clone->ClassRestriction_ = org->ClassRestriction_;
+      clone->_baseclass = org->_baseclass;
+      clone->_classrestriction = org->_classrestriction;
 
    }
 
@@ -1301,7 +1270,6 @@ namespace metamodel {
       clone->Ref = org->Ref;
       clone->NumIndex = org->NumIndex;
       clone->SpecIndex = org->SpecIndex;
-      clone->_kind = org->_kind;
 
    }
 
@@ -1648,12 +1616,6 @@ namespace metamodel {
          TypeRelatedType* o = static_cast<TypeRelatedType*>(this);
          clone_init_typerelatedtype(c,o);
       }
-      else if (classname == "TypeRestriction") {
-         clone = new TypeRestriction();
-         TypeRestriction* c = static_cast<TypeRestriction*>(clone);
-         TypeRestriction* o = static_cast<TypeRestriction*>(this);
-         clone_init_typerestriction(c,o);
-      }
       else if (classname == "MultiValue") {
          clone = new MultiValue();
          MultiValue* c = static_cast<MultiValue*>(clone);
@@ -1665,18 +1627,6 @@ namespace metamodel {
          ClassRelatedType* c = static_cast<ClassRelatedType*>(clone);
          ClassRelatedType* o = static_cast<ClassRelatedType*>(this);
          clone_init_classrelatedtype(c,o);
-      }
-      else if (classname == "BaseClass") {
-         clone = new BaseClass();
-         BaseClass* c = static_cast<BaseClass*>(clone);
-         BaseClass* o = static_cast<BaseClass*>(this);
-         clone_init_baseclass(c,o);
-      }
-      else if (classname == "ClassRestriction") {
-         clone = new ClassRestriction();
-         ClassRestriction* c = static_cast<ClassRestriction*>(clone);
-         ClassRestriction* o = static_cast<ClassRestriction*>(this);
-         clone_init_classrestriction(c,o);
       }
       else if (classname == "ReferenceType") {
          clone = new ReferenceType();

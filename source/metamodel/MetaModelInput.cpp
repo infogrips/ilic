@@ -19,6 +19,7 @@ namespace metamodel {
    static list <Import*> AllImports;
    static list <FunctionDef*> AllFunctions;
    static list <LineForm*> AllLineForms;
+   static list <Graphic*> AllGraphics;
 
    // mmobject helpers
 
@@ -148,6 +149,12 @@ namespace metamodel {
       if (p == nullptr) {
          return;
       }
+      for (auto pp : AllPackages) {
+         if (get_path(pp) == get_path(p)) {
+            Log.error("multiple declarations of " + get_path(p),p->_line);
+            return;
+         }
+      }
       AllPackages.push_back(p);
    }
 
@@ -159,6 +166,13 @@ namespace metamodel {
          package_name = package_name.substr(0,package_name.length()-7);
       }
       Log.debug("find_package " + package_name);
+      for (Package* p : AllPackages) {
+         for (auto unqualified : get_all_unqualified_imports(get_model_context()->Name)) {
+            if (get_path(p) == unqualified + "." + package_name) {
+               return p;
+            }
+         }
+      }
       for (Package* p : AllPackages) {
          if (get_path(p) == package_name) {
             return p;
@@ -236,7 +250,7 @@ namespace metamodel {
       }
       Log.debug(">>> add_type " + get_path(t));
       for (Type* tt : AllTypes) {
-         if (get_path(tt) == get_path(t)) {
+         if (get_path(tt) == get_path(t) && t->Name != "???") {
             Log.error("multiple declarations of " + get_path(t),t->_line);
             return;
          }
@@ -255,7 +269,7 @@ namespace metamodel {
       else {
          search = name;
       }
-
+      
       if (search == "HALIGNMENT") {
          search = "INTERLIS.HALIGNMENT";
       }
@@ -271,42 +285,51 @@ namespace metamodel {
       Type *found = nullptr;
       for (Type* t : AllTypes) {
          string path = get_path(t);
-         if (path == search) {
+         if (search == path) {
             found = t;
-            break;
          }
-         else {
-            if (path == package_path + "." + search) {
-               found = t;
-               break;
-            }
-            if (ctx->getClass() == "Model") {
-               for (auto unqualified : get_all_unqualified_imports(ctx->Name)) {
-                  if (path == unqualified + "." + search) {
-                     found = t;
-                     break;
+         if (path == package_path + "." + search) {
+            found = t;
+         }
+         if (ctx->getClass() == "Model") {
+            string first_unqualified_match = "";
+            for (auto unqualified : get_all_unqualified_imports(ctx->Name)) {
+               if (path == unqualified + "." + search) {
+                  if (first_unqualified_match == "") {
+                     first_unqualified_match = unqualified;
                   }
-               }
-            }
-            else if (ctx->getClass() == "SubModel") {
-               SubModel *s = static_cast<SubModel *>(ctx);
-               while (s->_super != nullptr) {
-                  if (path == get_path(s->_super) + "." + search) {
-                     found = t;
-                     break;
+                  else {
+                     Log.error("ambiguous path " + search + " found in " + first_unqualified_match + " and " + unqualified,line);
                   }
-                  s = static_cast<SubModel *>(s->_super);
-               }
-               if (path == get_parent_path(ctx) + "." + search) {
                   found = t;
                   break;
                }
-               for (auto unqualified : get_all_unqualified_imports(get_parent_path(ctx))) {
-                  if (path == unqualified + "." + search) {
-                     found = t;
-                     break;
+            }
+         }
+         else if (ctx->getClass() == "SubModel") {
+            if (path == get_parent_path(ctx) + "." + search) {
+               found = t;
+            }
+            for (auto unqualified : get_all_unqualified_imports(get_parent_path(ctx))) {
+               string first_unqualified_match = "";
+               if (path == unqualified + "." + search) {
+                  if (first_unqualified_match == "") {
+                     first_unqualified_match = unqualified;
                   }
+                  else {
+                     Log.error("ambiguous path " + search + " found in " + first_unqualified_match + " and " + unqualified,line);
+                  }
+                  found = t;
+                  break;
                }
+            }
+            SubModel *s = static_cast<SubModel *>(ctx);
+            while (s->_super != nullptr) {
+               if (path == get_path(s->_super) + "." + search) {
+                  found = t;
+                  break;
+               }
+               s = static_cast<SubModel *>(s->_super);
             }
          }
       }
@@ -373,21 +396,63 @@ namespace metamodel {
       add_type(c);
    }
 
-   Class* find_class_object(string name,string restriction, int line)
+   Class* find_class_or_view(string name,int line)
    {
 
       Type* t = find_type(name, line, false);
       if (t == nullptr) {
-         Log.error(restriction + " " + name + " not found",line);
+         Log.error("viewable " + name + " not found",line);
          return nullptr;
       }
 
-      if (t->getClass() != "Class") {
-         Log.error(name + " is no " + restriction,line);
+      if (t->getClass() != "Class" && t->getClass() != "View") {
+         Log.error(name + " is no class or view",line);
          return nullptr;
       }
 
       return static_cast<Class*>(t);
+
+   }
+
+   Class* find_class_or_structure(string name,int line)
+   {
+
+      Type* t = find_type(name, line, false);
+      if (t == nullptr) {
+         Log.error("viewable " + name + " not found",line);
+         return nullptr;
+      }
+
+      if (t->getClass() != "Class") {
+         Log.error(name + " is no class or structure",line);
+         return nullptr;
+      }
+      
+      Class *c = static_cast<Class *>(t);
+      if (c->Kind != Class::ClassVal && c->Kind != Class::Structure) {
+         Log.error(name + " is no class or structure",line);
+         return nullptr;
+      }
+
+      return c;
+
+   }
+
+   Class* find_class_type(string name,int line)
+   {
+
+      Type* t = find_type(name, line, false);
+      if (t == nullptr) {
+         Log.error("viewable " + name + " not found",line);
+         return nullptr;
+      }
+
+      if (t->getClass() != "Class") {
+         Log.error(name + " is no class, structure or association ",line);
+         return nullptr;
+      }
+      
+      return static_cast<Class *>(t);
 
    }
 
@@ -408,10 +473,18 @@ namespace metamodel {
          c->Kind = Class::Structure;
       }
       else {
-         c = find_class_object(name,"class", line);
-         if (c != nullptr && c->Kind != Class::ClassVal) {
-            Log.error(name + " is no class");
-            c = nullptr;
+         Type* t = find_type(name, line, false);
+         if (t == nullptr) {
+            Log.error("class " + name + " not found",line);
+            return nullptr;
+         }
+         if (t->getClass() != "Class") {
+            Log.error(name + " is no class",line);
+            return nullptr;
+         }
+         c = static_cast<Class *>(t);
+         if (c->Kind != Class::ClassVal) {
+            Log.error(name + " is no class",line);
          }
       }
       return c;
@@ -438,10 +511,18 @@ namespace metamodel {
    Class* find_structure(string name, int line)
    {
       Log.debug("find_structure " + name);
-      Class* c = find_class_object(name,"structure", line);
-      if (c != nullptr && c->Kind != Class::Structure) {
-         Log.error(name + " is no structure");
-         c = nullptr;
+      Type* t = find_type(name, line, false);
+      if (t == nullptr) {
+         Log.error("structure " + name + " not found",line);
+         return nullptr;
+      }
+      if (t->getClass() != "Class") {
+         Log.error(name + " is no structure",line);
+         return nullptr;
+      }
+      Class *c = static_cast<Class *>(t);
+      if (c->Kind != Class::Structure) {
+         Log.error(name + " is no structure",line);
       }
       return c;
    }
@@ -467,10 +548,18 @@ namespace metamodel {
    Class* find_association(string name, int line)
    {
       Log.debug("find_association " + name);
-      Class* c = find_class_object(name,"association", line);
-      if (c != nullptr && c->Kind != Class::Association) {
-         Log.error(name + " is no association");
-         c = nullptr;
+      Type* t = find_type(name, line, false);
+      if (t == nullptr) {
+         Log.error("association " + name + " not found",line);
+         return nullptr;
+      }
+      if (t->getClass() != "Class") {
+         Log.error(name + " is no association",line);
+         return nullptr;
+      }
+      Class *c = static_cast<Class *>(t);
+      if (c->Kind != Class::Association) {
+         Log.error(name + " is no association",line);
       }
       return c;
    }
@@ -496,17 +585,21 @@ namespace metamodel {
    View* find_view(string name, int line)
    {
       Log.debug("find_view " + name);
-      Class *v = find_class_object(name,"view",line);
-      if (v != nullptr && v->Kind != Class::ViewVal) {
-         Log.error(name + " is no view");
-         v = nullptr;
+      Type* t = find_type(name, line, false);
+      if (t == nullptr) {
+         Log.error("view " + name + " not found",line);
+         return nullptr;
       }
-      return static_cast<View *>(v);
+      if (t->getClass() != "View") {
+         Log.error(name + " is no view",line);
+         return nullptr;
+      }
+      return static_cast<View *>(t);
    }
 
-   AttrOrParam* find_attribute(Class* c,string name,int line)
+   AttrOrParam* find_attribute(Class* c,string name)
    {
-      Log.debug("find_attribute " + name);
+      Log.debug("find_attribute " + name + " in context " + get_path(c));
       if (c == nullptr) {
          return nullptr;
       }
@@ -517,10 +610,34 @@ namespace metamodel {
       }
       if (c->Super != nullptr) {
          Class* s = static_cast<Class*>(c->Super);
-         return find_attribute(s,name,line);
+         return find_attribute(s,name);
       }
       else {
-         Log.error("attribute " + name + " not found", line);
+         return nullptr;
+      }
+   }
+
+   Role* find_role(Class* c,string name)
+   {
+      Log.debug("find_role " + name + " in context " + get_path(c) + " " + to_string(c->_roleaccess.size()));
+      if (c == nullptr) {
+         return nullptr;
+      }
+      for (auto r : c->Role) {
+         if (r->Name == name) {
+            return r;
+         }
+      }
+      for (auto r : c->_roleaccess) {
+         if (r->Name == name) {
+            return r;
+         }
+      }
+      if (c->Super != nullptr) {
+         Class* s = static_cast<Class*>(c->Super);
+         return find_role(s,name);
+      }
+      else {
          return nullptr;
       }
    }
@@ -544,6 +661,87 @@ namespace metamodel {
          Log.error("parameter " + name + " not found", line);
          return nullptr;
       }
+   }
+
+   // Graphic helpers
+
+   void init_graphic(Graphic* g, int line)
+   {
+      init_extendableme(g, line);
+   }
+
+   void add_graphic(Graphic* g)
+   {
+      if (g == nullptr) {
+         return;
+      }
+      Log.debug(">>> add_graphic " + get_path(g));
+      for (Graphic* gg : AllGraphics) {
+         if (get_path(gg) == get_path(g)) {
+            Log.error("multiple declarations of " + get_path(g),g->_line);
+            return;
+         }
+      }
+      Log.debug("<<< add_graphic " + get_path(g));
+      AllGraphics.push_back(g);
+   }
+
+   Graphic* find_graphic(string name,int line)
+   {
+
+      string search;
+      search = name;
+
+      MetaElement *ctx = get_package_context();
+         
+      string package_path = get_path(get_package_context());
+      Log.debug(">>> find_graphic <" + search + "> in context " + package_path);
+
+      Graphic *found = nullptr;
+      for (Graphic* g : AllGraphics) {
+         string path = get_path(g);
+         if (path == search) {
+            found = g;
+            break;
+         }
+         else if (path == package_path + "." + search) {
+            found = g;
+            break;
+         }
+         else if (ctx->getClass() == "Model") {
+            for (auto unqualified : get_all_unqualified_imports(ctx->Name)) {
+               if (path == unqualified + "." + search) {
+                  found = g;
+                  break;
+               }
+            }
+         }
+         else if (ctx->getClass() == "SubModel") {
+            SubModel *s = static_cast<SubModel *>(ctx);
+            while (s->_super != nullptr) {
+               if (path == get_path(s->_super) + "." + search) {
+                  found = g;
+                  break;
+               }
+               s = static_cast<SubModel *>(s->_super);
+            }
+            if (path == get_parent_path(ctx) + "." + search) {
+               found = g;
+               break;
+            }
+            for (auto unqualified : get_all_unqualified_imports(get_parent_path(ctx))) {
+               if (path == unqualified + "." + search) {
+                  found = g;
+                  break;
+               }
+            }
+         }
+      }
+      
+      Log.debug("<<< find_graphic " + get_path(found));
+      
+      return found;
+
    }
 
    // expression helpers

@@ -202,22 +202,15 @@ void Ili1Output::visitRole(Role* r)
         multiplicity = to_string(r->Multiplicity.Min) + ".." + to_string(r->Multiplicity.Max);
     }
 
-    string targets = "";
+    string targets = r->_baseclass->Name;
     string targets_additional = "";
-    for (auto b : get_all_baseclasses()) {
-        if (b->CRT == r) {
-            if (targets.size() <= 0) {
-                targets = b->BaseClass_->Name;
-            }
-            else {
-                if (targets_additional.size() > 0) {
-                    targets_additional = targets_additional + ", ";
-                }
-                targets_additional = targets_additional + b->BaseClass_->Name;
-            }
-            targets = b->BaseClass_->Name;
-            break;
-        }
+    for (auto tt : r->_classrestriction) {
+       if (targets_additional == "") {
+          targets_additional = tt->Name;
+       }
+       else {
+          targets_additional += ", " + tt->Name;
+       }
     }
 
     string mandatory = "";

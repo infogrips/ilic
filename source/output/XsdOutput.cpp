@@ -323,14 +323,7 @@ void XsdOutput::visitClass(metamodel::Class* c) {
                   check = role1;
                }
 
-               Class* baseClass = nullptr;
-
-               for (auto bc : get_all_baseclasses()) {
-                  if (bc->CRT == check) {
-                     baseClass = bc->BaseClass_;
-                     break;
-                  }
-               }
+               Class* baseClass = check->_baseclass;
 
                ExtendableME* base = baseClass;
 
@@ -1748,7 +1741,7 @@ list<metamodel::ExtendableME*> XsdOutput::getClassAttributes(metamodel::Class* c
       Class* ac = static_cast<Class*>(cts);
 
       if (ac->Kind == Class::Association) {
-         for (auto ra : ac->RoleAttribute) {
+         for (auto ra : ac->_roleaccess) {
             string findString = ra->Name;
             auto it = std::find_if(attributes.begin(), attributes.end(), [&findString](metamodel::ExtendableME* obj) {return obj->Name == findString; });
 
@@ -1777,7 +1770,7 @@ list<metamodel::ExtendableME*> XsdOutput::getClassAttributes(metamodel::Class* c
       }
 
       if (ac->Kind != Class::Association) {
-         for (auto ra : ac->RoleAttribute) {
+         for (auto ra : ac->_roleaccess) {
             string findString = ra->Name;
             auto it = std::find_if(attributes.begin(), attributes.end(), [&findString](metamodel::ExtendableME* obj) {return obj->Name == findString; });
 

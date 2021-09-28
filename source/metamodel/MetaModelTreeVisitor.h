@@ -54,11 +54,8 @@ namespace metamodel {
       virtual void visitType(Type *t) {};
       virtual void visitAttrOrParam(AttrOrParam *a) {};
       virtual void visitTypeRelatedType(TypeRelatedType *r) {};
-      virtual void visitTypeRestriction(TypeRestriction *r) {};
       virtual void visitMultiValue(MultiValue* m) {};
       virtual void visitClassRelatedType(ClassRelatedType *t) {};
-      virtual void visitBaseClass(BaseClass *b) {};
-      virtual void visitClassRestriction(ClassRestriction *r) {};
       virtual void visitReferenceType(ReferenceType *r) {};
       virtual void visitRole(Role *r) {};
       virtual void visitExplicitAssocAccess(ExplicitAssocAccess *a) {};

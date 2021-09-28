@@ -42,10 +42,7 @@ namespace output {
       void visitIli1Format(metamodel::Ili1Format *f) override;
       void visitMultiplicity(metamodel::Multiplicity *m) override;
       void visitAttrOrParam(metamodel::AttrOrParam *a) override;
-      void visitTypeRestriction(metamodel::TypeRestriction *r) override;
       void visitMultiValue(metamodel::MultiValue* m) override;
-      void visitBaseClass(metamodel::BaseClass *b) override;
-      void visitClassRestriction(metamodel::ClassRestriction *r) override;
       void visitReferenceType(metamodel::ReferenceType* t) override;
       void visitRole(metamodel::Role* r) override;
       void visitExplicitAssocAccess(metamodel::ExplicitAssocAccess *a) override;

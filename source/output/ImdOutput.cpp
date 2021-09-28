@@ -352,20 +352,6 @@ void ImdOutput::visitAttrOrParam(AttrOrParam *t)
 
 }
 
-void ImdOutput::visitTypeRestriction(TypeRestriction *t)
-{
-
-   xtf.openObject("IlisMeta07", "ModelData", "TypeRestriction", get_path(t));
-   xtf.writeComment("line=" + to_string(t->_line));
-
-   // TypeRestriction
-   xtf.writeReference("TRTR", get_path(t->TRTR));
-   xtf.writeReference("TypeRestriction", get_path(t->TypeRestriction_));
-
-   xtf.closeObject();
-
-}
-
 void ImdOutput::visitMultiValue(MultiValue *t)
 {
 
@@ -414,34 +400,6 @@ void ImdOutput::visitMultiValue(MultiValue *t)
 
 }
 
-void ImdOutput::visitBaseClass(BaseClass *t)
-{
-
-   xtf.openObject("IlisMeta07", "ModelData", "BaseClass", get_path(t));
-   xtf.writeComment("line=" + to_string(t->_line));
-
-   // BaseClass
-   xtf.writeReference("CRT", get_path(t->CRT));
-   xtf.writeReference("BaseClass", get_path(t->BaseClass_));
-
-   xtf.closeObject();
-
-}
-
-void ImdOutput::visitClassRestriction(ClassRestriction *t)
-{
-
-   xtf.openObject("IlisMeta07", "ModelData", "ClassRestriction", get_path(t));
-   xtf.writeComment("line=" + to_string(t->_line));
-
-   // ClassRestriction
-   xtf.writeReference("CRTR", get_path(t->CRTR));
-   xtf.writeReference("ClassRestriction", get_path(t->ClassRestriction_));
-
-   xtf.closeObject();
-
-}
-
 void ImdOutput::visitReferenceType(ReferenceType *t)
 {
 
@@ -478,7 +436,7 @@ void ImdOutput::visitReferenceType(ReferenceType *t)
    xtf.writeReference("GenericDef", get_path(t->GenericDef));
 
    // ClassRelatedType
-   xtf.writeReference("BaseClass", get_path(t->BaseClass));
+   xtf.writeReference("BaseClass", get_path(t->_baseclass));
 
    // ReferenceType
    xtf.writeTag("External", to_string_bool(t->External));
@@ -522,7 +480,7 @@ void ImdOutput::visitRole(Role *t)
    xtf.writeReference("GenericDef", get_path(t->GenericDef));
 
    // ClassRelatedType
-   xtf.writeReference("BaseClass", get_path(t->BaseClass));
+   xtf.writeReference("BaseClass", get_path(t->_baseclass));
 
    // ReferenceType
    xtf.writeTag("External", to_string_bool(t->External));
@@ -1312,7 +1270,7 @@ void ImdOutput::visitClassRefType(ClassRefType *t)
    xtf.writeReference("GenericDef", get_path(t->GenericDef));
 
    // ClassRelatedType
-   xtf.writeReference("BaseClass", get_path(t->BaseClass));
+   xtf.writeReference("BaseClass", get_path(t->_baseclass));
 
    // ClassRefType
 
@@ -1355,7 +1313,7 @@ void ImdOutput::visitObjectType(ObjectType *t)
    xtf.writeReference("GenericDef", get_path(t->GenericDef));
 
    // ClassRelatedType
-   xtf.writeReference("BaseClass", get_path(t->BaseClass));
+   xtf.writeReference("BaseClass", get_path(t->_baseclass));
 
    // ObjectType
    xtf.writeTag("Multiple", to_string_bool(t->Multiple));

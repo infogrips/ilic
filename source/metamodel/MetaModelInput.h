@@ -49,17 +49,25 @@ namespace metamodel {
    // Class helpers
    void init_class(Class *c,int line);
    void add_class(Class *c);
-   Class* find_class_object(string name, string restriction, int line);
    Class* find_class(string name,int line);
+   Class* find_class_type(string name,int line);
    Class* find_class(Package *p,string name,int line);
+   Class* find_class_or_view(string name, int line);
+   Class* find_class_or_structure(string name, int line);
    Class* find_structure(string name,int line );
    Class* find_structure(Package *p,string name,int line);
    View* find_view(string name, int line);
    Class* find_association(string name,int line);
    Class* find_association(Package *p,string name,int line);
-   AttrOrParam* find_attribute(Class *c,string name,int line);
+   AttrOrParam* find_attribute(Class *c,string name);
+   Role* find_role(Class *c,string name);
    AttrOrParam* find_parameter(Class *c,string name,int line);
    
+   // Graphic helpers
+   void init_graphic(Graphic *g,int line);
+   void add_graphic(Graphic *g);
+   Graphic* find_graphic(string name,int line);
+
    // Function helpers
    void init_function(FunctionDef *f, int line);
    void add_function(FunctionDef *function);

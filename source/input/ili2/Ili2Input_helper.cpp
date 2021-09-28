@@ -10,7 +10,58 @@ string input::visitString(antlr4::Token *t)
    string value = t->getText();
    return value.substr(1,value.size()-2);
 }
+
+static string simplify_type(string t)
+{
+   string ts = t;
+   if (ts == "FormattedType") {
+      ts = "TextType";
+   }
+   else if (ts == "EnumTreeValueType") {
+      ts = "EnumType";
+   }
+   return ts;
+}
    
+bool input::check_type_compatibility(string t1,string t2)
+{
+   
+   return true; // to do !!!
+
+   if (t1 == "???" || t2 == "???") {
+      return true;
+   }
+
+   if (simplify_type(t1) == simplify_type(t2)) {
+      return true;
+   }
+   else {
+      return false;
+   }
+
+}
+
+bool input::check_type_extendability(metamodel::Type *base,metamodel::Type *extension,int line)
+{
+
+   if (base == nullptr || extension == nullptr) {
+      return true;
+   }
+   if (base->getClass() != extension->getClass()) {
+      Log.error("incompatible type",line);
+      return false;
+   }
+   else if (base->getClass() == "TextType") {
+      TextType *b = static_cast<TextType *>(base);
+      TextType *e = static_cast<TextType *>(extension);
+      if (e->MaxLength > b->MaxLength && b->MaxLength != -1) {
+         Log.error("extended type may not exeed length of base type",line);
+         return false;
+      }
+   }
+   return true;
+}
+
 map<string,bool> input::get_properties(parser::Ili2Parser::PropertiesContext *ctx,vector<string> allowed_properties)
 {
 
@@ -186,5 +237,63 @@ map<string,bool> input::get_properties(parser::Ili2Parser::PropertiesContext *ct
    }
 
    return properties;
+
+}
+
+void input::check_references(Class *c,string name,int line)
+{
+   
+   Log.debug(">>> check_references() " + get_path(c));
+   Log.incNestLevel();
+   
+   for (auto a: c->ClassAttribute) {
+      int l = line;
+      if (line == 0) {
+         l = a->_line;
+      }
+      string n;
+      if (name == "") {
+         n = a->Name;
+      }
+      else {
+         n = name + "->" + a->Name;
+      }
+      if (a->Type->getClass() == "ReferenceType") {
+         ReferenceType *t = static_cast<ReferenceType *>(a->Type);
+         list<Class *> classrestriction;
+         if (t->_classrestriction.size() == 0) {
+            classrestriction.push_back(t->_baseclass);
+         }
+         else {
+            classrestriction = t->_classrestriction;            
+         }
+         for (auto c: classrestriction) {
+            if (get_package_context() != c->ElementInPackage && !t->External) {
+               Log.error("reference to other topic must be declared EXTERNAL",l);
+               break;
+            }
+         }
+         for (auto c: classrestriction) {
+            if (!depends_on(c->ElementInPackage)) {
+               Log.error(n + " requires topic dependency on " + get_path(t->_baseclass->ElementInPackage),l);
+               break;
+            }
+         }
+      }
+      else if (a->Type->getClass() == "MultiValue") {
+         MultiValue *t = static_cast<MultiValue *>(a->Type);
+         if (t->TypeRestriction.size() == 0) {
+            check_references(static_cast<Class *>(t->BaseType),n,l);
+         }
+         else {
+            for (auto c: t->TypeRestriction) {
+               check_references(static_cast<Class *>(c),n,l);
+            }
+         }
+      }
+   }
+
+   Log.decNestLevel();
+   Log.debug("<<< check_references() " + get_path(c));
 
 }

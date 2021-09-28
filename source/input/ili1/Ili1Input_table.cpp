@@ -100,7 +100,7 @@ antlrcpp::Any Ili1Input::visitAttribute(Ili1Parser::AttributeContext *ctx)
       init_domaintype(rt,ctx->start->getLine());
       dt = static_cast<DomainType*>(rt);
       rt->External = false;
-      rt->BaseClass = find_class(ctx->tablename->getText(),get_line(ctx));
+      rt->_baseclass = find_class(ctx->tablename->getText(),get_line(ctx));
       a->Type = dt;
    }
    pop_context();
@@ -151,7 +151,7 @@ antlrcpp::Any Ili1Input::visitIdentifications(Ili1Parser::IdentificationsContext
          for (auto a : attr_names) {
             PathEl *pl = new PathEl;
             pl->Kind = PathEl::Attribute;
-            pl->Ref = find_attribute(get_class_context(),a,get_line(ictx));
+            pl->Ref = find_attribute(get_class_context(),a);
             PathOrInspFactor * pf = new PathOrInspFactor;
             pf->PathEls.push_back(pl);
             pf->_path = a;

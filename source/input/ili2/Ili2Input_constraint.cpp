@@ -66,7 +66,7 @@ antlrcpp::Any Ili2Input::visitConstraintDef(parser::Ili2Parser::ConstraintDefCon
 
 static bool is_boolean_expression(Expression *e)
 {
-   return e->_type == "BooleanType";
+   return e->_type == "BooleanType" || e->_type == "???";
 }
 
 antlrcpp::Any Ili2Input::visitMandatoryConstraint(parser::Ili2Parser::MandatoryConstraintContext *ctx)
@@ -214,14 +214,29 @@ antlrcpp::Any Ili2Input::visitUniquenessConstraint(parser::Ili2Parser::Uniquenes
    }
    
    if (ctx->globalUniqueness() != nullptr) {
+      /* globalUniqueness
+      : uniqueEl
+      */
       c->Kind = UniqueConstraint::GlobalU;
-      // c->UniqueDef = visitGlobalUniqueness(ctx->globalUniqueness());
-      // to do !!!
+      for (auto p: ctx->globalUniqueness()->uniqueEl()->objectOrAttributePath()) {
+         PathOrInspFactor * pf = new PathOrInspFactor;
+         pf->_path = p->getText();
+         c->UniqueDef.push_back(pf);
+      }
    }
    else {
+      /* localUniqueness
+      : LPAREN LOCAL RPAREN localUniqueEl
+      */
+      /* localUniqueEl
+      : structureattributename=NAME
+      (RARROW structureattributename=NAME)* COLON
+      attributename=NAME (COMMA attributename=NAME)*
+      */
       c->Kind = UniqueConstraint::LocalU;
-      // c->UniqueDef = visitLocalUniqueness(ctx->localUniqueness());
-      // to do !!!
+      PathOrInspFactor * pf = new PathOrInspFactor;
+      pf->_path = ctx->localUniqueness()->localUniqueEl()->getText();
+      c->UniqueDef.push_back(pf);
    }
    
    return c;
@@ -361,10 +376,12 @@ antlrcpp::Any Ili2Input::visitConstraintsDef(parser::Ili2Parser::ConstraintsDefC
    
    Class *c = find_class(visit(ctx->path()),get_line(ctx));
    if (c != nullptr) {
+      push_context(c);
       for (auto cctx : ctx->constraintDef()) { // ???, to do !!!
          Constraint *cc = visitConstraintDef(cctx);
          c->Constraint.push_back(cc);
       }
+      pop_context();
    }
 
    Log.decNestLevel();

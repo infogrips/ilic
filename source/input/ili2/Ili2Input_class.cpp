@@ -91,44 +91,27 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
    c->Name = name1;
 
    // ExtendableME Attributes
-   if (ctx->properties() != nullptr) {
-      map<string,bool> properties = get_properties(ctx->properties(),vector<string>({ABSTRACT,FINAL,EXTENDED}));
-      c->Abstract = properties[ABSTRACT];
-      c->Final = properties[FINAL];
-      c->Extended = properties[EXTENDED];
-      if (properties[EXTENDED]) {
-         //c->Abstract = false;
-         Package *p = get_package_context();
-         int line = get_line(ctx);
-         DataUnit* u = find_dataunit(get_path(p),line);
-         if (u->Super == nullptr) {
-            Log.error(string("EXTENDED can only by used in extended topics"),line);
-         }
-         else {
-            string superpath = get_path(u->Super);
-            superpath = superpath.substr(0,superpath.length()-7); // without .BASKET
-            string baseclass = superpath + "." + c->Name;
-            c->Super = find_class_object(baseclass,"class or structure",line);
-            bool found = false;
-            while (u->Super != nullptr) {
-               DataUnit *uu = static_cast<DataUnit *>(u->Super);
+   map<string,bool> properties = get_properties(ctx->properties(),vector<string>({ABSTRACT,FINAL,EXTENDED}));
+   c->Abstract = properties[ABSTRACT];
+   if (get_package_context()->getClass() == "Model" && !c->Abstract) {
+      Log.error("a class in model context has to be defined ABSTRACT",get_line(ctx));
+   }
+   c->Final = properties[FINAL];
+   c->Extended = properties[EXTENDED];
 
-               string package_path = get_path(uu);
-
-               if (util::ends_with(package_path,".BASKET")) {
-                  package_path = package_path.substr(0,package_path.length()-7);
-               }
-
-               Package* pp = find_package(package_path,line);
-               Class *cc = find_class(pp,name1,line);
-               if (cc != nullptr) {
-                  found = true;
-                  break;
-               }
-               u = static_cast<DataUnit *>(u->Super);
-            }
-            if (!found) {
-               Log.error("class " + name1 + " not found in basetopic(s)",line);
+   // EXTENDED
+   if (c->Extended) {
+      DataUnit* u = find_dataunit(get_path(get_package_context()),c->_line);
+      if (u->Super == nullptr) {
+         Log.error(string("EXTENDED can only by used in extended topics"),c->_line);
+      }
+      else {
+         Class *s = find_class_or_structure(name1,c->_line);
+         c->Super = s;
+         if (s != nullptr) {
+            s->Sub.push_back(c);
+            if (s->Final) {
+               Log.error("class " + name1 + " can not extend FINAL base class " + get_path(s),c->_line);
             }
          }
       }
@@ -136,9 +119,13 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
 
    // EXTENDS
    if (ctx->classbase != nullptr) {
-      c->Super = find_class_object(ctx->classbase->getText(),"class or structure",get_line(ctx->classbase));
-      if (c->Super != nullptr) {
-         c->Super->Sub.push_back(c);
+      Class *s = find_class_or_structure(ctx->classbase->getText(),get_line(ctx->classbase));
+      c->Super = s;
+      if (s != nullptr) {
+         s->Sub.push_back(c);
+         if (s->Final) {
+            Log.error("class " + name1 + " can not extend FINAL base class " + get_path(s),c->_line);
+         }
       }
    }
 
@@ -148,6 +135,9 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
    if (ctx->classoid != nullptr) {
       c->Oid = find_domaintype(ctx->classoid->getText(),get_line(ctx->classoid));
       // DomainType *Oid; // RESTRICTION(TextType; NumType; AnyOIDType), to do !!!
+   }
+   else if (ctx->NO()) {
+      // to do !!!
    }
 
    // role from ASSOCIATION DerivedAssoc
@@ -176,6 +166,7 @@ antlrcpp::Any Ili2Input::visitClassDef(Ili2Parser::ClassDefContext *ctx)
       visitParameterDef(pctx);
    }
 
+   check_references(c,"",0);
    pop_context();
 
    Log.decNestLevel();
@@ -217,43 +208,24 @@ antlrcpp::Any Ili2Input::visitStructureDef(Ili2Parser::StructureDefContext *ctx)
    c->Name = name1;
 
    // ExtendableME Attributes
-   if (ctx->properties() != nullptr) {
-      map<string,bool> properties = get_properties(ctx->properties(),vector<string>({ABSTRACT,FINAL,EXTENDED}));
-      c->Abstract = properties[ABSTRACT];
-      c->Final = properties[FINAL];
-      c->Extended = properties[EXTENDED];
-      if (properties[EXTENDED]) {
-         c->Abstract = false;
-         Package* p = get_package_context();
-         int line = get_line(ctx);
-         DataUnit* u = find_dataunit(get_path(p),line);
-         if (u->Super == nullptr) {
-            Log.error(string("EXTENDED can only by used in extended topics"), line);
-         }
-         else {
-            string superpath = get_path(u->Super);
-            superpath = superpath.substr(0,superpath.length()-7); // without .BASKET
-            string baseclass = superpath + "." + c->Name;
-            c->Super = find_class_object(baseclass,"class or structure",line);
-            bool found = false;
-            while (u->Super != nullptr) {
-               DataUnit *uu = static_cast<DataUnit *>(u->Super);
-               string package_path = get_path(uu);
+   map<string,bool> properties = get_properties(ctx->properties(),vector<string>({ABSTRACT,FINAL,EXTENDED}));
+   c->Abstract = properties[ABSTRACT];
+   c->Final = properties[FINAL];
+   c->Extended = properties[EXTENDED];
 
-               if (util::ends_with(package_path,".BASKET")) {
-                  package_path = package_path.substr(0,package_path.length()-7);
-               }
-
-               Package* pp = find_package(package_path,line);
-               Class *cc = find_structure(pp,name1,line);
-               if (cc != nullptr) {
-                  found = true;
-                  break;
-               }
-               u = static_cast<DataUnit *>(u->Super);
-            }
-            if (!found) {
-               Log.error("structure " + name1 + " not found in basetopic(s)", line);
+   // EXTENDED
+   if (c->Extended) {
+      DataUnit* u = find_dataunit(get_path(get_package_context()),c->_line);
+      if (u->Super == nullptr) {
+         Log.error(string("EXTENDED can only by used in extended topics"),c->_line);
+      }
+      else {
+         Class *s = find_structure(name1,c->_line);
+         c->Super = s;
+         if (s != nullptr) {
+            s->Sub.push_back(c);
+            if (s->Final) {
+               Log.error("structure " + name1 + " can not extend FINAL base structure " + get_path(s),c->_line);
             }
          }
       }
@@ -261,9 +233,13 @@ antlrcpp::Any Ili2Input::visitStructureDef(Ili2Parser::StructureDefContext *ctx)
 
    // EXTENDS
    if (ctx->structurebase != nullptr) {
-      c->Super = find_structure(ctx->structurebase->getText(),get_line(ctx->structurebase));
-      if (c->Super != nullptr) {
-         c->Super->Sub.push_back(c);
+      Class *s = find_structure(ctx->structurebase->getText(),get_line(ctx->structurebase));
+      c->Super = s;
+      if (s != nullptr) {
+         s->Sub.push_back(c);
+         if (s->Final) {
+            Log.error("structure " + name1 + " can not extend FINAL base structure " + get_path(s),c->_line);
+         }
       }
    }
 
@@ -284,7 +260,7 @@ antlrcpp::Any Ili2Input::visitStructureDef(Ili2Parser::StructureDefContext *ctx)
    */
 
    for (auto *actx : ctx->classOrStructureDef()->attributeDef()) {
-      AttrOrParam *a = visitAttributeDef(actx);
+      visitAttributeDef(actx);
    }
 
    for (auto cctx : ctx->classOrStructureDef()->constraintDef()) {
@@ -295,6 +271,7 @@ antlrcpp::Any Ili2Input::visitStructureDef(Ili2Parser::StructureDefContext *ctx)
       visitParameterDef(pctx);
    }
 
+   check_references(c,"",0);
    pop_context();
 
    Log.decNestLevel();
@@ -428,8 +405,17 @@ antlrcpp::Any Ili2Input::visitAttributeDef(parser::Ili2Parser::AttributeDefConte
    */
 
    string name = ctx->attributname->getText();
+      
    debug(ctx,">>> visitAttributeDef(" + name + ")");
    Log.incNestLevel();
+
+   if (find_role(get_class_context(),name) != nullptr) {
+      Log.error("there is already a role with name " + name,get_line(ctx));
+   }
+   AttrOrParam *aa = find_attribute(get_class_context(),name);
+   if (aa != nullptr && aa->AttrParent == get_class_context()) {
+      Log.error("there is already an attribute with name " + name,get_line(ctx));
+   }
 
    // init AttrOrParam
    AttrOrParam *a = new AttrOrParam();
@@ -439,30 +425,43 @@ antlrcpp::Any Ili2Input::visitAttributeDef(parser::Ili2Parser::AttributeDefConte
    a->Name = name;
    
    // ExtendableME attributes
-   if (ctx->properties() != nullptr) {
-      map <string,bool> properties = get_properties(ctx->properties(),vector<string>({ABSTRACT,FINAL,EXTENDED,TRANSIENT}));
-      a->Abstract = properties[ABSTRACT];
-      a->Final = properties[FINAL];
-      a->Extended = properties[EXTENDED];
-      if (properties[EXTENDED]) {
-         Class *c = get_class_context();
-         if (c->Super == nullptr) {
-            Log.error(string("EXTENDED can only by used in extended classes / structures / associations"),ctx->attributname->getLine());
+   
+   map <string,bool> properties;
+   properties = get_properties(ctx->properties(),vector<string>({ABSTRACT,FINAL,EXTENDED,TRANSIENT}));
+   a->Abstract = properties[ABSTRACT];
+   a->Final = properties[FINAL];
+   a->Extended = properties[EXTENDED];
+   if (a->Extended) {
+      Class *c = get_class_context();
+      if (c->Super == nullptr) {
+         Log.error(string("EXTENDED can only by used in extended classes / structures / associations"),ctx->attributname->getLine());
+      }
+      else {
+         Class* s = static_cast<Class*>(c->Super);
+         aa = find_attribute(s, a->Name);
+         if (aa == nullptr) {
+            Log.error("base attribute of " + name + " not found in " + get_path(s), a->_line);
          }
-         else {
-            Class* s = static_cast<Class*>(c->Super);
-            AttrOrParam *aa = metamodel::find_attribute(s,name,get_line(ctx));
-            if (aa != nullptr) {
-               //check_type_restriction(aa->Type, a->Type, name, ctx->attributname->getLine());
-               a->Extending = aa;
-            }
+         else if (aa->Final) {
+            Log.error("base attribute of " + name + " is FINAL", a->_line);
          }
+         a->Extending = aa;
+         //check_type_restriction(aa->Type, a->Type, name, ctx->attributname->getLine());
       }
    }
 
    push_context(a);
    a->Type = visitAttrTypeDef(ctx->attrTypeDef());
    pop_context();
+
+   if (aa != nullptr && aa->AttrParent != get_class_context()) {
+      if (properties[EXTENDED]) {
+         check_type_extendability(aa->Type,a->Type,get_line(ctx));
+      }
+      else {
+         Log.error("attribute " + a->Name + " must be declared EXTENDED",get_line(ctx));
+      }
+   }
 
    // AttrOrParam Attributes
    if (ctx->SUBDIVISION() != nullptr) {
@@ -651,11 +650,22 @@ antlrcpp::Any Ili2Input::visitAttrType(parser::Ili2Parser::AttrTypeContext * ctx
 
    Type *t = nullptr;
 
-   if (ctx->path() != nullptr) {
+   if (ctx->path()) {
       Type *tt = find_type(visitPath(ctx->path()),get_line(ctx));
       if (tt != nullptr) {
-         t = static_cast<Type *>(tt->clone());
-         t->Super = tt;
+         if (tt->getClass() == "Class") {
+            MultiValue *mv = new MultiValue;
+            init_type(mv,get_line(ctx));
+            mv->Multiplicity.Min = 0;
+            mv->Multiplicity.Max = 1;
+            mv->BaseType = tt;
+            mv->Super == nullptr;
+            t = mv;
+         }
+         else {
+            t = static_cast<Type *>(tt->clone());
+            t->Super = tt;
+         }
       }
    }
    else if (ctx->type() != nullptr) {
@@ -667,10 +677,17 @@ antlrcpp::Any Ili2Input::visitAttrType(parser::Ili2Parser::AttrTypeContext * ctx
       t = rt;
    }
    else if (ctx->restrictedRef() != nullptr) {
-      RestrictedRef *r =  visitRestrictedRef(ctx->restrictedRef());
-      if (r != nullptr) {
-         t = r->BaseType;
+      RestrictedRef* r = visitRestrictedRef(ctx->restrictedRef());
+      MultiValue* mv = new MultiValue;
+      init_type(mv, get_line(ctx));
+      mv->Multiplicity.Min = 0;
+      mv->Multiplicity.Max = 1;
+      mv->BaseType = r->_baseclass;
+      for (auto r : r->_classrestriction) {
+         mv->TypeRestriction.push_back(r);
       }
+      mv->Super == nullptr;
+      t = mv;
    }
 
    if (t != nullptr) {
@@ -717,7 +734,7 @@ antlrcpp::Any Ili2Input::visitReferenceAttr(parser::Ili2Parser::ReferenceAttrCon
 
    debug(ctx,">>> visitReferenceAttr()");
    Log.incNestLevel();
-   
+      
    ReferenceType *t = new ReferenceType();
    init_domaintype(t,ctx->start->getLine());
    
@@ -734,17 +751,13 @@ antlrcpp::Any Ili2Input::visitReferenceAttr(parser::Ili2Parser::ReferenceAttrCon
    
    RestrictedRef *r = visitRestrictedRef(ctx->restrictedRef());
    
-   if (r != nullptr && r->BaseType != nullptr) {
-      if (r->BaseType->getClass() == "Class") {
-         Class *c = static_cast<Class *>(r->BaseType);
-         t->BaseClass = c;
-         if (c->Kind == Class::Structure) {
+   if (r != nullptr && r->_baseclass != nullptr) {
+      t->_classrestriction = r->_classrestriction;
+      if (r->_baseclass != nullptr) {
+         t->_baseclass = r->_baseclass;
+         if (t->_baseclass->Kind == Class::Structure) {
             Log.error("target of reference type must be a class or association, found structure",get_line(ctx));
-            t->BaseClass = nullptr;
          }
-      }
-      else {
-         Log.error("target of reference type must be a class or association, found " + r->BaseType->getClass(),get_line(ctx));
       }
    }
    

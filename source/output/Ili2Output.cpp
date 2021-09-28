@@ -14,6 +14,36 @@ static string ili_file;
 static string model_version;
 static TextWriter ili2;
 
+static string get_properties(metamodel::Type* t)
+{
+   string properties = "";
+   if (t->Abstract) {
+      properties = "ABSTRACT";
+   }
+   if (t->Generic) {
+      if (properties == "") {
+         properties = "GENERIC";
+      }
+      else {
+         properties += ",GENERIC";
+      }
+   }
+   if (t->Final) {
+      if (properties == "") {
+         properties = "FINAL";
+      }
+      else {
+         properties += ",FINAL";
+      }
+   }
+   if (properties == "") {
+      return "";
+   }
+   else {
+      return " (" + properties + ")";
+   }
+}  
+
 Ili2Output::Ili2Output(string ili_f,string model_v)
 {
    ili_file = ili_f;
@@ -212,8 +242,24 @@ static void write_referencetype(ReferenceType *t)
       bool External = false;
    */
 
-   ili2.write(0, "REFERENCE TO " + get_path(t->BaseClass));
+   ili2.write(0, "REFERENCE TO ");
+   if (t->External) {
+      ili2.write(0,"(EXTERNAL) ");
+   }
+   ili2.write(0, get_path(t->_baseclass));
 
+   if (t->_classrestriction.size() > 0) {
+      ili2.write(0," RESTRICTION (");
+      bool semi = false;
+      for (auto r: t->_classrestriction) {
+         if (semi) {
+            ili2.write(0,";");
+         }
+         ili2.write(0,get_path(r));
+         semi = true;
+      }
+      ili2.write(0,")");
+   }
 }
 
 static void write_multivalue(MultiValue *t) 
@@ -232,15 +278,19 @@ static void write_multivalue(MultiValue *t)
       list<Type *> TypeRestriction;
    */
 
-   if (t->Ordered) {
-      ili2.write(0,"LIST ");
+   if (t->Multiplicity.Min == 0 && t->Multiplicity.Max == 1) {
+      ili2.write(0,get_path(t->BaseType));
    }
    else {
-      ili2.write(0,"BAG ");
+      if (t->Ordered) {
+         ili2.write(0,"LIST ");
+      }
+      else {
+         ili2.write(0,"BAG ");
+      }
+      ili2.write(0,multiplicity_to_string(t->Multiplicity));
+      ili2.write(0," OF " + get_path(t->BaseType));
    }
-
-   ili2.write(0,multiplicity_to_string(t->Multiplicity));
-   ili2.write(0," OF " + get_path(t->BaseType));
 
    if (t->TypeRestriction.size() > 0) {
       ili2.write(0," RESTRICTION (");
@@ -288,6 +338,9 @@ static void write_formattedtype(FormattedType *t)
    if (t->Struct != nullptr) {
       ili2.write(0,"FORMAT BASED ON " + get_path(t->Struct) + " (" + t->Format + ")");
    }
+   else if (t->BaseFormattedType != nullptr) {
+      ili2.write(0,"FORMAT " + get_path(t->BaseFormattedType) + " \"" + t->Min + "\" .. \"" + t->Max + "\"");
+   }
    else {
       ili2.write(0,"\"" + t->Min + "\" .. \"" + t->Max + "\"");
    }
@@ -334,17 +387,27 @@ static void write_type(Type *t)
       else if (t->getClass() == "ReferenceType") {
          // to do !!!
       }
+      else if (t->getClass() == "AttributeRefType") {
+         ili2.write(0,"ATTRIBUTE");
+      }
+      else if (t->getClass() == "ClassRefType") {
+         ili2.write(0,"CLASS");
+      }
+      else if (t->getClass() == "EnumTreeValueType") {
+         EnumTreeValueType* tt = static_cast<EnumTreeValueType*>(t);
+         ili2.write(0,"ALL OF " + get_path(tt->ET));
+      }
       else if (t->getClass() == "ObjectType") {
          ObjectType *o = static_cast<ObjectType *>(t);
          if (o->Multiple) {
-            ili2.write(0,"OBJECTS OF " + get_path(o->_basetype));
+            ili2.write(0,"OBJECTS OF " + get_path(o->_baseclass));
          }
          else {
-            ili2.write(0,"OBJECT OF " + get_path(o->_basetype));
+            ili2.write(0,"OBJECT OF " + get_path(o->_baseclass));
          }
       }
       else {
-         Log.internal_error("write_type(): <" + t->getClass() + "> not implemented yet",1);
+         Log.internal_error("write_type(): <" + t->getClass() + "> not implemented yet, line=" + to_string(t->_line) ,1);
       }
    } 
    catch (exception e) {
@@ -418,6 +481,19 @@ void Ili2Output::visitModel(Model *m)
       if (i->ImportingP->Name == m->Name) {
          visit(i);
       }
+   }
+   
+   if (m->_runtimeparameter.size() > 0) {
+      ili2.writeln("");
+      ili2.writeln("PARAMETER");
+      ili2.incNestLevel();
+      for (auto p: m->_runtimeparameter) {
+         ili2.write(p->Name);
+         ili2.write(0,": TEXT;");         
+//         visitAttrOrParam(p); to do !!
+      }
+      ili2.decNestLevel();
+      ili2.writeln("");
    }
    
    bool indomain = false;
@@ -503,10 +579,22 @@ void Ili2Output::preVisitSubModel(SubModel *s)
 
    ili2.writeln("");
    ili2.write("TOPIC " + s->Name);
+   if (s->_dataunit->Abstract) {
+      ili2.write(0," (ABSTRACT)");
+   }
    if (s->_super != nullptr) {
       ili2.write(0," EXTENDS " + get_path(s->_super));
    }
    ili2.writeln(0," =");
+ 
+   for (auto d : get_all_dependencies()) {
+      ili2.incNestLevel();
+      if (d->Using == s->_dataunit) {
+         ili2.writeln("DEPENDS ON " + get_parent_path(d->Dependent) + ";");
+      }
+      ili2.decNestLevel();
+   }
+
    ili2.incNestLevel();
 
 }
@@ -617,14 +705,55 @@ void Ili2Output::preVisitClass(Class *c)
       ili2.write("STRUCTURE " + c->Name);
    }
    else if (c->Kind == Class::ViewVal) {
-      ili2.write("VIEW " + c->Name);
+      View *v = static_cast<View *>(c);
+      ili2.write("VIEW " + v->Name);
+      if (v->FormationKind == View::Projection) {
+         ili2.write(0," PROJECTION OF ");
+         bool comma = false;
+         for (auto a: v->ClassAttribute) {
+            if (a->Type == nullptr) {
+               continue;
+            }
+            if (a->Type->getClass() != "ObjectType") {
+               continue;
+            }
+            if (comma) {
+               ili2.write(0,",");
+            }
+            ObjectType *o = static_cast<ObjectType *>(a->Type);
+            ili2.write(0,a->Name);
+            if (a->Name != o->_baseclass->Name) {
+               ili2.write(0,"~" + get_path(o->_baseclass));
+            }
+            comma = true;
+         }
+      }
+      ili2.write(0,";");
    }
    else if (c->Kind == Class::Association) {
-      ili2.write("ASSOCIATION " + c->Name);
+      if (c->Name == "???") {
+         ili2.write("ASSOCIATION");
+      }
+      else {
+         ili2.write("ASSOCIATION " + c->Name);
+      }
    }
+   
+   ili2.write(0,get_properties(c));
 
    if (c->Super != nullptr) {
+      bool extended = false;
       if (c->Super->Name == c->Name) {
+         Package *p = get_package_context()->_super;
+         while (p != nullptr) {
+            if (p == c->Super->ElementInPackage) {
+               extended = true;
+               break;
+            }
+            p = p->_super;
+         }
+      }
+      if (extended) {
          ili2.write(0," (EXTENDED)");
       }
       else {
@@ -636,6 +765,10 @@ void Ili2Output::preVisitClass(Class *c)
    firstClassParam = true;
 
    ili2.incNestLevel();
+   
+   if (c->Oid != nullptr) {
+      ili2.writeln("OID AS " + get_path(c->Oid) + ";");
+   }
 
 }
 
@@ -643,7 +776,12 @@ void Ili2Output::postVisitClass(Class *c)
 {
 
    ili2.decNestLevel();
-   ili2.writeln("END " + c->Name + ";");
+   if (c->Name == "???") {
+      ili2.write("END;");
+   }
+   else {
+      ili2.writeln("END " + c->Name + ";");
+   }
    pop_context();
 
    if (model_version == "2.3" && c->Kind != Class::Structure) {
@@ -654,7 +792,7 @@ void Ili2Output::postVisitClass(Class *c)
             ili2.writeln("");
             ili2.writeln("ASSOCIATION " + assocname + " =");
             ili2.incNestLevel();
-            ili2.writeln(a->Name + " -- {1} " + get_path(rt->BaseClass) + ";");
+            ili2.writeln(a->Name + " -- {1} " + get_path(rt->_baseclass) + ";");
             ili2.writeln(c->Name + " -- {0..*} " + get_path(c) + ";");
             ili2.decNestLevel();
             ili2.writeln("END " + assocname + ";");
@@ -741,6 +879,10 @@ void Ili2Output::visitUniqueConstraint(metamodel::UniqueConstraint *c)
    ili2.decNestLevel();
    ili2.write("UNIQUE ");
    
+   if (c->Kind == UniqueConstraint::LocalU) {
+      ili2.write(0,"(LOCAL) ");
+   }
+   
    bool comma = false;
    for (auto f: c->UniqueDef) {
       if (comma) {
@@ -754,36 +896,6 @@ void Ili2Output::visitUniqueConstraint(metamodel::UniqueConstraint *c)
    ili2.incNestLevel();
 
 }
-
-static string get_properties(metamodel::Type* t)
-{
-   string properties = "";
-   if (t->Abstract) {
-      properties = "ABSTRACT";
-   }
-   if (t->Generic) {
-      if (properties == "") {
-         properties = "GENERIC";
-      }
-      else {
-         properties += ",GENERIC";
-      }
-   }
-   if (t->Final) {
-      if (properties == "") {
-         properties = "FINAL";
-      }
-      else {
-         properties += ",FINAL";
-      }
-   }
-   if (properties == "") {
-      return "";
-   }
-   else {
-      return " (" + properties + ")";
-   }
-}  
 
 void Ili2Output::visitAttrOrParam(AttrOrParam *a)
 {
@@ -805,17 +917,26 @@ void Ili2Output::visitAttrOrParam(AttrOrParam *a)
       virtual string getBaseClass() { return "ExtendableME"; };
    */
 
+   if (!a->_visible) {
+      return;
+   }
+
    if (a->ParamParent != nullptr && firstClassParam) {
       ili2.writeln("PARAMETER ");
       firstClassParam = false;
    }
 
    if (a->Type != nullptr) {
+      if (a->Type->getClass() == "ObjectType" && get_class_context()->getClass() == "View") {
+         ObjectType *o = static_cast<ObjectType *>(a->Type);
+         ili2.writeln("ALL OF " + a->Name + ";");
+         return;
+      }
       if (model_version == "2.3" && get_class_context()->Kind == Class::ClassVal && a->Type->getClass() == "ReferenceType") {
          return;
       }
       try {
-         DomainType *t = dynamic_cast<DomainType *>(a->Type);
+         DomainType *t = static_cast<DomainType *>(a->Type);
          if (a->Extending != nullptr) {
             ili2.write(a->Name + " (EXTENDED): ");
          }
@@ -888,14 +1009,7 @@ void Ili2Output::visitRole(Role *r)
       strongness = "-<#>";
    }
    
-   string target = "???";
-   for (auto b : get_all_baseclasses()) {
-      if (b->CRT != r) {
-         continue;
-      }
-      target = get_path(b->BaseClass_);
-      break; // more than one target, to do !!
-   }
+   string target = get_path(r->_baseclass);
 
    ili2.writeln(r->Name + " " + strongness + " " + multiplicity_to_string(r->Multiplicity) + " " + target + ";");
 

@@ -108,24 +108,6 @@ static void visitClassRelatedType(MetaModelTreeVisitor* visitor, ClassRelatedTyp
    }
 }
 
-static void visitBaseClass(MetaModelTreeVisitor* visitor, BaseClass* c)
-{
-   if (visitor->visitBaseClassOverride()) {
-      debug1(c,"BaseClass");
-      visitor->visitBaseClass(c);
-      debug2(c,"BaseClass");
-   }
-}
-
-static void visitClassRestriction(MetaModelTreeVisitor* visitor, ClassRestriction* r)
-{
-   if (visitor->visitClassRestrictionOverride()) {
-      debug1(r,"ClassRestriction");
-      visitor->visitClassRestriction(r);
-      debug2(r,"ClassRestriction");
-   }
-}
-
 static void visitTransferElement(MetaModelTreeVisitor* visitor, TransferElement* e)
 {
    if (visitor->visitTransferElementOverride()) {
@@ -899,25 +881,6 @@ static void visitAttrOrParam(MetaModelTreeVisitor *visitor, AttrOrParam *t)
    }
    
    visitor->visit(t->Type); // ???, to do !!!
-
-}
-
-static void visitTypeRestriction(MetaModelTreeVisitor *visitor, TypeRestriction *t)
-{
-
-   /*
-   class TypeRestriction : public MMObject {
-   public:
-      TypeRelatedType *TRTR;
-      Type *TypeRestriction;
-   */
-
-   visitMMObject(visitor,t);
-   if (visitor->visitTypeRestrictionOverride()) {
-      debug1(t,"TypeRestriction");
-      visitor->visitTypeRestriction(t);
-      debug2(t,"TypeRestriction");
-   }
 
 }
 
@@ -2348,20 +2311,11 @@ void metamodel::MetaModelTreeVisitor::visit(MMObject *o,string classname)
    else if (classname == "TypeRelatedType") {
       metamodel::visitTypeRelatedType(this,static_cast<TypeRelatedType *>(o));
    }
-   else if (classname == "TypeRestriction") {
-      metamodel::visitTypeRestriction(this,static_cast<TypeRestriction *>(o));
-   }
    else if (classname == "MultiValue") {
       metamodel::visitMultiValue(this,static_cast<MultiValue *>(o));
    }
    else if (classname == "ClassRelatedType") {
       metamodel::visitClassRelatedType(this,static_cast<ClassRelatedType *>(o));
-   }
-   else if (classname == "BaseClass") {
-      metamodel::visitBaseClass(this,static_cast<BaseClass *>(o));
-   }
-   else if (classname == "ClassRestriction") {
-      metamodel::visitClassRestriction(this,static_cast<ClassRestriction *>(o));
    }
    else if (classname == "ReferenceType") {
       metamodel::visitReferenceType(this,static_cast<ReferenceType *>(o));

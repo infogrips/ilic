@@ -160,7 +160,7 @@ antlrcpp::Any Ili2Input::visitBaseType(parser::Ili2Parser::BaseTypeContext *ctx)
    | coordinateType
    | oIDType
    | blackboxType
-   | classType
+   | classRefType
    | attributePathType
    */
 
@@ -464,7 +464,7 @@ antlrcpp::Any Ili2Input::visitEnumTreeValueType(parser::Ili2Parser::EnumTreeValu
    EnumTreeValueType *t = new EnumTreeValueType();
    init_domaintype(t,ctx->start->getLine());
 
-   // ASSOCIATION PackageElements
+   t->ET = static_cast<EnumType *>(find_type(visitPath(ctx->path()),get_line(ctx)));
 
    Log.decNestLevel();
    debug(ctx,"<<< visitEnumTreeValueType()");
@@ -787,11 +787,11 @@ antlrcpp::Any Ili2Input::visitCoordinateType(parser::Ili2Parser::CoordinateTypeC
 
 // BagOrListType
 
-antlrcpp::Any Ili2Input::visitBagOrListType(parser::Ili2Parser::BagOrListTypeContext * ctx)
+antlrcpp::Any Ili2Input::visitBagOrListType(parser::Ili2Parser::BagOrListTypeContext* ctx)
 {
-   
+
    /* bagOrListType
-   : (BAG | LIST) cardinality? OF restrictedRef
+   : (BAG | LIST) cardinality? OF ({ili23}? restrictedRef | {ili24}? attrType)
    */
 
    /* class TypeRelatedType : public DomainType { // ABSTRACT
@@ -809,35 +809,42 @@ antlrcpp::Any Ili2Input::visitBagOrListType(parser::Ili2Parser::BagOrListTypeCon
       list<Type *> TypeRestriction;
    */
 
-   debug(ctx,">>> visitBagOrListType()");
+   debug(ctx, ">>> visitBagOrListType()");
    Log.incNestLevel();
-   
-   MultiValue *m = new MultiValue();
-   init_domaintype(m,ctx->start->getLine());
-   
+
+   MultiValue* m = new MultiValue();
+   init_domaintype(m, ctx->start->getLine());
+
    if (ctx->LIST() != nullptr) {
       m->Ordered = true;
    }
-   
+
    if (ctx->cardinality() != nullptr) {
       Multiplicity mm = visitCardinality(ctx->cardinality());
       m->Multiplicity = mm;
    }
-   
+
    if (ctx->restrictedRef() != nullptr) {
-      RestrictedRef *r = visitRestrictedRef(ctx->restrictedRef());
-      m->BaseType = r->BaseType;
-      m->TypeRestriction = r->TypeRestriction;
+      RestrictedRef* r = visitRestrictedRef(ctx->restrictedRef());
+      m->BaseType = r->_baseclass;
+      for (auto cr : r->_classrestriction) {
+         m->TypeRestriction.push_back(cr);
+      }
    }
 
    if (ctx->attrType() != nullptr) {
       Type *t = visitAttrType(ctx->attrType());
-
       if (t->getClass() == "RestrictedRef") {
          RestrictedRef* rr = dynamic_cast<RestrictedRef *>(t);
-
-         m->BaseType = rr->BaseType;
-         m->TypeRestriction == rr->TypeRestriction;
+         m->BaseType = rr->_baseclass;
+         for (auto cr : rr->_classrestriction) {
+            m->TypeRestriction.push_back(cr);
+         }
+      }
+      else if (t->getClass() == "MultiValue") {
+         MultiValue* mv = dynamic_cast<MultiValue *>(t);
+         m->BaseType = mv->BaseType;
+         m->TypeRestriction == mv->TypeRestriction;
       }
       else {
          m->BaseType = t;

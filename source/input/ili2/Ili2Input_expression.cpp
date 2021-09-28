@@ -77,13 +77,7 @@ antlrcpp::Any Ili2Input::visitExpression(parser::Ili2Parser::ExpressionContext* 
    debug(ctx, ">>> visitExpression()");
    Log.incNestLevel();
 
-   Expression* e = nullptr;
-   if (ili23) {
-      e = visitTerm1(ctx->term1().front());
-   }
-   else {
-      // 2.4 to do !!!
-   }
+   Expression* e = visitTerm1(ctx->term1());
 
    Log.decNestLevel();
    if (e != nullptr) {
@@ -108,6 +102,7 @@ antlrcpp::Any Ili2Input::visitTerm1(parser::Ili2Parser::Term1Context *ctx)
    : OR
    | {ili24}? PLUS
    | {ili24}? MINUS
+   | {ili24}? IMPL
    */
 
    /* struct CompoundExpr : public Expression {
@@ -142,6 +137,10 @@ antlrcpp::Any Ili2Input::visitTerm1(parser::Ili2Parser::Term1Context *ctx)
       else if (ctx->operator1().front()->MINUS() != nullptr) {
          ce->Operation = CompoundExpr_OperationType::Minus;
          ce->_type = "NumType";
+      }
+      else if (ctx->operator1().front()->IMPL() != nullptr) {
+         ce->Operation = CompoundExpr_OperationType::Implication;
+         ce->_type = "BooleanType";
       }
       for (auto t : ctx->term2()) {
          Expression *e2 = visitTerm2(t);
@@ -409,12 +408,13 @@ antlrcpp::Any Ili2Input::visitTerm(parser::Ili2Parser::TermContext *ctx)
       Factor *f = visitFactor(ctx->factor());
       if (ctx->DEFINED() != nullptr) {
          u->Operation = UnaryExpr::Defined;
+         u->_type = "BooleanType";
       }
       else {
          u->Operation = UnaryExpr::None;
+         u->_type = f->_type;
       }
       u->SubExpression = f;
-      u->_type = "BooleanType";
       e = u;
    }
 
@@ -489,7 +489,7 @@ antlrcpp::Any Ili2Input::visitFactor(parser::Ili2Parser::FactorContext *ctx)
       : objectpath=objectOrAttributePath
       | (inspection | INSPECTION path) (OF inspectionpath = objectOrAttributePath)?
       | functionCall
-      | PARAMETER (modelname=NAME DOT)* runtimeparametername = NAME
+      | PARAMETER parampath = path
       | constant
    */
 
@@ -514,14 +514,27 @@ antlrcpp::Any Ili2Input::visitFactor(parser::Ili2Parser::FactorContext *ctx)
       f = visitInspection(ctx->inspection()); // ???, to do !!!
    }
    else if (ctx->INSPECTION() != nullptr) {
-      // to do !!!
+      // tod do !!!
    }
    else if (ctx->functionCall() != nullptr) {
       FunctionCall *fc = visitFunctionCall(ctx->functionCall());
       f = fc;
    }
    else if (ctx->PARAMETER() != nullptr) {
-      // to do !!!
+      RuntimeParamRef *r = new RuntimeParamRef;
+      r->_line = get_line(ctx->parampath);
+      r->RuntimeParam = nullptr;
+      string name = ctx->parampath->getText();
+      for (auto p : get_model_context()->_runtimeparameter) {
+         if (name == p->Name) {
+            r->RuntimeParam = p;
+            break;
+         }
+      }
+      if (r->RuntimeParam == nullptr) {
+         Log.error("unknown runtime parameter " + name,get_line(ctx));
+      }
+      f = r;
    }
    else if (ctx->constant() != nullptr) {
       Constant *c = visitConstant(ctx->constant());

@@ -21,7 +21,7 @@ decimal
    ;
    
 path
-   : (INTERLIS DOT)? (SIGN | URI | REFSYSTEM | BOOLEAN | HALIGNMENT | VALIGNMENT)
+   : (INTERLIS DOT)? (SIGN | URI | REFSYSTEM | BOOLEAN | HALIGNMENT | VALIGNMENT | METAOBJECT)
    | (INTERLIS DOT)? NAME (DOT NAME)*
    ;
    
@@ -358,7 +358,7 @@ lineType
    : (directed=DIRECTED? POLYLINE|SURFACE|AREA|({ili24}? (multdir=DIRECTED? MULTIPOLYLINE) | MULTISURFACE | MULTIAREA))
      lineForm? 
      (VERTEX coordref=path)? 
-     (WITHOUT OVERLAPS (GREATER overlap=decimal)?)? // 2.4
+     (WITHOUT OVERLAPS GREATER overlap=decimal | {ili24}? WITHOUT OVERLAPS)?
      ({ili23}? LINE ATTRIBUTES lineattrstruct=path)?
    ;
 
@@ -438,7 +438,11 @@ properties
    ;
 
 runTimeParameterDef
-   : PARAMETER (runtimeparametername=NAME COLON attrTypeDef SEMI)*
+   : PARAMETER runTimeParameter*
+   ;
+
+runTimeParameter
+   : runtimeparametername=NAME COLON attrTypeDef SEMI
    ;
 
 constraintDef
@@ -450,28 +454,24 @@ constraintDef
    ;
 
 mandatoryConstraint
-   : MANDATORY CONSTRAINT booleanexp=expression SEMI
-//   : MANDATORY CONSTRAINT ({ili24}? name=NAME COLON)? booleanexp=expression SEMI
+   : MANDATORY CONSTRAINT ({ili24}? name=NAME COLON)? booleanexp=expression SEMI
    ;
 
 plausibilityConstraint
-   : CONSTRAINT
-//   : CONSTRAINT ({ili24}? name=NAME COLON)? 
+   : CONSTRAINT ({ili24}? name=NAME COLON)? 
      (LESSEQUAL | GREATEREQUAL) percentage=decimal PERCENT
      expression SEMI
    ;
 
 existenceConstraint
-   : EXISTENCE CONSTRAINT attributePath REQUIRED IN
-//   : EXISTENCE CONSTRAINT ({ili24}? name=NAME COLON)? attributePath REQUIRED IN
+   : EXISTENCE CONSTRAINT ({ili24}? name=NAME COLON)? attributePath REQUIRED IN
      path COLON attributePath
      (OR path COLON attributePath )* SEMI
    ;
 
 uniquenessConstraint
-   : UNIQUE
-//   : UNIQUE ({ili24}? LPAREN BASKET RPAREN)?
-//     ({ili24}? name=NAME COLON)?
+   : UNIQUE ({ili24}? LPAREN BASKET RPAREN)?
+     ({ili24}? name=NAME COLON)?
      (WHERE expression COLON)?
      (globalUniqueness | localUniqueness) SEMI
    ;
@@ -485,14 +485,17 @@ uniqueEl
    ;
 
 localUniqueness
-   : LPAREN LOCAL RPAREN structureattributename=NAME
+   : LPAREN LOCAL RPAREN localUniqueEl
+   ;
+   
+localUniqueEl
+   : structureattributename=NAME
      (RARROW structureattributename=NAME)* COLON
      attributename=NAME (COMMA attributename=NAME)*
    ;
 
 setConstraint
-   : SET CONSTRAINT 
-//   : SET CONSTRAINT ({ili24}? LPAREN BASKET RPAREN)? 
+   : SET CONSTRAINT ({ili24}? LPAREN BASKET RPAREN)?
      ({ili24}? name=NAME COLON)?
      (WHERE logical=expression COLON)? expression SEMI
    ;
@@ -504,7 +507,7 @@ constraintsDef
    ;
 
 expression
-   : term1 ({ili24}? IMPL term1)?
+   : term1
    ;
 
 term1
@@ -515,6 +518,7 @@ operator1
    : OR
    | {ili24}? PLUS
    | {ili24}? MINUS
+   | {ili24}? IMPL
    ;
 
 term2
@@ -551,7 +555,7 @@ factor
    : objectpath=objectOrAttributePath 
    | (inspection | INSPECTION path) (OF inspaectionpath=objectOrAttributePath)? 
    | functionCall
-   | PARAMETER (modelname=NAME DOT)* runtimeparametername=NAME
+   | PARAMETER parampath=path
    | constant 
    ;
 
@@ -568,23 +572,16 @@ pathEl
    | THISAREA 
    | THATAREA
    | PARENT
-   | referenceattributename=NAME
-   | associationPath
-   | rolename=NAME (LBRACE associationname=NAME RBRACE)?
-   | basename=NAME
-   | attributeRef 
+   | objectRef 
    ;
 
-associationPath
-   : (BACKSLASH)? associationaccessmame=NAME
-   ;
-
-attributeRef 
-   : ( attributename=NAME ((LBRACE (FIRST | LAST | axislistindex=POSNUMBER) RBRACE)?) | AGGREGATES)
+objectRef 
+   : (BACKSLASH)? (name=NAME (LBRACE (FIRST | LAST | axislistindex=POSNUMBER | associationname=NAME) RBRACE)? | AGGREGATES)
    ;
 
 functionCall
-   : functionname=path LPAREN (functionCallArgument (COMMA functionCallArgument)*)? RPAREN // 2.4 function argument optional
+   : functionname=path 
+     LPAREN (functionCallArgument (COMMA functionCallArgument)*)? RPAREN
    ;
 
 functionCallArgument
@@ -594,7 +591,7 @@ functionCallArgument
 
 functionDef
    : FUNCTION functioname=NAME
-     LPAREN (functionDefParam (SEMI functionDefParam)*)? RPAREN // 2.4 function argument optional
+     LPAREN (functionDefParam (SEMI functionDefParam)*)? RPAREN
      COLON result=argumentType 
      EXPLANATION? 
      SEMI
@@ -614,7 +611,7 @@ argumentType
 viewDef
    : VIEW viewname1=NAME
      properties? // ABSTRACT|EXTENDED|FINAL|TRANSIENT
-     (formationDef | EXTENDS viewref=path)
+     (formationDef? | EXTENDS viewref=path)
      (baseExtensionDef)*
      (selection)*
      EQUAL
@@ -644,7 +641,7 @@ iliunion
 
 aggregation
    : AGGREGATION OF renamedViewableRef
-    (ALL | EQUAL LPAREN uniqueEl RPAREN)
+    (ALL | EQUAL_CONST LPAREN uniqueEl RPAREN)
    ;
 
 inspection
@@ -674,8 +671,8 @@ viewAttribute
 
 graphicDef
    : GRAPHIC graphicname1=NAME properties? // ABSTRACT|FINAL
-     (EXTENDS ((INTERLIS DOT)? SIGN))?
-     (BASED ON path)? 
+     (EXTENDS expath=path)?
+     (BASED ON bpath=path)? 
      EQUAL
      (selection)*
      (drawingRule)*

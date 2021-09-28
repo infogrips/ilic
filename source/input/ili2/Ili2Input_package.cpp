@@ -257,18 +257,21 @@ antlrcpp::Any Ili2Input::visitTopicDef(Ili2Parser::TopicDefContext *ctx)
    init_extendableme(d,get_line(ctx->topicname1));
    d->Name = "BASKET";
    add_dataunit(d);
+   s->_dataunit = d;
 
    // ExtendableME Attributes
-   if (ctx->properties() != nullptr) {
-      map<string,bool> properties = get_properties(ctx->properties(),vector<string>({ABSTRACT,FINAL}));
-      d->Abstract = properties[ABSTRACT];
-      d->Final = properties[FINAL];
-   }
+   map<string,bool> properties = get_properties(ctx->properties(),vector<string>({ABSTRACT,FINAL}));
+   d->Abstract = properties[ABSTRACT];
+   d->Final = properties[FINAL];
 
    if (ctx->topicbase != nullptr) {
-      s->_super = find_topic(visitPath(ctx->topicbase),get_line(ctx->topicbase));
-      if (s->_super != nullptr) {
-         d->Super = find_dataunit(get_path(s->_super),get_line(ctx->topicbase));
+      SubModel *ss = find_topic(visitPath(ctx->topicbase), get_line(ctx->topicbase));
+      s->_super = ss;
+      if (ss != nullptr) {
+         if (ss->_dataunit->Final) {
+            Log.error("topic " + name1 + " can not extend FINAL topic " + get_path(s->_super),s->_line);
+         }
+         d->Super = find_dataunit(get_path(ss),get_line(ctx->topicbase));
          if (d->Super != nullptr) {
             s->_super->_sub.push_back(s);
             d->Super->Sub.push_back(d);

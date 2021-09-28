@@ -15,7 +15,7 @@ namespace metamodel {
    class Package;
    class Class;
    class AttrOrParam;
-   class Expression;
+   struct Expression;
    class EnumNode;
    class Argument;
    class AttributeRefType;
@@ -109,8 +109,8 @@ namespace metamodel {
    public:
       // ROLE from ASSOCIATION PackageElements
       list <MetaElement *> Element;
-      Package *_super = nullptr;
       list <Package *> _sub;
+      Package* _super = nullptr;
       virtual string getClass() { return "Package"; }
       virtual string getBaseClass() { return "MetaElement"; };
       virtual bool isAbstract() { return true; }
@@ -155,6 +155,7 @@ namespace metamodel {
       string ili1Transfername = "";
       Ili1Format *ili1Format = nullptr;
       string _ilifile = "internal";
+      list<metamodel::AttrOrParam *> _runtimeparameter;
       virtual string getClass() { return "Model"; }
       virtual string getBaseClass() { return "Package"; };
    };
@@ -162,6 +163,7 @@ namespace metamodel {
    class SubModel : public Package {
       // MetaElement.Name := TopicName as defined in the INTERLIS-Model
    public:
+      DataUnit *_dataunit = nullptr;
       virtual string getClass() { return "SubModel"; }
       virtual string getBaseClass() { return "Package"; };
    };
@@ -231,7 +233,7 @@ namespace metamodel {
       // role from ASSOCIATION ClassParam
       list<metamodel::AttrOrParam *> ClassParameter;
       // role from many to one ASSOCIATION
-      list<Role*> RoleAttribute;
+      list<Role*> _roleaccess;
       // role from ASSOCIATION AssocRole
       list<Role *> Role;
       // role from ExplicitAssocAcc
@@ -278,6 +280,7 @@ namespace metamodel {
       // ROLE from ASSOCIATION AttrOrParamType
       Type *Type = nullptr;
       AttrOrParam* Extending = nullptr;
+      bool _visible = true;
       virtual string getClass() { return "AttrOrParam"; }
       virtual string getBaseClass() { return "ExtendableME"; };
    };
@@ -287,8 +290,8 @@ namespace metamodel {
    struct RestrictedRef : public MMObject {
    // for ilic internal purposes only
    public:
-      Type *BaseType = nullptr;
-      list<Type *> TypeRestriction;
+      Class *_baseclass = nullptr;
+      list<Class *> _classrestriction;
       virtual string getClass() { return "RestrictedRef"; }
       virtual string getBaseClass() { return "MMObject"; };
       virtual bool isAbstract() { return false; }
@@ -301,14 +304,6 @@ namespace metamodel {
       virtual string getClass() { return "TypeRelatedType"; }
       virtual string getBaseClass() { return "DomainType"; };
       virtual bool isAbstract() { return true; }
-   };
-
-   class TypeRestriction : public MMObject { // ASSOCIATION
-   public:
-      TypeRelatedType *TRTR = nullptr;
-      Type *TypeRestriction_ = nullptr; // because of MSVC error, member can not have same name as class
-      virtual string getClass() { return "TypeRestriction"; }
-      virtual string getBaseClass() { return "MMObject"; };
    };
 
    // bag or list type
@@ -328,26 +323,11 @@ namespace metamodel {
 
    class ClassRelatedType : public DomainType { // ABSTRACT
    public:
-      Class *BaseClass = nullptr;
+      Class *_baseclass = nullptr;
+      list<Class *> _classrestriction;
       virtual string getClass() { return "ClassRelatedType"; }
       virtual string getBaseClass() { return "DomainType"; };
       virtual bool isAbstract() { return true; }
-   };
-
-   class BaseClass : public MMObject { // ASSOCIATION
-   public:
-      ClassRelatedType *CRT = nullptr;
-      Class *BaseClass_ = nullptr; // because of MSVC error, member can not have same name as class
-      virtual string getClass() { return "BaseClass"; }
-      virtual string getBaseClass() { return "MMObject"; };
-   };
-
-   class ClassRestriction : public MMObject { // ASSOCIATION
-   public:
-      ClassRelatedType *CRTR = nullptr;
-      Class *ClassRestriction_ = nullptr; // because of MSVC error, member can not have same name as class
-      virtual string getClass() { return "ClassRestriction"; }
-      virtual string getBaseClass() { return "MMObject"; };
    };
 
    class ReferenceType : public ClassRelatedType {
@@ -633,7 +613,6 @@ namespace metamodel {
    class ObjectType : public ClassRelatedType {
    public:
       bool Multiple = false;
-      Type * _basetype = nullptr;
       virtual string getClass() { return "ObjectType"; }
       virtual string getBaseClass() { return "ClassRelatedType"; };
    };
@@ -803,7 +782,6 @@ namespace metamodel {
       MetaElement *Ref = nullptr;
       int NumIndex = -1;
       enum {First, Last} SpecIndex;
-      string _kind;
       virtual string getClass() { return "PathEl"; }
       virtual string getBaseClass() { return "MMObject"; };
    };
@@ -1040,11 +1018,10 @@ namespace metamodel {
    list <Import *> get_all_imports();
    list<string> get_all_unqualified_imports(string modelname);
    void add_dependency(Dependency *d);
+   bool depends_on(Package *p);
    list <Dependency *> get_all_dependencies();
    void add_axisspec(AxisSpec *s);
    list <AxisSpec *> get_all_axisspecs();
-   void add_baseclass(BaseClass *c);
-   list <BaseClass *> get_all_baseclasses();
 
    // path helpers
    string get_path(MMObject *o);

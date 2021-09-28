@@ -97,39 +97,39 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
    c->Abstract = properties[ABSTRACT];
    c->Final = properties[FINAL];
    c->Extended = properties[EXTENDED];
-   if (properties[EXTENDED]) {
-      Package* p = get_package_context();
-      int line = get_line(ctx);
-      DataUnit* u = find_dataunit(get_path(p),line);
+
+   // EXTENDED
+   if (c->Extended) {
+      DataUnit* u = find_dataunit(get_path(get_package_context()),c->_line);
       if (u->Super == nullptr) {
-         Log.error(string("EXTENDED can only by used in extended topics"), line);
+         Log.error(string("EXTENDED can only by used in extended topics"),c->_line);
       }
       else {
-         bool found = false;
-         while (u->Super != nullptr) {
-            DataUnit* uu = static_cast<DataUnit*>(u->Super);
-            Package* pp = find_package(get_path(uu),line);
-            Class* cc = find_association(pp,name1,line);
-            if (cc != nullptr) {
-               found = true;
-               break;
+         Class *s = find_association(name1,c->_line);
+         c->Super = s;
+         if (s != nullptr) {
+            s->Sub.push_back(c);
+            if (s->Final) {
+               Log.error("association " + name1 + " can not extend FINAL base association " + get_path(s),c->_line);
             }
-            u = static_cast<DataUnit*>(u->Super);
-         }
-         if (!found) {
-            Log.error("association " + name1 + " not found in basetopic(s)", line);
          }
       }
-   }
-   if (properties[OID]) {
-      // to do !!!
    }
    
+   // EXTENDS
    if (ctx->associationRef() != nullptr) {
-      c->Super = find_association(ctx->associationRef()->getText(),get_line(ctx->associationRef()));
-      if (c->Super != nullptr) {
-         c->Super->Sub.push_back(c);
+      Class *s = find_association(ctx->associationRef()->getText(),c->_line);
+      c->Super = s;
+      if (s != nullptr) {
+         s->Sub.push_back(c);
+         if (s->Final) {
+            Log.error("association " + name1 + " can not extend FINAL base association " + get_path(s),c->_line);
+         }
       }
+   }
+   
+   if (properties[OID]) {
+      // to do !!!
    }
    
    if (ctx->DERIVED() != nullptr) {
@@ -154,10 +154,25 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
    for (auto rctx : ctx->roleDef()) {
       Role *r = visitRoleDef(rctx);
       if (r->Abstract && !c->Abstract) {
-         Log.error("concrete association " + get_path(c) + " can not contain abstract role " + r->Name);
+         Log.error("concrete association " + get_path(c) + " can not contain abstract role " + r->Name,get_line(rctx));
       }
-      r->Association = c;
-      c->Role.push_back(r);
+      if (c->Super != nullptr && !r->Extended) {
+         Log.error("can not add role " + r->Name + " in extended association",get_line(rctx));
+      }
+      else {
+         r->Association = c;
+         c->Role.push_back(r);
+      }
+   }
+
+   int rolecount = 0;
+   Class *cc = c;
+   while (cc != nullptr) {
+      rolecount += cc->Role.size();
+      cc = static_cast<Class *>(cc->Super);
+   }
+   if (rolecount < 2) {
+      Log.error("an association requires at least two roles",get_line(ctx));
    }
    
    if (ctx->CARDINALITY() != nullptr) {
@@ -170,76 +185,34 @@ antlrcpp::Any Ili2Input::visitAssociationDef(parser::Ili2Parser::AssociationDefC
       //c->ClassAttribute.push_back(a);
    }
 
-   for (auto cctx : ctx->constraintDef()) {
-      Constraint *cc = visitConstraintDef(cctx);
-      c->Constraints.push_back(cc);
-   }
-
-   if (c->Role.size() > 2) {
-      for (auto r : c->Role) {
-         c->RoleAttribute.push_back(r);
-      }
-   }
-   else if (c->Role.size() == 2) {
-      Role* role1 = c->Role.front();
-      Role* role2 = c->Role.back();
-
-      int role1Min = role1->Multiplicity.Min;
-      int role1Max = role1->Multiplicity.Max;
-
-      if (role1Min == -1) {
-         role1Min = 0;
-      }
-
-      if (role1Max == -1) {
-         if (role1->Strongness == Role::Comp) {
-            role1Max = 1;
-         }
-         else {
-            role1Max = INT_MAX;
-         }
-      }
-
-      int role2Min = role2->Multiplicity.Min;
-      int role2Max = role2->Multiplicity.Max;
-
-      if (role2Min == -1) {
-         role2Min = 0;
-      }
-
-      if (role2Max == -1) {
-         if (role2->Strongness == Role::Comp) {
-            role2Max = 1;
-         }
-         else {
-            role2Max = INT_MAX;
-         }
-      }
-
-      if (role1Max > 1 && role2Max > 1) {
-         for (auto r : c->Role) {
-            c->RoleAttribute.push_back(r);
-         }
-      }
-      else {
-         if (role1Max < 2 /*&& role2->Strongness != Role::Aggr*/) {
-            for (auto bc : get_all_baseclasses()) {
-               if (bc->CRT == role2) {
-                  bc->BaseClass_->RoleAttribute.push_back(role1);
-               }
+   for (auto r1: c->Role) {
+      for (auto r2: c->Role) {
+         if (r1 != r2 && r1->_baseclass != nullptr) {
+            if (r1->External) {
+               continue;
             }
-         }
-         
-         if (role1Max != 1 && role2Max < 2 /*&& role1->Strongness != Role::Aggr*/ && c->ClassAttribute.size() == 0) {
-            for (auto bc : get_all_baseclasses()) {
-               if (bc->CRT == role1) {
-                  bc->BaseClass_->RoleAttribute.push_back(role2);
-               }
+            else if (r2->Extended) {
+               continue;
+            }
+            if (find_attribute(r1->_baseclass,r2->Name)) {
+               Log.error("attribute with name " + r2->Name + " already exists in " + get_path(r1->_baseclass),r2->_line); 
+            }
+            else if (find_role(r1->_baseclass,r2->Name)) {
+               Log.error("role or roleaccess with name " + r2->Name + " already exists in " + get_path(r1->_baseclass),r2->_line); 
+            }
+            else {
+               r1->_baseclass->_roleaccess.push_back(r2);
             }
          }
       }
    }
    
+   for (auto cctx : ctx->constraintDef()) {
+      Constraint *cc = visitConstraintDef(cctx);
+      c->Constraints.push_back(cc);
+   }
+
+   check_references(c,"",0);
    pop_context();
 
    Log.decNestLevel();
@@ -299,12 +272,19 @@ antlrcpp::Any Ili2Input::visitRoleDef(parser::Ili2Parser::RoleDefContext *ctx)
       Class *BaseClass = nullptr;
    */
 
-   debug(ctx,"visitRoleDef()");
+   string name = ctx->rolename->getText();
+
+   debug(ctx,">>> visitRoleDef(" + name + ")");
+   Log.incNestLevel();
+
+   if (find_attribute(get_class_context(),name)) {
+      Log.error("there is already an attribute with name " + name,get_line(ctx));
+   }
 
    Role *r = new Role;
    init_domaintype(r,ctx->start->getLine());
 
-   r->Name = ctx->rolename->getText();
+   r->Name = name;
    r->ElementInPackage = nullptr;
 
    map<string,bool> properties = get_properties(ctx->properties(),vector<string>({ABSTRACT,EXTENDED,FINAL,HIDING,ORDERED,EXTERNAL}));
@@ -312,8 +292,27 @@ antlrcpp::Any Ili2Input::visitRoleDef(parser::Ili2Parser::RoleDefContext *ctx)
    r->Final = properties[FINAL];
    r->Ordered = properties[ORDERED];
    r->Extended = properties[EXTENDED];
+   r->External = properties[EXTERNAL];
    // HIDING ???
-   // EXTERNAL ???
+
+   if (r->Extended) {
+      Class* c = get_class_context();
+      if (c->Super == nullptr) {
+         Log.error("EXTENDED can only be used in extended associations",r->_line);
+      }
+      else {
+         Class* s = static_cast<Class*>(c->Super);
+         Role *rr = find_role(s,r->Name);
+         if (rr == nullptr) {
+            Log.error("base of role " + r->Name + " not found in " + get_path(s),r->_line);
+         }
+         else if (rr->Final) {
+            Log.error("base of role " + r->Name + " is FINAL",r->_line);
+         }
+         r->Super = rr;
+      }
+   }
+
    r->Association = get_class_context();
 
    if (ctx->ASSOCIATE() != nullptr) {
@@ -335,26 +334,20 @@ antlrcpp::Any Ili2Input::visitRoleDef(parser::Ili2Parser::RoleDefContext *ctx)
       if (rrr == nullptr) {
          continue;
       }
-      for (auto t : rrr->TypeRestriction) {
-         if (!t->isSubClassOf("Class")) {
-            Log.error(t->getClass() + " must be extension of class",t->_line);
-            continue;
-         }
+      for (auto t : rrr->_classrestriction) {
          ExplicitAssocAccess *a = new ExplicitAssocAccess();
-         a->AssocAccOf = static_cast<Class *>(t);
+         a->AssocAccOf = t;
          // Role* OriginRole; to do !!!
          // Role* TargetRole; to do !!!
          r->UseAsTarget.push_back(a);
       }
-      BaseClass *b = new BaseClass();
-      init_mmobject(b,r->_line);
-      b->CRT = r;
-      if (rrr->BaseType->isSubClassOf("Class")) {
-         b->BaseClass_ = dynamic_cast<Class *>(rrr->BaseType);
-      };
-      add_baseclass(b);
+      r->_baseclass = rrr->_baseclass;
+      r->_classrestriction = rrr->_classrestriction;
    }
    
+   Log.decNestLevel();
+   debug(ctx,"<<< visitRoleDef(" + name + ")");
+
    return r;
    
 }

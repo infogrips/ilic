@@ -82,25 +82,25 @@ antlrcpp::Any Ili2Input::visitRestrictedRef(parser::Ili2Parser::RestrictedRefCon
    
    if (ctx->typeref != nullptr) {
       string path = visitPath(ctx->typeref);
-      r->BaseType = find_type(path,get_line(ctx->typeref));
+      r->_baseclass = find_class_type(path,get_line(ctx->typeref));
    }
    else if (ctx->ANYCLASS() != nullptr) {
       // returns Class / Type
-      r->BaseType = find_class("ANYCLASS",get_line(ctx->ANYCLASS()->getSymbol()));
+      r->_baseclass = find_class("ANYCLASS",get_line(ctx->ANYCLASS()->getSymbol()));
    }
    else {
       // returns Class / Type
-      r->BaseType = find_class("ANYSTRUCTURE", get_line(ctx->ANYSTRUCTURE()->getSymbol()));
+      r->_baseclass = find_class("ANYSTRUCTURE", get_line(ctx->ANYSTRUCTURE()->getSymbol()));
    }
    
    if (ctx->restriction() != nullptr) {
-      list<Type *> t = visitRestriction(ctx->restriction());
-      r->TypeRestriction = t;
+      list<Class *> t = visitRestriction(ctx->restriction());
+      r->_classrestriction = t;
    }
    
-   for (auto t : r->TypeRestriction) {
-      if (!t->isSubClassOf(r->BaseType->getClass())) {
-         Log.error(t->getClass() + " is no extension of " + r->BaseType->getClass(),t->_line);
+   for (auto c : r->_classrestriction) {
+      if (!c->isSubClassOf(r->_baseclass->getClass())) {
+         Log.error(c->getClass() + " is no extension of " + r->_baseclass->getClass(),c->_line);
       }
    }
       
@@ -108,11 +108,11 @@ antlrcpp::Any Ili2Input::visitRestrictedRef(parser::Ili2Parser::RestrictedRefCon
    if (r == nullptr) {
       debug(ctx,"<<< visitRestrictedRef() returns nullptr");
    }
-   else if (r->BaseType == nullptr) {
-      debug(ctx,"<<< visitRestrictedRef() BaseType is nullptr");
+   else if (r->_baseclass == nullptr) {
+      debug(ctx,"<<< visitRestrictedRef() BaseClass is nullptr");
    }
    else {
-      debug(ctx,"<<< visitRestrictedRef() returns " + r->BaseType->getClass());
+      debug(ctx,"<<< visitRestrictedRef() returns " + r->_baseclass->getClass());
    }
    return r;
 
@@ -125,13 +125,19 @@ antlrcpp::Any Ili2Input::visitRestriction(parser::Ili2Parser::RestrictionContext
    :  RESTRICTION LPAREN path (COMMA path)* RPAREN)?
    */
 
-   debug(ctx,"visitRestriction()");
-
-   list<Type *> r;
+   debug(ctx,">>> visitRestriction()");
+   Log.incNestLevel();
+   
+   list<Class *> r;
    for (auto p : ctx->path()) {
-      Type *t = find_type(visitPath(p),get_line(ctx));
-      r.push_back(t);
+      Class *c = find_class_or_structure(visitPath(p),get_line(ctx));
+      if (c != nullptr) {
+         r.push_back(c);
+      }
    }
+
+   Log.decNestLevel();
+   debug(ctx,"<<< visitRestriction(" + to_string(r.size()) + ")");
 
    return r;
 
@@ -162,17 +168,7 @@ antlrcpp::Any Ili2Input::visitMetaObjectRef(parser::Ili2Parser::MetaObjectRefCon
 
 }
 
-antlrcpp::Any Ili2Input::visitAttributeRef(parser::Ili2Parser::AttributeRefContext *ctx)
-{
-
-   /* attributeRef 
-   : (attributename=NAME ((LBRACE (FIRST | LAST | axislistindex=POSNUMBER) RBRACE)?) | AGGREGATES)
-   */
-
-   debug(ctx,"visitAttributeRef()");
-   return nullptr;
-
-}
+static Class* pathel_context;
 
 antlrcpp::Any Ili2Input::visitObjectOrAttributePath(parser::Ili2Parser::ObjectOrAttributePathContext *ctx)
 {
@@ -204,15 +200,31 @@ antlrcpp::Any Ili2Input::visitObjectOrAttributePath(parser::Ili2Parser::ObjectOr
    
    PathOrInspFactor *f = new PathOrInspFactor();
    init_factor(f,ctx->start->getLine());
-   f->_type = "???"; // to do !!!
 
-   list<PathEl *> pathels;
+   if (get_context()->getClass() == "Graphic") {
+      Graphic *g = static_cast<Graphic *>(get_context());
+      pathel_context = g->Base;
+   }
+   else {
+      pathel_context = get_class_context();
+   }
+
    for (auto p : ctx->pathEl()) {
       f->PathEls.push_back(visitPathEl(p));
       if (f->_path != "") {
          f->_path += "->";
       }
       f->_path += p->getText();
+   }
+
+   f->_type = "???";
+   if (f->PathEls.back()->Ref != nullptr) {
+      if (f->PathEls.back()->Ref->getClass() == "AttrOrParam") {
+         AttrOrParam *a = static_cast<AttrOrParam*>(f->PathEls.back()->Ref);
+         if (a->Type != nullptr) {
+            f->_type = a->Type->getClass();
+         }
+      }
    }
 
    Log.decNestLevel();
@@ -223,14 +235,10 @@ antlrcpp::Any Ili2Input::visitObjectOrAttributePath(parser::Ili2Parser::ObjectOr
 
 antlrcpp::Any Ili2Input::visitAttributePath(parser::Ili2Parser::AttributePathContext *ctx)
 {
-
-   /* attributePath
-   : objectOrAttributePath
-   */
-
-   debug(ctx,"visitAttributePath()");
-   return nullptr;
-
+   debug(ctx, ">>> visitAttributePath()");
+   Factor *f = visitObjectOrAttributePath(ctx->objectOrAttributePath());
+   debug(ctx, "<<< visitAttributePath()");
+   return f;
 }
 
 antlrcpp::Any Ili2Input::visitPathEl(parser::Ili2Parser::PathElContext *ctx)
@@ -241,11 +249,11 @@ antlrcpp::Any Ili2Input::visitPathEl(parser::Ili2Parser::PathElContext *ctx)
    | THISAREA 
    | THATAREA
    | PARENT
-   | referenceattributename=NAME
-   | associationPath
-   | rolename=NAME (LBRACE associationname=NAME RBRACE)?
-   | basename=NAME
-   | attributeRef 
+   | objectRef 
+   */
+
+   /* objectRef 
+   : (BACKSLASH)? (name=NAME (LBRACE (FIRST | LAST | axislistindex=POSNUMBER | associationname=NAME) RBRACE)? | AGGREGATES)
    */
 
    /* struct PathEl : public MMObject {
@@ -261,60 +269,67 @@ antlrcpp::Any Ili2Input::visitPathEl(parser::Ili2Parser::PathElContext *ctx)
    */
 
    debug(ctx, ">>> visitPathEl()");
+   Log.incNestLevel();
+
    PathEl *e = new PathEl();
    init_mmobject(e,ctx->start->getLine());
    string kind = "";
-
-   if (ctx->THIS() != nullptr) {
-      e->Kind = PathEl::This;
-      e->_kind = "This";
-   }
-   else if (ctx->THISAREA() != nullptr) {
-      e->Kind = PathEl::ThisArea;
-      e->_kind = "ThisArea";
-   }
-   else if (ctx->PARENT() != nullptr) {
-      e->Kind = PathEl::Parent;
-      e->_kind = "Parent";
-   }
-   else if (ctx->referenceattributename != nullptr) {
-      e->Kind = PathEl::ReferenceAttr;
-      e->_kind = "ReferenceAttr";
-   }
-   else if (ctx->associationPath() != nullptr) {
-      e->Kind = PathEl::AssocPath;
-      e->_kind = "AssocPath";
-   }
-   else if (ctx->rolename != nullptr) {
-      e->Kind = PathEl::Role;
-      e->_kind = "Role";
-   }
-   else if (ctx->basename != nullptr) {
-      e->Kind = PathEl::ViewBase;
-      e->_kind = "ViewBase";
-   }
-   else if (ctx->attributeRef() != nullptr) {
-      e->Kind = PathEl::Attribute;
-      e->_kind = "Attribute";
-   }
    e->Ref = nullptr; // ???
    e->NumIndex = -1; // ???
    e->SpecIndex = PathEl::First; // ???
+   
+   if (ctx->THIS() != nullptr) {
+      e->Kind = PathEl::This;
+      kind = "This";
+   }
+   else if (ctx->THISAREA() != nullptr) {
+      e->Kind = PathEl::ThisArea;
+      kind = "ThisArea";
+   }
+   else if (ctx->PARENT() != nullptr) {
+      e->Kind = PathEl::Parent;
+      kind = "Parent";
+   }
+   else if (ctx->objectRef() != nullptr) {
 
-   debug(ctx, "<<< visitPathEl() " + e->_kind);
+      e->Kind = PathEl::Attribute;
+      kind = "Attribute";
+      string name = ctx->objectRef()->name->getText();
+
+      // role
+      Role *r = find_role(pathel_context,name);
+      if (r != nullptr) {
+         pathel_context = r->_baseclass;
+         e->Ref = r;
+         goto end;
+      }
+
+      // attribute
+      AttrOrParam *a = find_attribute(pathel_context,name);
+      e->Ref = a;
+      if (a == nullptr) {
+         Log.error("attribute " + name + " not found",get_line(ctx->objectRef()));
+         pathel_context = nullptr;
+      }
+      else if (a != nullptr && a->Type != nullptr) {
+         if (a->Type->isSubClassOf("ClassRelatedType")) {
+            ClassRelatedType *t = static_cast<ClassRelatedType *>(a->Type);
+            pathel_context = t->_baseclass;
+         }
+         else if (a->Type->isSubClassOf("TypeRelatedType")) {
+            TypeRelatedType *t = static_cast<TypeRelatedType *>(a->Type);
+            if (t->BaseType != nullptr && t->BaseType->getClass() == "Class") {
+               pathel_context = static_cast<Class *>(t->BaseType);
+            }
+         }
+      }
+
+   }
+
+   end:
+   Log.decNestLevel();
+   debug(ctx, "<<< visitPathEl() " + kind);
 
    return e;
-
-}
-
-antlrcpp::Any Ili2Input::visitAssociationPath(parser::Ili2Parser::AssociationPathContext *ctx)
-{
-
-   /* associationPath
-   : (BACKSLASH)? associationaccessmame=NAME
-   */
-
-   debug(ctx,"visitAssociationPath()");
-   return nullptr;
 
 }

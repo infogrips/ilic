@@ -381,7 +381,7 @@ void GmlOutput::visitClass(metamodel::Class* c) {
       Class* ac = static_cast<Class*>(cts);
 
       if (ac->Kind == Class::Association) {
-         for (auto ra : ac->RoleAttribute) {
+         for (auto ra : ac->_roleaccess) {
             attributes.push_back(ra);
          }
       }
@@ -401,7 +401,7 @@ void GmlOutput::visitClass(metamodel::Class* c) {
       }
 
       if (ac->Kind != Class::Association) {
-         for (auto ra : ac->RoleAttribute) {
+         for (auto ra : ac->_roleaccess) {
             attributes.push_back(ra);
          }
       }
@@ -491,14 +491,7 @@ void GmlOutput::visitClass(metamodel::Class* c) {
                   check = role1;
                }
 
-               Class* baseClass = nullptr;
-
-               for (auto bc : get_all_baseclasses()) {
-                  if (bc->CRT == check) {
-                     baseClass = bc->BaseClass_;
-                     break;
-                  }
-               }
+               Class* baseClass = check->_baseclass;
 
                ExtendableME* base = baseClass;
 
@@ -535,15 +528,7 @@ void GmlOutput::visitClass(metamodel::Class* c) {
                gml.writeln("<xsd:element name=\"" + role->Name + "\" type=\"gml:ReferenceType\">");
             }
 
-            string target = "???";
-            for (auto b : get_all_baseclasses()) {
-               if (b->CRT != role) {
-                  continue;
-               }
-               target = getScopedName(b->BaseClass_);
-
-               break; // more than one target, to do !!
-            }
+            string target = getScopedName(role->_baseclass);
 
             gml.writelnIncNestLevel("<xsd:annotation>");
             gml.writelnIncNestLevel("<xsd:appinfo>");
@@ -572,14 +557,7 @@ void GmlOutput::visitClass(metamodel::Class* c) {
                gml.writeln("<xsd:element name=\"" + role->Name + "\" type=\"gml:ReferenceType\"" + minOccurs + ">");
             }
 
-            string target = "???";
-            for (auto b : get_all_baseclasses()) {
-               if (b->CRT != role) {
-                  continue;
-               }
-               target = getScopedName(b->BaseClass_);
-               break; // more than one target, to do !!
-            }
+            string target = getScopedName(role->_baseclass);
 
             gml.writelnIncNestLevel("<xsd:annotation>");
             gml.writelnIncNestLevel("<xsd:appinfo>");
@@ -1277,7 +1255,7 @@ void GmlOutput::writeReferenceType(metamodel::ReferenceType* t) {
 
    gml.writeln("<xsd:annotation>");
    gml.writelnIncNestLevel("<xsd:appinfo>");
-   gml.writelnIncNestLevel("<gml:targetElement>" + getScopedName(t->BaseClass) + "</gml:targetElement>");
+   gml.writelnIncNestLevel("<gml:targetElement>" + getScopedName(t->_baseclass) + "</gml:targetElement>");
    gml.writelnDecNestLevel("</xsd:appinfo>");
    gml.writelnDecNestLevel("</xsd:annotation>");
 }
@@ -1526,7 +1504,7 @@ list<metamodel::ExtendableME*> GmlOutput::getClassAttributes(metamodel::Class* c
       Class* ac = static_cast<Class*>(cts);
 
       if (ac->Kind == Class::Association) {
-         for (auto ra : ac->RoleAttribute) {
+         for (auto ra : ac->_roleaccess) {
             string findString = ra->Name;
             auto it = std::find_if(attributes.begin(), attributes.end(), [&findString](metamodel::ExtendableME* obj) {return obj->Name == findString; });
 
@@ -1555,7 +1533,7 @@ list<metamodel::ExtendableME*> GmlOutput::getClassAttributes(metamodel::Class* c
       }
 
       if (ac->Kind != Class::Association) {
-         for (auto ra : ac->RoleAttribute) {
+         for (auto ra : ac->_roleaccess) {
             string findString = ra->Name;
             auto it = std::find_if(attributes.begin(), attributes.end(), [&findString](metamodel::ExtendableME* obj) {return obj->Name == findString; });
 

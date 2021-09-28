@@ -38,13 +38,15 @@ using namespace metamodel;
 
 */
 
+extern Class* pathel_context;
+
 antlrcpp::Any Ili2Input::visitGraphicDef(parser::Ili2Parser::GraphicDefContext *ctx)
 {
 
    /* graphicDef
    : GRAPHIC graphicname1=NAME properties? // ABSTRACT|FINAL
-     (EXTENDS ((INTERLIS DOT)? SIGN | path))?
-     (BASED ON path)? EQUAL
+     (EXTENDS expath=path)?
+     (BASED ON bpath=path)? EQUAL
      (selection)*
      (drawingRule)*
      END graphicname2=NAME SEMI
@@ -71,23 +73,35 @@ antlrcpp::Any Ili2Input::visitGraphicDef(parser::Ili2Parser::GraphicDefContext *
    }
    
    Graphic *g = new Graphic();
-   init_extendableme(g,ctx->start->getLine());
-
+   init_graphic(g,get_line(ctx));
+   g->Name = name1;
+   add_graphic(g);
+   push_context(g);
+   
    map<string,bool> properties = get_properties(ctx->properties(),vector({ABSTRACT,FINAL}));
    if (properties[ABSTRACT]) {
       g->Abstract = true;
    }
-   else if (properties[FINAL]) {
+   if (properties[FINAL]) {
       g->Final = true;
    }
    
+   g->Base = nullptr;
    if (ctx->EXTENDS() != nullptr) {
-      // to do !!!
+      Graphic *s = find_graphic(ctx->expath->getText(),get_line(ctx->expath));
+      g->Super = s;
+      if (s != nullptr) {
+         g->Base = s->Base;
+      }
    }
    
    if (ctx->BASED() != nullptr) {
-      // to do !!!
-      // g->Base = find_graphic(ctx->path());
+      if (g->Base != nullptr) {
+         Log.error("graphic definition is already based on " + get_path(g->Base),get_line(ctx->BASED()));
+      }
+      else {
+         g->Base = find_class_or_view(ctx->bpath->getText(),get_line(ctx->bpath));
+      }
    }
    
    for (auto s : ctx->selection()) {
@@ -119,8 +133,12 @@ antlrcpp::Any Ili2Input::visitGraphicDef(parser::Ili2Parser::GraphicDefContext *
    }
    
    for (auto r : ctx->drawingRule()) {
-      g->DrawingRule.push_back(visitDrawingRule(r));
+      DrawingRule *dr = visitDrawingRule(r);
+      dr->Graphic = g;
+      g->DrawingRule.push_back(dr);
    }
+   
+   pop_context();
    
    return g;
 
@@ -134,14 +152,40 @@ antlrcpp::Any Ili2Input::visitDrawingRule(parser::Ili2Parser::DrawingRuleContext
      (OF path)?
      COLON condSignParamAssignment (COMMA condSignParamAssignment)* SEMI
    */
+
+   /* class DrawingRule : public ExtendableME {
+      // MetaElement.Name := Name as defined in the INTERLIS-Model
+   public:
+      list<CondSignParamAssignment *> Rule; // LIST
+      // role from ASSOCIATION GraphicRule
+      Graphic *Graphic = nullptr;
+      // role from ASSOCIATION SignClass
+      Class *Class = nullptr;
+   */
    
    string name = ctx->drawingrulename->getText();
    
    debug(ctx,">>> visitDrawingRule(" + name + ")");
    Log.incNestLevel();
 
-   DrawingRule *r = new DrawingRule();
-   // to do !!!
+   DrawingRule *r = new DrawingRule;
+   init_extendableme(r,get_line(ctx));
+   r->Name = name;
+
+   map<string,bool> properties = get_properties(ctx->properties(),vector({ABSTRACT,EXTENDED,FINAL}));
+   if (properties[ABSTRACT]) {
+      r->Abstract = true;
+   }
+   if (properties[FINAL]) {
+      r->Final = true;
+   }
+   if (properties[EXTENDED]) {
+      // g->Super, to do !!!
+   }
+
+   for (auto actx: ctx->condSignParamAssignment()) {
+      r->Rule.push_back(visitCondSignParamAssignment(actx));
+   }
 
    Log.decNestLevel();
    debug(ctx,"<<< visitDrawingRule(" + name + ")");
@@ -156,9 +200,31 @@ antlrcpp::Any Ili2Input::visitCondSignParamAssignment(parser::Ili2Parser::CondSi
    : (WHERE logical=expression)?
      LPAREN signParamAssignment (COMMA signParamAssignment)* RPAREN
    */
+
+   /* struct CondSignParamAssignment : public MMObject {
+   public:
+      Expression *Where = nullptr;
+      list<SignParamAssignment *> Assignments; // LIST
+   */
    
-   debug(ctx,"visitCondSignParamAssignment()");
-   return nullptr;
+   debug(ctx,">>> visitCondSingAssignment()");
+   Log.incNestLevel();
+
+   CondSignParamAssignment *a = new CondSignParamAssignment;
+   init_mmobject(a,get_line(ctx));
+
+   if (ctx->expression() != nullptr) {
+      a->Where = visitExpression(ctx->expression());
+   }
+
+   for (auto actx: ctx->signParamAssignment()) {
+      a->Assignments.push_back(visitSignParamAssignment(actx));
+   }
+
+   Log.decNestLevel();
+   debug(ctx,">>> visitCondSingAssignment()");
+
+   return a;
 
 }
              
@@ -175,7 +241,21 @@ antlrcpp::Any Ili2Input::visitSignParamAssignment(parser::Ili2Parser::SignParamA
      )
    */
 
-   debug(ctx,"visitSignParamAssignment");
-   return nullptr;
+   /* struct SignParamAssignment : public MMObject {
+   public:
+      AttrOrParam *Param = nullptr;
+      Expression *Assignment = nullptr;
+   */
+
+   string name = ctx->signparametername->getText();
+   debug(ctx,">>> visitSignParamAssignment(" + name + ")");
+
+   SignParamAssignment *a = new SignParamAssignment;
+   init_mmobject(a,get_line(ctx));
+   // to do !!!
+
+   debug(ctx,"<<< visitSignParamAssignment(" + name + ")");
+
+   return a;
 
 }

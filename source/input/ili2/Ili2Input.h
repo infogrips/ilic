@@ -95,13 +95,11 @@ namespace input {
       antlrcpp::Any visitComposedUnitExpr(parser::Ili2Parser::ComposedUnitExprContext* ctx) override;
       antlrcpp::Any visitBaseAttrRef(parser::Ili2Parser::BaseAttrRefContext *ctx) override;
       antlrcpp::Any visitMetaObjectRef(parser::Ili2Parser::MetaObjectRefContext *ctx) override;
-      antlrcpp::Any visitAttributeRef(parser::Ili2Parser::AttributeRefContext *ctx) override;
       antlrcpp::Any visitRefSys(parser::Ili2Parser::RefSysContext *ctx) override;
       antlrcpp::Any visitFormatDef(parser::Ili2Parser::FormatDefContext *ctx) override;
-      antlrcpp::Any visitObjectOrAttributePath(parser::Ili2Parser::ObjectOrAttributePathContext *ctx) override;
       antlrcpp::Any visitAttributePath(parser::Ili2Parser::AttributePathContext *ctx) override;
+      antlrcpp::Any visitObjectOrAttributePath(parser::Ili2Parser::ObjectOrAttributePathContext *ctx) override;
       antlrcpp::Any visitPathEl(parser::Ili2Parser::PathElContext *ctx) override;
-      antlrcpp::Any visitAssociationPath(parser::Ili2Parser::AssociationPathContext *ctx) override;
       antlrcpp::Any visitAttributePathType(parser::Ili2Parser::AttributePathTypeContext *ctx) override;
       antlrcpp::Any visitEnumAssignment(parser::Ili2Parser::EnumAssignmentContext *ctx) override;
       antlrcpp::Any visitEnumRange(parser::Ili2Parser::EnumRangeContext *ctx) override;

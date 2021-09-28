@@ -88,7 +88,7 @@ string input::getInterlisModel23()
    source += "      UNIQUE Name;\n";
    source += "   END ILIC_METAOBJECT;\n";
    source += "   \n";
-   source += "   CLASS METAOBJECT_TRANSLATION =\n";
+   source += "   CLASS METAOBJECT_TRANSLATION (ABSTRACT) =\n";
    source += "      Name: MANDATORY ILIC_NAME;\n";
    source += "      NameInBaseLanguage: MANDATORY ILIC_NAME;\n";
    source += "      UNIQUE Name;\n";

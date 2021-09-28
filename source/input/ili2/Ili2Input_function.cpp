@@ -91,6 +91,10 @@ antlrcpp::Any Ili2Input::visitFunctionDef(parser::Ili2Parser::FunctionDefContext
       debug(ctx,"<<< visitArgument " + a->Name);
    }
 
+   if (ili23 && f->Argument.size() == 0) {
+      Log.error("function definition of " + name + "() needs at least one argument",get_line(ctx));
+   }
+
    // f->LocalType ???
    debug(ctx,">>> visitResultType");
    Log.incNestLevel();
@@ -122,13 +126,14 @@ antlrcpp::Any Ili2Input::visitFunctionCall(parser::Ili2Parser::FunctionCallConte
    : functionname=path LPAREN functionCallArgument (COMMA functionCallArgument)* RPAREN
    */
 
-   string functionname = visitPath(ctx->path());
-   debug(ctx,">>> visitFunctionCall(" + functionname + ")");
+   string name = visitPath(ctx->path());
+   debug(ctx,">>> visitFunctionCall(" + name + ")");
+   Log.incNestLevel();
 
    FunctionCall *c = new FunctionCall();
    init_factor(c,get_line(ctx));
    
-   c->Function = find_function(functionname,get_line(ctx));
+   c->Function = find_function(name,get_line(ctx));
    if (c->Function != nullptr && c->Function->ResultType != nullptr) {
       c->_type = get_type_string(c->Function->ResultType);
    }
@@ -139,8 +144,34 @@ antlrcpp::Any Ili2Input::visitFunctionCall(parser::Ili2Parser::FunctionCallConte
    for (auto actx : ctx->functionCallArgument()) {
       c->Arguments.push_back(visitFunctionCallArgument(actx));
    }
+   
+   if (c->Function != nullptr) {
+      if (c->Arguments.size() != c->Function->Argument.size()) {
+         Log.error("function call of " + name + "() needs " + to_string(c->Function->Argument.size()) + " arguments",get_line(ctx));
+      }
+      else {
+         auto argp = c->Function->Argument.begin();
+         for (auto a: c->Arguments) {
+            if ((*argp)->Type == nullptr) {
+               continue;
+            }
+            if (a->Expression->_type == "???") {
+               continue;
+            }
+            if (!check_type_compatibility((*argp)->Type->getClass(),a->Expression->_type)) {
+               Log.error(
+                  "incompatible type for " + name + "() argument " + (*argp)->Name +
+                  " (" + a->Expression->_type + "<>" + (*argp)->Type->getClass() + ")",
+                  get_line(ctx)
+               );
+            }
+            argp++;
+         }
+      }
+   }
 
-   debug(ctx,"<<< visitFunctionCall(" + functionname + ":" + c->_type + ")");
+   Log.decNestLevel();
+   debug(ctx,"<<< visitFunctionCall(" + name + ":" + c->_type + ")");
    return c;
 
 }
@@ -203,7 +234,7 @@ antlrcpp::Any Ili2Input::visitArgumentType(parser::Ili2Parser::ArgumentTypeConte
          RestrictedRef *r = visitRestrictedRef(ctx->restrictedRef());
          ObjectType *o = new ObjectType;
          o->Multiple = false;
-         o->_basetype = r->BaseType;
+         o->_baseclass = r->_baseclass;
          t = o;
       }
       else {
@@ -216,7 +247,7 @@ antlrcpp::Any Ili2Input::visitArgumentType(parser::Ili2Parser::ArgumentTypeConte
          RestrictedRef* r = visitRestrictedRef(ctx->restrictedRef());
          ObjectType* o = new ObjectType;
          o->Multiple = true;
-         o->_basetype = r->BaseType;
+         o->_baseclass = r->_baseclass;
          t = o;
       }
       else {
